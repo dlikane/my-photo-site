@@ -1,43 +1,63 @@
-import express from "express";
-import fs from "fs";
-import path from "path";
-import cors from "cors";
-import { fileURLToPath } from "url";
+// import all necessary modules
+import dotenv from 'dotenv';
+import express from 'express';
+import cors from 'cors';
+import { Dropbox } from 'dropbox';
+import fetch from 'node-fetch';
 
-// Fix __dirname issue in ES module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// load environment variables from .env file
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+const dropboxAccessToken = process.env.DROPBOX_TOKEN;
 
-// ✅ Dynamically set API Base URL
+// Dynamically set API Base URL
 const API_BASE_URL = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : `http://localhost:${PORT}`;
 
-// ✅ Allow CORS for React frontend
+// Enable CORS for your React frontend
 app.use(cors());
 
-// ✅ Serve images from the public folder (correct path)
-app.use("/images", express.static(path.join(__dirname, "../../public/images")));
+// Initialize the Dropbox Client
+const dbx = new Dropbox({ accessToken: dropboxAccessToken, fetch: fetch });
 
-// ✅ API to get all image filenames dynamically
-app.get("/api/images", (req, res) => {
-    const imageDir = path.join(__dirname, "../../public/images");
+// API to get all image filenames dynamically
+app.get('/api/images', async (req, res) => {
 
-    fs.readdir(imageDir, (err, files) => {
-        if (err) {
-            return res.status(500).json({ error: "Error reading image directory" });
+    console.log('Received request to /api/images');
+    console.log('Token: ', dropboxAccessToken);
+
+    try {
+        console.log('Requesting file list from Dropbox');
+        const response = await dbx.filesListFolder({ path: '' });
+
+        console.log('Received file list from Dropbox:', response);
+        let images = [];
+
+        // Loop through each file from Dropbox and generate a temporary link
+        for (const file of response.result.entries) {
+            if (file['.tag'] === 'file') {
+
+                console.log(`Requesting temporary link for file: ${file.path_lower}`);
+                const link = await dbx.filesGetTemporaryLink({ path: file.path_lower });
+
+                console.log(`Received temporary link: `, link.result.link);
+                images.push(link.result.link);
+            }
         }
 
-        // ✅ Use dynamic API URL for images
-        const images = files.map(file => `${API_BASE_URL}/images/${file}`);
+        console.log(`Responding with list of ${images.length} images`);
         res.json(images);
-    });
+
+    } catch (err) {
+        console.error('Error during processing:', err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// ✅ Start server
+// Start the server
 app.listen(PORT, () => {
-    console.log(`✅ Server running at ${API_BASE_URL}`);
+    console.log(`Server started, it's running at ${API_BASE_URL}`);
 });
