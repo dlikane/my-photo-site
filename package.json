@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e .env -- cross-env PNPM_NODE=$PNPM_NODE concurrently \"vite\" \"$PNPM_NODE src/server/index.js\"",
+    "dev": "dotenv -e .env -- cross-env PNPM_NODE=$PNPM_NODE concurrently \"vite\" \"$PNPM_NODE api/server.js\"",
     "start": "dotenv -e .env -- $PNPM_NODE src/server/index.js",
     "build": "vite build",
     "lint": "eslint .",
