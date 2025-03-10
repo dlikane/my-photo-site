@@ -17,7 +17,8 @@
     }
   ],
   "framework": "vite",
-  "buildCommand": "pnpm run build",
+  "buildCommand": "vite build",
   "installCommand": "pnpm install",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "devCommand": "vite"
 }
