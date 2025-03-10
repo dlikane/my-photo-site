@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently 'vite' 'node src/server/index.js'",
+    "dev": "dotenv -e .env -- cross-env PNPM_NODE=$PNPM_NODE concurrently \"vite\" \"$PNPM_NODE src/server/index.js\"",
+    "start": "dotenv -e .env -- $PNPM_NODE src/server/index.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "start": "node src/server/index.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.8.2",
@@ -27,6 +27,8 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "cross-env": "^7.0.3",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",

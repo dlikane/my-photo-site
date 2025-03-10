@@ -15,3 +15,4 @@ If you are developing a production application, we recommend using TypeScript an
 Connecting to dropbox:
 https://www.dropbox.com/developers/apps
 app name: dlikane.my-photo-site
+the folder is Apps/my-photo-site (!)
