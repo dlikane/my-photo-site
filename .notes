@@ -1,0 +1,27 @@
+https://www.dropbox.com/oauth2/authorize?client_id=knp5qbzp4zyo0z9&response_type=code&token_access_type=offline
+
+
+$headers = @{
+    "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("knp5qbzp4zyo0z9:p1mkdmrr33ryz5q"))
+    "Content-Type"  = "application/x-www-form-urlencoded"
+}
+
+$body = @{
+    "grant_type"    = "refresh_token"
+    "refresh_token" = "1Bqijh2ZQe0AAAAAAAEMc8Xjd92ONpMV2tAsc502TTU"
+}
+
+$headers = @{
+    "Authorization" = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("knp5qbzp4zyo0z9:p1mkdmrr33ryz5q"))
+    "Content-Type"  = "application/x-www-form-urlencoded"
+}
+
+$body = @{
+    "code"       = "1Bqijh2ZQe0AAAAAAAEMdZQcMcTKIpXFXqmQV9zckag"
+    "grant_type" = "authorization_code"
+}
+
+Invoke-RestMethod -Uri "https://api.dropbox.com/oauth2/token" -Method Post -Headers $headers -Body $body
+
+
+vercel env add DROPBOX_REFRESH_TOKEN=UZJmm0ZcGtkAAAAAAAAAAXcrS99HfTu1g78sEFALLp59abnpvDgZs17lV4gcmr_f
