@@ -2,14 +2,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-
 const Slideshow = () => {
     const [images, setImages] = useState([]);
     const [index, setIndex] = useState(0);
 
     useEffect(() => {
-        axios.get(`${API_BASE_URL}/api/images`)
+        axios.get("/api/server") // Direct relative path to the Vercel function
             .then(response => {
                 const shuffled = response.data.sort(() => Math.random() - 0.5);
                 setImages(shuffled);

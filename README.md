@@ -16,3 +16,7 @@ Connecting to dropbox:
 https://www.dropbox.com/developers/apps
 app name: dlikane.my-photo-site
 the folder is Apps/my-photo-site (!)
+
+
+https://www.dropbox.com/oauth2/authorize?client_id=knp5qbzp4zyo0z9&response_type=code&token_access_type=offline
+

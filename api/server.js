@@ -1,20 +1,52 @@
 import dotenv from 'dotenv';
-import express from 'express';
-import cors from 'cors';
 import { Dropbox } from 'dropbox';
 import fetch from 'node-fetch';
 
 dotenv.config();
 
-const app = express();
-app.use(cors());
+const DROPBOX_APP_KEY = process.env.DROPBOX_APP_KEY;
+const DROPBOX_APP_SECRET = process.env.DROPBOX_APP_SECRET;
+const DROPBOX_REFRESH_TOKEN = process.env.DROPBOX_REFRESH_TOKEN;
 
-const PORT = process.env.PORT || 5001;
-const dropboxAccessToken = process.env.DROPBOX_TOKEN;
-const dbx = new Dropbox({ accessToken: dropboxAccessToken, fetch: fetch });
+async function getAccessToken() {
+    try {
+        const response = await fetch('https://api.dropbox.com/oauth2/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Basic ${Buffer.from(`${DROPBOX_APP_KEY}:${DROPBOX_APP_SECRET}`).toString('base64')}`,
+            },
+            body: new URLSearchParams({
+                grant_type: 'refresh_token',
+                refresh_token: DROPBOX_REFRESH_TOKEN,
+            }),
+        });
 
-app.get('/api/images', async (req, res) => {
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`Failed to refresh access token: ${data.error_description}`);
+        }
+
+        return data.access_token;
+    } catch (error) {
+        console.error('Error refreshing access token:', error);
+        return null;
+    }
+}
+
+export default async function handler(req, res) {
+    if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
     console.log('Received request to /api/images');
+
+    const accessToken = await getAccessToken();
+    if (!accessToken) {
+        return res.status(500).json({ error: 'Failed to get access token' });
+    }
+
+    const dbx = new Dropbox({ accessToken, fetch });
 
     try {
         const response = await dbx.filesListFolder({ path: '' });
@@ -27,19 +59,9 @@ app.get('/api/images', async (req, res) => {
             }
         }
 
-        res.json(images);
+        res.status(200).json(images);
     } catch (err) {
         console.error('Error fetching images:', err);
         res.status(500).json({ error: err.message });
     }
-});
-
-// If running locally, start the server
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`Server running locally on http://localhost:${PORT}`);
-    });
 }
-
-// Export for Vercel deployment
-export default app;
