@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e .env -- cross-env PNPM_NODE=$PNPM_NODE concurrently \"vite\" \"$PNPM_NODE api/server.js\"",
+    "dev": "dotenv -e .env -- cross-env PNPM_NODE=$PNPM_NODE vite",
     "build": "vite build",
     "start": "vite preview",
     "vercel-build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "vercel-dev": "vercel dev"
   },
   "dependencies": {
     "axios": "^1.8.2",

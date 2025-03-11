@@ -1,24 +1,15 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/server.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/*.js": {
+      "memory": 1024
     }
-  ],
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "development"
+    }
+  },
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
-  "framework": "vite",
-  "buildCommand": "vite build",
-  "installCommand": "pnpm install",
-  "outputDirectory": "dist",
-  "devCommand": "vite"
+    { "src": "/api/.*", "dest": "/api/server.js" }
+  ]
 }
