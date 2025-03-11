@@ -1,0 +1,12 @@
+Ok, I want to modify Slideshow to do the following:
+
+Get list of images as it does now
+Select a few randome images between 3 and 5 and show them with the disolve and slight zoom in/out effect 10%, keep the latest image displayed
+Transition 2 seconds stay up for 3 seconds
+Get list of quotes from /api/quotes, choose one randomly
+As the last image is displayed, show the quote on top of it in a very nice neat font
+Quote is pipe delimited file with first field Author and second quote itself
+Display quote in the right bottom corner taking no more than 25% of space
+File name comes in form itme1_item2_ etc, can be a few items. Show them as an image caption on the top of image, taking small neat font
+If slideshow is clicked while rotating throuhg images, keep rotating.
+if slideshow is clicked while standing, hide the quote and start another 3 to 5 images

@@ -5,7 +5,7 @@ import Footer from "./Footer";
 
 const Main = () => {
     useEffect(() => {
-        document.title = "Visuals by Dmitry Likane"; // ✅ Update tab title
+        document.title = "With Dmitry Likane"; // ✅ Update tab title
     }, []);
 
     return (

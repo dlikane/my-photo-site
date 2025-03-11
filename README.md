@@ -20,3 +20,12 @@ Git
 https://github.com/dlikane/my-photo-site
 
 ## dev
+
+NOTE:
+    there is call back list for AOuth2 in dropbox, need to add proper URL once configured
+    Maybe need to regenerate refresh token
+
+## refresh token
+look at scripts:
+getRefreshToken.ps
+refreshAccessToken.ps
