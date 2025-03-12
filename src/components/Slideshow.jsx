@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import useFetchImages from "../hooks/useFetchImages";
 import useFetchQuote from "../hooks/useFetchQuote";
 import ImageDisplay from "./ImageDisplay";
-import Caption from "./Caption";
 import QuoteDisplay from "./QuoteDisplay";
 
 const Slideshow = () => {
@@ -10,7 +9,6 @@ const Slideshow = () => {
     const { quote, fetchQuote, setQuote } = useFetchQuote();
     const [currentImages, setCurrentImages] = useState([]);
     const [index, setIndex] = useState(0);
-    const [caption, setCaption] = useState("");
     const [isPaused, setIsPaused] = useState(false);
     const [isReady, setIsReady] = useState(false); // ✅ Hide images initially
 
@@ -26,7 +24,6 @@ const Slideshow = () => {
         setIndex(0);
         setIsPaused(false);
         fetchQuote(); // ✅ Fetch a new quote every cycle
-        setCaption(selectedImages[0]?.name || "");
     }, [images]);
 
     useEffect(() => {
@@ -70,12 +67,7 @@ const Slideshow = () => {
         startNewCycle();
     };
 
-    useEffect(() => {
-        if (currentImages.length > 0) {
-            console.log("📝 Updating caption for image:", currentImages[index]?.name);
-            setCaption(currentImages[index]?.name || ""); // ✅ Ensures correct caption
-        }
-    }, [index, currentImages]); // ✅ Runs whenever the index changes
+    if (!isReady) return null; // ✅ Don't render until images are ready
 
     return (
         <div className="slideshow-container" onClick={handleClick}>
