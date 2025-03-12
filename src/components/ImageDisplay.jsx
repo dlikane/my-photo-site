@@ -11,15 +11,15 @@ const ImageDisplay = ({ currentImages, index, isPaused }) => {
                     className="image-container"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    exit={{ opacity: isPaused ? 1 : 0 }} // ✅ Keeps last image & caption visible when paused
+                    exit={{ opacity: isPaused ? 1 : 0 }}
                     transition={{ duration: 2, ease: "easeInOut" }}
                 >
-                    {/* ✅ Image */}
+                    {/* ✅ Image - Now properly fits both horizontally & vertically */}
                     <motion.img
                         src={currentImage.url}
                         className="slideshow-image"
                         initial={{ opacity: 0, scale: 1 }}
-                        animate={{ opacity: 1, scale: [1, 1.05, 1] }}
+                        animate={{ opacity: 1, scale: [1, 1.025, 1] }}
                         transition={{
                             opacity: { duration: 2, ease: "easeInOut" },
                             scale: { duration: 5, ease: "easeInOut" }
@@ -27,7 +27,7 @@ const ImageDisplay = ({ currentImages, index, isPaused }) => {
                         exit={{ opacity: isPaused ? 1 : 0 }}
                     />
 
-                    {/* ✅ Caption stays exactly where the tagline was */}
+                    {/* ✅ Caption - Stays attached to the top inside slideshow */}
                     <motion.div
                         className="image-caption"
                         initial={{ opacity: 0 }}
