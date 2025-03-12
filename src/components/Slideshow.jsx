@@ -67,7 +67,9 @@ const Slideshow = () => {
         startNewCycle();
     };
 
-    if (!isReady) return null; // ✅ Don't render until images are ready
+    if (!isReady) return (
+        <div className="slideshow-container" />
+    );
 
     return (
         <div className="slideshow-container" onClick={handleClick}>
