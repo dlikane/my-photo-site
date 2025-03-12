@@ -31,7 +31,13 @@ export default async function handler(req, res) {
                 // ✅ Return both URL and file name
                 return {
                     url: link.result.link,
-                    name: file.name.replace(/_/g, " ").replace(/\.[^/.]+$/, "") // Format filename
+                    name: (() => {
+                        let parts = file.name.replace(/\.[^/.]+$/, "").split("_"); // ✅ Remove extension and split by underscore
+                        if (parts.length > 1) {
+                            parts.pop(); // ✅ Drop the last part if there is more than one
+                        }
+                        return parts.join(" | "); // ✅ Join remaining parts with " | "
+                    })()
                 };
             });
 
