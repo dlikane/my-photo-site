@@ -21,6 +21,11 @@ https://github.com/dlikane/my-photo-site
 
 ## dev
 
+Running locally:
+```
+pnpm vercer-dev
+```
+
 NOTE:
     there is call back list for AOuth2 in dropbox, need to add proper URL once configured
     Maybe need to regenerate refresh token
