@@ -51,6 +51,16 @@ body {
   margin-top: 5px;
 }
 
+/* ✅ Placeholder Image (me.jpg) */
+.placeholder-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* ✅ Ensures it fits properly */
+}
+
 /* ✅ Prevents stretching and centers the image */
 .slideshow-container {
   display: flex;

@@ -3,6 +3,7 @@ import useFetchImages from "../hooks/useFetchImages";
 import useFetchQuote from "../hooks/useFetchQuote";
 import ImageDisplay from "./ImageDisplay";
 import QuoteDisplay from "./QuoteDisplay";
+import {AnimatePresence, motion} from "framer-motion";
 
 const Slideshow = () => {
     const images = useFetchImages();
@@ -10,7 +11,8 @@ const Slideshow = () => {
     const [currentImages, setCurrentImages] = useState([]);
     const [index, setIndex] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
-    const [isReady, setIsReady] = useState(false); // ✅ Hide images initially
+    const [isReady, setIsReady] = useState(false);
+    const [showPlaceholder, setShowPlaceholder] = useState(true);
 
     const startNewCycle = useCallback(() => {
         if (images.length === 0) return;
@@ -29,8 +31,15 @@ const Slideshow = () => {
     useEffect(() => {
         if (images.length > 0) {
             console.log("🟢 Images fetched, preparing slideshow...");
-            setIsReady(true); // ✅ Only show images once they're ready
-            startNewCycle();
+            setTimeout(() => {
+                setShowPlaceholder(false);
+                setTimeout(() => {
+                    setIsReady(true);
+                    startNewCycle();
+                }, 1000); // ✅ Ensures transition completes before images start
+            }, 2000); // ✅ Let `me.jpg` stay visible for a short time
+            // setIsReady(true); // ✅ Only show images once they're ready
+            // startNewCycle();
         }
     }, [images]);
 
@@ -68,13 +77,32 @@ const Slideshow = () => {
     };
 
     if (!isReady) return (
-        <div className="slideshow-container" />
+        <div className="slideshow-container">
+            <AnimatePresence>
+                {showPlaceholder && (
+                    <motion.img
+                        src="/me.jpg"
+                        className="placeholder-image"
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ opacity: { duration: 2, ease: "easeInOut" } }}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
     );
 
+    console.log("Placeholder: ", showPlaceholder)
     return (
         <div className="slideshow-container" onClick={handleClick}>
-            <ImageDisplay currentImages={currentImages} index={index} />
-            <QuoteDisplay quote={quote} isPaused={isPaused} />
+            {!showPlaceholder && (
+                <>
+                    <ImageDisplay currentImages={currentImages} index={index} />
+                    <QuoteDisplay quote={quote} isPaused={isPaused} />
+                </>
+            )}
+
         </div>
     );
 };
