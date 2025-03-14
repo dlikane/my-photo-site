@@ -1,0 +1,20 @@
+Ok, let's re-think the whole logic.
+I want to:
+- when open site I want to display header and tagline as it is at the moment
+- footer should always stay at bottom
+- allow slide show to take whole area between taglien and footer
+- show me.jpg straight away fitting slide area and "welcome" in caption
+- prepare slide show and once it is ready ease out initial image and caption
+- get in the cycle
+- get list of images from dropbox (url and caption)
+- select 3-5 images for the cycle
+- caption stays where it is now
+- wade in and out images and captions together
+- caption keeps size, images zoom in as they wade in and zoom out as the wade out about 5%
+- images fit width and height
+- the last image stays on
+- get random quote from dropbox
+- wade in quote
+- stay until a click
+- keep quote and image on until next cycle is ready
+- wade out image and quote and start next cycle
