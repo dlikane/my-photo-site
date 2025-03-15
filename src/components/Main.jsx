@@ -1,17 +1,28 @@
-import { useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import Header from "./Header";
-import Slideshow from "./Slideshow";
+import Menu from "./Menu";
 import Footer from "./Footer";
+import Slideshow from "./Slideshow";
+import Category from "./Category";
+import Videos from "./Videos";
+import About from "./About";
 
 const Main = () => {
-    useEffect(() => {
-        document.title = "With Dmitry Likane"; // ✅ Update tab title
-    }, []);
-
     return (
-        <div className="main-container">
+        <div className="app-container">
+            <Menu />
             <Header />
-            <Slideshow />
+
+            {/* ✅ Dynamic Page Content */}
+            <div className="content-wrapper">
+                <Routes>
+                    <Route path="/" element={<Slideshow />} />
+                    <Route path="/category/:categoryName" element={<Category />} />
+                    <Route path="/videos/:videoType" element={<Videos />} />
+                    <Route path="/about" element={<About />} />
+                </Routes>
+            </div>
+
             <Footer />
         </div>
     );
