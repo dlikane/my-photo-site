@@ -1,10 +1,31 @@
-/* ✅ Basic Styling for About Page */
 .about-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    text-align: center;
-    font-size: 1.5rem;
-    color: white;
+    display: block; /* ✅ Reset to block flow */
+    width: 80%;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left; /* ✅ Ensures natural paragraph alignment */
+    line-height: 1.6;
+    overflow-y: auto; /* ✅ Allows scrolling when needed */
+    scrollbar-width: none; /* ✅ Hide scrollbar (for Firefox) */
+}
+
+.about-container::-webkit-scrollbar {
+    display: none; /* ✅ Hide scrollbar (for Chrome, Safari) */
+}
+
+.about-container p {
+    margin-bottom: 1rem; /* ✅ Proper spacing between paragraphs */
+}
+
+.about-container h1, .about-container h2, .about-container h3 {
+    margin-top: 1.5rem;
+    font-weight: bold;
+}
+
+.about-container strong {
+    font-weight: bold;
+}
+
+.about-container em {
+    font-style: italic;
 }

@@ -80,3 +80,15 @@ export async function getDropboxQuotes() {
     }
 }
 
+export async function getDropboxAbout() {
+    try {
+        const dbx = await getDropboxInstance();
+        const filePath = "/about.md";
+        const file = await dbx.filesDownload({ path: filePath });
+
+        return file.result.fileBinary.toString("utf-8");
+    } catch (error) {
+        console.error("❌ Dropbox about.md not found.");
+        return null; // ✅ Return null instead of handling local fallback
+    }
+}
