@@ -1,0 +1,36 @@
+Dmitry is a photographer and videographer with a knack for capturing the perfect shot—  
+whether it’s a breathtaking portrait or a split-second moment of chaos that somehow just works.
+
+What started as a hobby quickly spiraled into an obsession,  
+and now he finds himself constantly chasing the next great frame.
+
+---
+
+## 🎥 The Gear & The Vision
+Armed with a **Canon R5 II, Blackmagic cameras, and an unreasonable number of lenses and flashes,**  
+Dmitry believes that good lighting is the secret to life (and great photos).
+
+He’s been known to experiment with everything from cinematic storytelling to themed photoshoots—  
+because why take a normal portrait when you can add a little drama, mystery, or just a really good hat?
+
+---
+
+## 🎭 The Style
+A mix of **precision and spontaneity**, ensuring that every shot has:
+- ✔️ **Technical excellence**
+- ✔️ **A little bit of magic**
+
+Whether it’s a **high-energy action shoot** or an **intimate, moody portrait**,  
+Dmitry knows how to bring out the best in his subjects—  
+and if that fails, he’ll probably just crack a joke and capture the moment anyway.
+
+---
+
+## 🚀 The Mission
+Now, as he builds his photography portfolio,  
+Dmitry is on a mission to share his work with the world.
+
+If you’re looking for photos that have **personality, depth, and just the right amount of flair**,  
+you’re in the right place.
+
+> **_(Disclaimer: No cameras were harmed in the making of these photos. Well, maybe just one.)_**
