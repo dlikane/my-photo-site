@@ -9,7 +9,6 @@ const Slideshow = () => {
     const { quote, fetchQuote, setQuote } = useFetchQuote();
     const [currentImages, setCurrentImages] = useState([]);
     const [index, setIndex] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);
     const [showPlaceholder, setShowPlaceholder] = useState(true);
     const [showQuote, setShowQuote] = useState(false);
 
@@ -23,7 +22,6 @@ const Slideshow = () => {
 
         setCurrentImages(selectedImages);
         setIndex(0);
-        setIsPaused(false);
         setShowQuote(false);
         fetchQuote();
     }, [images]);
@@ -39,8 +37,8 @@ const Slideshow = () => {
     useEffect(() => {
         if (currentImages.length === 0) return;
 
-        const transitionDuration = 2000;
-        const displayDuration = 3000;
+        const transitionDuration = 2000; // 2 sec transition
+        const displayDuration = 3000; // 3 sec display
         const totalDuration = transitionDuration + displayDuration;
 
         const interval = setInterval(() => {
@@ -48,9 +46,15 @@ const Slideshow = () => {
                 const nextIndex = prevIndex + 1;
 
                 if (nextIndex >= currentImages.length) {
-                    console.log("🛑 Reached last image. Preparing to show quote...");
-                    setTimeout(() => setShowQuote(true), 2000); // ✅ Delay quote appearance
-                    setIsPaused(true);
+                    console.log("🛑 Reached last image. Stopping cycle...");
+
+                    clearInterval(interval); // ✅ Stops interval immediately
+
+                    setTimeout(() => {
+                        console.log("💬 Showing quote...");
+                        setShowQuote(true); // ✅ Actually triggers quote display
+                    }, displayDuration); // ✅ Delay before showing quote
+
                     return prevIndex;
                 }
 
@@ -64,10 +68,8 @@ const Slideshow = () => {
 
     const handleClick = () => {
         console.log("🟠 Slideshow clicked! Restarting...");
-
-        setIsPaused(false);
+        setShowQuote(false); // ✅ Hide quote on restart
         setQuote(null);
-        setShowQuote(false);
         startNewCycle();
     };
 
