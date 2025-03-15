@@ -1,5 +1,6 @@
 import { Dropbox } from "dropbox";
 import fetch from "node-fetch";
+import yaml from "js-yaml";
 import { getAccessToken } from "../auth.js";
 
 /** ✅ Get authenticated Dropbox instance */
@@ -90,5 +91,22 @@ export async function getDropboxAbout() {
     } catch (error) {
         console.error("❌ Dropbox about.md not found.");
         return null; // ✅ Return null instead of handling local fallback
+    }
+}
+
+export async function getDropboxPlaylists() {
+    try {
+        const dbx = await getDropboxInstance();
+        const filePath = "/playlists.yml"; // ✅ Make sure this file exists in Dropbox
+        const file = await dbx.filesDownload({ path: filePath });
+
+        // ✅ Convert file to string and parse as YAML
+        const content = file.result.fileBinary.toString("utf-8");
+        const parsedData = yaml.load(content);
+
+        return parsedData?.playlists || {}; // ✅ Return playlists object or empty object
+    } catch (error) {
+        console.error("❌ Error fetching playlists:", error);
+        throw error;
     }
 }

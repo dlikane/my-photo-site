@@ -6,15 +6,26 @@ import axios from "axios";
 const Menu = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [categories, setCategories] = useState([]);
+    const [playlists, setPlaylists] = useState({}); // ✅ Playlists now stored as an object
     const navigate = useNavigate();
 
     useEffect(() => {
+        // ✅ Fetch categories from Dropbox
         axios.get("/api/categories")
             .then((res) => setCategories(res.data))
             .catch((err) => console.error("❌ Error fetching categories:", err));
+
+        // ✅ Fetch playlists from Dropbox
+        axios.get("/api/playlists")
+            .then((res) => setPlaylists(res.data))
+            .catch((err) => {
+                console.error("❌ Error fetching playlists:", err);
+                setPlaylists({}); // ✅ Prevents infinite "Loading..."
+            });
     }, []);
 
     const handleNavigate = (path) => {
+        console.log(`🔗 Navigating to: ${path}`);
         setIsOpen(false);
         navigate(path);
     };
@@ -53,11 +64,22 @@ const Menu = () => {
                                 ))}
                             </ul>
 
-                            {/* ✅ Videos (Not Clickable) */}
+                            {/* ✅ Videos (Dynamically Loaded from API) */}
                             <li className="submenu-title">Videos</li>
                             <ul className="submenu">
-                                <li className="menu-item" onClick={() => handleNavigate(`/videos/music-videos`)}>music videos</li>
-                                <li className="menu-item" onClick={() => handleNavigate(`/videos/dance-videos`)}>dance videos</li>
+                                {Object.keys(playlists).length > 0 ? (
+                                    Object.keys(playlists).map((name) => (
+                                        <li
+                                            key={name}
+                                            className="menu-item"
+                                            onClick={() => handleNavigate(`/videos/${name}`)}
+                                        >
+                                            {name}
+                                        </li>
+                                    ))
+                                ) : (
+                                    <li className="menu-item disabled">Loading...</li> // ✅ Show loading state
+                                )}
                             </ul>
 
                             {/* ✅ Contact (Opens Instagram Messenger) */}
