@@ -1,3 +1,47 @@
+20250315
+    I don't quite like design for menu.
+    I want more obvious distinction between first level menu and sub-menu:
+    First level: Categories; Videos; Contact; About
+    Sub-menu for Categories: (folder names from dropbox)
+    Sub-menu for Videos: music videos; dance videos
+
+    Don't allow to click on Categories or Videos, only sub-menu for them.
+    When selected sub-menu for Categories show Categories component instead of Slideshow. For now show only category name at the centre
+    When selected sub-menu for Videos show Videos with sub-menu name at the centre for now
+
+    Clicking contact should open instagram messanger to @dlikane
+    Clicking about should open About component with "About" shown as a placeholder
+    Add menu item at the top Home which would bring us back to original screen with Slideshow
+
+
+    Show on main screen menu.svg to the left in the header
+    Once clicked show menu items
+    categories (get the list of categories and a query to dropbox via service - make another one api/categories)
+    videos (hardcode sub-menus: music videos; dance)
+    contact
+    about
+    If categories sub-menu clicked - open new Category component (placeholder) with category name passed as a parameter (we will deal with it later)
+    If videos sub-menu clicked - open new Videos component (placeholder) with sub-menu name passed as a parameter (we will deal with it later)
+    For contact go to instagram messanger @dlikane
+    for about open open placeholder component
+
+
+
+- categories (names of folders)
+    - studio
+    - dance
+    - street
+- videos
+    music videos (Youtube MyVideos) different leve of participation
+    edc
+- insta msg
+- about
+
+Show svg above quote "Click for More"
+    generate svg which would indicate: "click here for more information, next" as a round clickable image which would work both on mobile and desktop. That to be used to indicate that if clicked anywhere on the screen the next portion information would follow
+
+
+20230314
 Ok, let's re-think the whole logic.
 I want to:
 - when open site I want to display header and tagline as it is at the moment

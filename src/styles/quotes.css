@@ -1,0 +1,57 @@
+/* ✅ Quote Container (Bottom-Right, Over Image) */
+.quote-container {
+    position: absolute;
+    bottom: 5%;
+    right: 5%;
+    width: 30%;
+    text-align: right;
+    font-size: 1rem;
+    color: white;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.6); /* ✅ Slight overlay for visibility */
+    border-radius: 10px;
+}
+
+/* ✅ Next Button (Appears with Quote) */
+.next-button-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+/* ✅ Tooltip for Next Button */
+.next-tooltip {
+    visibility: hidden;
+    width: 160px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    text-align: center;
+    padding: 5px;
+    border-radius: 5px;
+    position: absolute;
+    bottom: 130%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/* ✅ Show Tooltip on Hover */
+.next-button-container:hover .next-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ✅ Adjust Next Button Size */
+.next-icon {
+    width: 40px;
+    height: 40px;
+    transition: transform 0.3s ease-in-out;
+}
+
+/* ✅ Slight Grow Effect on Hover */
+.next-icon:hover {
+    transform: scale(1.1);
+}

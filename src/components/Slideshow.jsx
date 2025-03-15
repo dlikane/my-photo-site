@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import useFetchImages from "../hooks/useFetchImages";
 import useFetchQuote from "../hooks/useFetchQuote";
 import ImageDisplay from "./ImageDisplay";
@@ -10,57 +9,52 @@ const Slideshow = () => {
     const { quote, fetchQuote, setQuote } = useFetchQuote();
     const [currentImages, setCurrentImages] = useState([]);
     const [index, setIndex] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);
+    const [showPlaceholder, setShowPlaceholder] = useState(true);
     const [showQuote, setShowQuote] = useState(false);
-    const [isFirstCycle, setIsFirstCycle] = useState(true); // ✅ Track first cycle
 
-    /** ✅ Start new image cycle **/
     const startNewCycle = useCallback(() => {
         if (images.length === 0) return;
 
         console.log("🔄 Starting new cycle...");
 
         const numImages = Math.floor(Math.random() * 3) + 3;
-        let selectedImages = images.sort(() => Math.random() - 0.5).slice(0, numImages);
-
-        // ✅ Only use `me.jpg` for the first cycle
-        if (isFirstCycle) {
-            selectedImages = [{ url: "/me.jpg", name: "Welcome" }, ...selectedImages];
-        }
+        const selectedImages = [...images].sort(() => Math.random() - 0.5).slice(0, numImages);
 
         setCurrentImages(selectedImages);
         setIndex(0);
-        setIsPaused(false);
         setShowQuote(false);
         fetchQuote();
-    }, [images, isFirstCycle]);
+    }, [images]);
 
-    /** ✅ Load images from Dropbox **/
     useEffect(() => {
         if (images.length > 0) {
             console.log("🟢 Images fetched, preparing slideshow...");
+            setTimeout(() => setShowPlaceholder(false), 2000);
             startNewCycle();
         }
     }, [images]);
 
-    /** ✅ Handle image transitions **/
     useEffect(() => {
         if (currentImages.length === 0) return;
 
         const transitionDuration = 2000; // 2 sec transition
-        const firstImageDuration = 7000; // ✅ First image stays longer
-        const displayDuration = 3000; // Normal display time
-        const totalDuration = index === 0 && isFirstCycle ? firstImageDuration : transitionDuration + displayDuration;
+        const displayDuration = 3000; // 3 sec display
+        const totalDuration = transitionDuration + displayDuration;
 
-        const interval = setTimeout(() => {
+        const interval = setInterval(() => {
             setIndex((prevIndex) => {
                 const nextIndex = prevIndex + 1;
 
                 if (nextIndex >= currentImages.length) {
-                    console.log("🛑 Reached last image. Showing quote...");
-                    setTimeout(() => setShowQuote(true), 2000); // ✅ Delay quote appearance
-                    setIsPaused(true);
-                    setIsFirstCycle(false); // ✅ Mark first cycle as complete, so `me.jpg` isn't used again
+                    console.log("🛑 Reached last image. Stopping cycle...");
+
+                    clearInterval(interval); // ✅ Stops interval immediately
+
+                    setTimeout(() => {
+                        console.log("💬 Showing quote...");
+                        setShowQuote(true); // ✅ Actually triggers quote display
+                    }, displayDuration); // ✅ Delay before showing quote
+
                     return prevIndex;
                 }
 
@@ -69,29 +63,26 @@ const Slideshow = () => {
             });
         }, totalDuration);
 
-        return () => clearTimeout(interval);
-    }, [currentImages, index, isFirstCycle]);
+        return () => clearInterval(interval);
+    }, [currentImages, index]);
 
-    /** ✅ Handle click event to start new cycle **/
     const handleClick = () => {
-        if (showQuote) {
-            console.log("🟠 Click detected. Restarting cycle...");
-            setQuote(null);
-            setShowQuote(false);
-            startNewCycle();
-        }
+        console.log("🟠 Slideshow clicked! Restarting...");
+        setShowQuote(false); // ✅ Hide quote on restart
+        setQuote(null);
+        startNewCycle();
     };
 
     return (
         <div className="slideshow-container" onClick={handleClick}>
-            {/* ✅ Display Images */}
-            <ImageDisplay currentImages={currentImages} index={index} isPaused={isPaused} />
-
-            {/* ✅ Show "Warm Greetings" only for first cycle */}
-            {isFirstCycle && showQuote && <QuoteDisplay quote={{ text: "Warm Greetings", author: "" }} />}
-
-            {/* ✅ Normal Quote after first cycle */}
-            {!isFirstCycle && showQuote && <QuoteDisplay quote={quote} />}
+            {showPlaceholder ? (
+                <ImageDisplay currentImages={[{ url: "/me.jpg", name: "Welcome" }]} index={0} />
+            ) : (
+                <>
+                    <ImageDisplay currentImages={currentImages} index={index} />
+                    {showQuote && <QuoteDisplay quote={quote} />}
+                </>
+            )}
         </div>
     );
 };

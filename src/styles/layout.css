@@ -1,0 +1,122 @@
+/* ✅ General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: black;
+    color: white;
+    font-family: "Cormorant Garamond", serif;
+    text-align: center;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* ✅ Main App Container */
+.app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* ✅ Full viewport height */
+}
+
+/* ✅ Header Styling */
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+    background: black;
+    z-index: 1000;
+}
+
+/* ✅ Ultra-Thin Modern Small Capitals Title */
+.title {
+    font-family: "Avenir Next", "Futura", "Gill Sans", "Helvetica Neue", sans-serif;
+    font-size: 2.8rem;
+    font-variant: small-caps;
+    font-weight: 100;
+    letter-spacing: 2px;
+    color: white;
+    margin: 0;
+    text-transform: lowercase;
+}
+
+/* ✅ Smaller Neat Font for Tagline */
+.tagline {
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: white;
+    margin-top: 5px;
+}
+
+/* ✅ Content Wrapper - Expands to Fill Space Between Header & Footer */
+.content-wrapper {
+    flex-grow: 1; /* ✅ Takes remaining space */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ✅ Slideshow Container */
+.slideshow-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ✅ Ensure images fit properly */
+.slideshow-image {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* ✅ Caption Inside Slideshow */
+.image-caption {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+    width: 80%;
+    text-align: center;
+    padding: 6px 10px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* ✅ Footer Always Stays at the Bottom */
+.footer {
+    text-align: center;
+    font-size: 0.9rem;
+    color: rgba(200, 200, 200, 0.8);
+    padding: 10px 0;
+    width: 100%;
+    background: black;
+    position: relative;
+}
+.footer a {
+    color: #ddd;
+    text-decoration: none;
+}
+.footer a:hover {
+    color: white;
+}
