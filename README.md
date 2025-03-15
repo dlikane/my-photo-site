@@ -19,6 +19,13 @@ https://vercel.com/dlikanes-projects/my-photo-site
 Git
 https://github.com/dlikane/my-photo-site
 
+YouTube:
+https://console.cloud.google.com/
+
+vercel env add YOUTUBE_API_KEY 
+vercel env add YOUTUBE_PLAYLIST_ID
+
+
 ## dev
 
 Running locally:
