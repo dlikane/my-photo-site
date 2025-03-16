@@ -7,7 +7,7 @@ const useFetchImages = () => {
     useEffect(() => {
         const fetchImages = async () => {
             try {
-                const response = await axios.get("/api/images");
+                const response = await axios.get(`/api/images`, { params: { category: "" } });
                 console.log("✅ Successfully fetched images:", response.data);
 
                 if (!Array.isArray(response.data) || response.data.length === 0) {

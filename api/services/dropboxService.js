@@ -1,7 +1,7 @@
 import { Dropbox } from "dropbox";
 import fetch from "node-fetch";
 import yaml from "js-yaml";
-import { getAccessToken } from "../auth.js";
+import { getAccessToken } from "./auth.js";
 
 /** ✅ Get authenticated Dropbox instance */
 async function getDropboxInstance() {
@@ -12,13 +12,16 @@ async function getDropboxInstance() {
     return new Dropbox({ accessToken, fetch });
 }
 
-/** ✅ List JPG images from Dropbox */
-export async function getDropboxImages() {
+export async function getDropboxImages(category = "") {
     try {
         const dbx = await getDropboxInstance();
-        const response = await dbx.filesListFolder({ path: "" });
+        const folderPath = category ? `/${category}` : ""; // ✅ Use root if category is empty
 
-        if (!response.result.entries) {
+        console.log(`📂 Fetching images from folder: ${folderPath || "Slideshow"}`);
+
+        const response = await dbx.filesListFolder({ path: folderPath });
+
+        if (!response.result.entries || response.result.entries.length === 0) {
             throw new Error("No images found");
         }
 
