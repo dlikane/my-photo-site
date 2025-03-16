@@ -1,0 +1,114 @@
+/* ✅ Category Container - Takes Full Available Space */
+.category-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* ✅ Aligns grid to top */
+    padding: 20px;
+    height: 100%;
+    width: 100%;
+    background-color: black;
+    position: relative; /* ✅ Ensures it's above other layers */
+    overflow-y: auto; /* ✅ Allows scrolling */
+    overflow-x: hidden; /* ✅ Prevents horizontal scrolling */
+}
+
+/* ✅ Image Grid */
+.image-grid {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    position: relative;
+    z-index: 10;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* ✅ Lazy Loading Effect */
+.category-image {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    opacity: 0; /* ✅ Initially hidden */
+    transition: opacity 0.5s ease-in-out;
+    cursor: pointer;
+}
+
+/* ✅ Images Fade in when Observed */
+.category-image.loaded {
+    opacity: 1;
+}
+
+/* ✅ Remove Scrollbar, but allow scrolling */
+.category-container::-webkit-scrollbar {
+    display: none; /* ✅ Hides scrollbar in Chrome/Safari */
+}
+
+.category-container {
+    -ms-overflow-style: none; /* ✅ Hides scrollbar in IE/Edge */
+    scrollbar-width: none; /* ✅ Hides scrollbar in Firefox */
+}
+
+/* ✅ Fullscreen Viewer */
+.fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 999;
+}
+
+/* ✅ Navigation Buttons */
+.nav-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.7;
+}
+
+.nav-btn.left { left: 10px; }
+.nav-btn.right { right: 10px; }
+
+.nav-btn:hover {
+    opacity: 1;
+}
+
+/* ✅ Close Button */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
+/* ✅ Fullscreen Image */
+.fullscreen-image {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+/* ✅ Counter for Image Position */
+.counter {
+    position: absolute;
+    bottom: 10px;
+    color: white;
+    font-size: 1.2rem;
+}
