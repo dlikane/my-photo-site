@@ -1,3 +1,20 @@
+20250318
+    We need a few fixes. Let's fix title first. It appears in different fonts for desktop and mobil. I prefer mobile.
+    But on mobile it takes about 90% of screen width, let change aspect to make it look slim
+
+    Please use older files for reference only if you have any. Here is list of current files:
+
+
+
+20250317
+    Generate full project.
+    Please get original project from: https://github.com/dlikane/my-photo-site
+    Modify it to replace CSS with tailwind. Be as careful as possible to keep styles working.
+    Do only safe for migration things
+    Generate ALL files required including unchanged and provide a downloadable zip.
+
+
+
 20250315
     I don't quite like design for menu.
     I want more obvious distinction between first level menu and sub-menu:
