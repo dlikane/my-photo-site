@@ -1,47 +1,48 @@
 import { useState, useEffect } from "react";
+import ImageGallery from "react-image-gallery";
+import "react-image-gallery/styles/css/image-gallery.css";
 
 const FullscreenViewer = ({ images, currentIndex, onClose }) => {
     const [index, setIndex] = useState(currentIndex);
-
-    const prevImage = () => {
-        if (index > 0) setIndex(index - 1);
-    };
-
-    const nextImage = () => {
-        if (index < images.length - 1) setIndex(index + 1);
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === "ArrowLeft") prevImage();
-        if (e.key === "ArrowRight") nextImage();
-        if (e.key === "Escape") onClose();
-    };
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     useEffect(() => {
-        document.body.classList.add("hide-menu"); // Hide menu when in Fullscreen
-        window.addEventListener("keydown", handleKeyDown);
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
-        return () => {
-            document.body.classList.remove("hide-menu"); // Show menu when exiting Fullscreen
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [index]);
+    const formattedImages = images.map((img) => ({
+        original: img.url,
+    }));
 
     return (
         <div className="fullscreen-overlay">
-            {/* 🔢 Move Counter to Top-Left */}
+            <button className="close-btn" onClick={onClose}>✖</button>
+
+            {/* Image Counter - Always Visible */}
             <div className="image-counter">
                 {index + 1} / {images.length}
             </div>
 
-            {/* ❌ Close Button */}
-            <button className="close-btn" onClick={onClose}>✖</button>
-
-            <div className="image-wrapper">
-                <button className="nav-btn left" onClick={prevImage} disabled={index === 0}>←</button>
-                <img src={images[index].url} alt={images[index].name} className="fullscreen-image" />
-                <button className="nav-btn right" onClick={nextImage} disabled={index === images.length - 1}>→</button>
-            </div>
+            <ImageGallery
+                items={formattedImages}
+                startIndex={index}
+                showFullscreenButton={false}
+                showPlayButton={false}
+                showThumbnails={false} // Hide thumbnails completely
+                showNav={false} // Remove navigation arrows
+                showIndex={false} // Disable default index to avoid duplicate counters
+                slideDuration={200} // Faster transitions
+                swipeThreshold={10} // More responsive swiping
+                disableSwipe={false} // Keep swiping enabled
+                lazyLoad={true} // Optimize loading
+                useTranslate3D={true} // Improve performance
+                onSlide={(currentIndex) => setIndex(currentIndex)} // Update counter
+                onScreenChange={(isFullscreen) => {
+                    if (!isFullscreen) onClose(); // Close when exiting fullscreen
+                }}
+            />
         </div>
     );
 };

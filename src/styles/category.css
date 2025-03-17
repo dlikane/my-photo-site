@@ -26,9 +26,23 @@
     width: 100%;
     max-width: 1200px;
     padding: 20px;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     position: relative;
     z-index: 10;
+}
+
+/* Ensure no more than 4 columns on larger screens */
+@media (min-width: 1024px) {
+    .image-grid {
+        grid-template-columns: repeat(4, 1fr); /* Max 4 columns */
+    }
+}
+
+/* Ensure at least 2 columns on mobile */
+@media (max-width: 768px) {
+    .image-grid {
+        grid-template-columns: repeat(2, 1fr); /* Forces 2 columns on mobile */
+    }
 }
 
 /* 🔄 Image Lazy Loading Effect */
