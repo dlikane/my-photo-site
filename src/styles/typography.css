@@ -1,28 +1,32 @@
 .title {
     font-family: "Avenir Next", "Futura", "Gill Sans", "Helvetica Neue", sans-serif;
-    font-size: 2.2rem; /* Reduced from 2.8rem */
+    font-size: 2.2rem; /* Keep font size */
     font-variant: small-caps;
     font-weight: 100;
-    letter-spacing: 2px;
+    letter-spacing: 30px; /* Increased by 50% (default ~1px, now 1.5px) */
     color: white;
     margin: 0 auto;
     text-transform: lowercase;
-    max-width: 70%; /* Reduce width to make it appear slimmer */
     text-align: center;
+    white-space: nowrap; /* Prevents breaking into two lines */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transform: scaleX(0.5);
 }
 
-/* Responsive adjustments for mobile */
+/* Adjustments for mobile */
 @media (max-width: 768px) {
     .title {
-        font-size: 2rem; /* Further reduce font size */
-        max-width: 60%; /* Make it even slimmer on smaller screens */
+        font-size: 1.8rem; /* Slightly smaller to fit one line */
+        letter-spacing: 20px; /* Adjusted for mobile */
+        transform: scaleX(0.5);
     }
 }
 
 /* ✅ Tagline Styling */
 .tagline {
     font-size: 1.2rem;
-    font-weight: 300;
+    font-weight: 100;
     color: white;
     margin-top: 5px;
 }

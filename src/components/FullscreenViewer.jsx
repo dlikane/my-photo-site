@@ -4,13 +4,18 @@ import "react-image-gallery/styles/css/image-gallery.css";
 
 const FullscreenViewer = ({ images, currentIndex, onClose }) => {
     const [index, setIndex] = useState(currentIndex);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+    // Close viewer when pressing Escape key
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [onClose]);
 
     const formattedImages = images.map((img) => ({
         original: img.url,
@@ -20,7 +25,7 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
         <div className="fullscreen-overlay">
             <button className="close-btn" onClick={onClose}>✖</button>
 
-            {/* Image Counter - Always Visible */}
+            {/* Image Counter */}
             <div className="image-counter">
                 {index + 1} / {images.length}
             </div>
@@ -30,9 +35,9 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
                 startIndex={index}
                 showFullscreenButton={false}
                 showPlayButton={false}
-                showThumbnails={false} // Hide thumbnails completely
-                showNav={false} // Remove navigation arrows
-                showIndex={false} // Disable default index to avoid duplicate counters
+                showThumbnails={false} // No thumbnails
+                showNav={false} // No navigation arrows
+                showIndex={false} // Prevent double counter
                 slideDuration={200} // Faster transitions
                 swipeThreshold={10} // More responsive swiping
                 disableSwipe={false} // Keep swiping enabled
