@@ -19,40 +19,35 @@
     display: none;
 }
 
-/* 🖼️ Image Grid */
 .image-grid {
     display: grid;
     gap: 10px;
-    width: 100%;
-    max-width: 1200px;
+    width: 100%; /* Take full container width */
     padding: 20px;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    position: relative;
-    z-index: 10;
+    justify-content: center;
+    align-items: center;
 }
 
-/* Ensure no more than 4 columns on larger screens */
+/* Ensure no more than 4 columns */
 @media (min-width: 1024px) {
     .image-grid {
-        grid-template-columns: repeat(4, 1fr); /* Max 4 columns */
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
 /* Ensure at least 2 columns on mobile */
 @media (max-width: 768px) {
     .image-grid {
-        grid-template-columns: repeat(2, 1fr); /* Forces 2 columns on mobile */
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* 🔄 Image Lazy Loading Effect */
+/* Make images fill their grid cells */
 .category-image {
     width: 100%;
     height: auto;
-    object-fit: cover;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-    cursor: pointer;
+    object-fit: cover; /* Expand images while maintaining aspect ratio */
 }
 
 /* ✅ Ensures images smoothly appear as they load */
