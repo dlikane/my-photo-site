@@ -14,10 +14,10 @@ const About = () => {
                     setAboutContent(response.data.content);
                     return;
                 }
-                throw new Error("Empty content from Dropbox"); // ✅ Force fallback
+                throw new Error("Empty content from Dropbox");
             } catch (error) {
                 console.warn("⚠️ Failed to load about.md from Dropbox. Fetching local version...");
-                fetch("/about.md") // ✅ Ensure proper fetch from public folder
+                fetch("/about.md")
                     .then((res) => {
                         if (!res.ok) throw new Error("Failed to load local about.md");
                         return res.text();
@@ -32,11 +32,7 @@ const About = () => {
 
     return (
         <div className="about-container">
-            {aboutContent ? (
-                <ReactMarkdown>{aboutContent}</ReactMarkdown>
-            ) : (
-                <p>Loading...</p>
-            )}
+            <ReactMarkdown>{aboutContent}</ReactMarkdown>
         </div>
     );
 };

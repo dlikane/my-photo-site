@@ -1,33 +1,55 @@
 /* ✅ Video Feed Container */
 .video-feed {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    position: relative;
-    height: 100vh; /* ✅ Full screen */
+    height: 100vh;
     width: 100%;
     background-color: black;
     overflow: hidden;
 }
 
-/* ✅ Video Frame (Full Screen) */
+/* ✅ Video Title (Smaller Font) */
+.video-title {
+    font-size: 1.2rem; /* Smaller font size */
+    font-weight: 300;
+    color: white;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+/* ✅ Video Frame (Fullscreen Width) */
 .video-frame {
-    width: 100%;
-    height: 100vh; /* ✅ Takes full height */
-    object-fit: cover; /* ✅ Ensures the video fills the container */
+    width: 100vw; /* Full viewport width */
+    height: 56.25vw; /* 16:9 Aspect Ratio */
+    max-height: 100vh; /* Ensure it doesn't exceed screen height */
     border: none;
+    background: black;
+}
+
+/* ✅ Video Counter */
+.video-counter {
+    margin-top: 10px;
+    font-size: 1rem;
+    color: white;
 }
 
 /* ✅ Navigation Buttons */
+.video-nav {
+    display: flex;
+    justify-content: space-between;
+    width: 80%;
+    max-width: 800px;
+    margin-top: 10px;
+}
+
 .nav-button {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(255, 255, 255, 0.2);
     color: white;
     border: none;
-    padding: 10px 15px;
-    font-size: 1.2rem;
+    padding: 8px 12px;
+    font-size: 0.9rem;
     cursor: pointer;
     border-radius: 5px;
     opacity: 0.8;
@@ -37,29 +59,27 @@
 /* ✅ Hover Effect */
 .nav-button:hover {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.3);
 }
 
-/* ✅ Position Left & Right Buttons */
-.nav-button.left {
-    left: 20px;
-}
-
-.nav-button.right {
-    right: 20px;
+/* ✅ Disabled State */
+.nav-button:disabled {
+    opacity: 0.5;
+    cursor: default;
 }
 
 /* ✅ Responsive Adjustments for Mobile */
 @media (max-width: 768px) {
     .video-frame {
-        height: 100vh; /* ✅ Ensures fullscreen video on mobile */
-        width: 100vw;
+        height: 56.25vw; /* Keep 16:9 aspect ratio */
     }
 
-    /* ✅ Smaller arrows for mobile */
+    .video-title {
+        font-size: 1rem; /* Smaller title for mobile */
+    }
+
     .nav-button {
-        font-size: 1rem;
-        padding: 8px 12px;
-        opacity: 0.7;
+        font-size: 0.8rem;
+        padding: 6px 10px;
     }
 }
