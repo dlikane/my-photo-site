@@ -26,12 +26,6 @@ const Videos = () => {
         fetchVideos();
     }, [videoType]);
 
-    useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.src += "&autoplay=1&mute=1"; // ✅ Auto-play muted
-        }
-    }, [currentIndex]);
-
     const navigateToNext = () => {
         if (currentIndex < videos.length - 1) {
             setCurrentIndex((prev) => prev + 1);
@@ -59,28 +53,33 @@ const Videos = () => {
 
     return (
         <div className="video-feed">
-            {/* Left Navigation Indicator */}
-            {currentIndex > 0 && (
-                <button className="nav-button left" onClick={navigateToPrev}>
-                    ◀ {currentIndex} / {videos.length}
-                </button>
-            )}
+            {/* Video Title */}
+            <h2 className="video-title">{videos[currentIndex]?.title}</h2>
 
             {/* YouTube Video */}
             <iframe
                 ref={videoRef}
                 key={videos[currentIndex]?.id}
                 className="video-frame"
-                src={`https://www.youtube.com/embed/${videos[currentIndex]?.id}?autoplay=1&controls=1&modestbranding=1&playsinline=1`}
+                src={`https://www.youtube.com/embed/${videos[currentIndex]?.id}?controls=1&modestbranding=1&playsinline=1&rel=0&showinfo=0&fs=1`}
                 allow="autoplay; encrypted-media"
                 allowFullScreen
             ></iframe>
-            {/* Right Navigation Indicator */}
-            {currentIndex < videos.length - 1 && (
-                <button className="nav-button right" onClick={navigateToNext}>
-                    {currentIndex + 1} / {videos.length} ▶
+
+            {/* Video Counter */}
+            <div className="video-counter">
+                {currentIndex + 1} / {videos.length}
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="video-nav">
+                <button className="nav-button left" onClick={navigateToPrev} disabled={currentIndex === 0}>
+                    ◀ Previous
                 </button>
-            )}
+                <button className="nav-button right" onClick={navigateToNext} disabled={currentIndex === videos.length - 1}>
+                    Next ▶
+                </button>
+            </div>
         </div>
     );
 };

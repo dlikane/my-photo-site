@@ -1,31 +1,75 @@
 .about-container {
-    display: block; /* ✅ Reset to block flow */
+    display: block;
     width: 80%;
     max-width: 800px;
-    margin: 0 auto;
-    text-align: left; /* ✅ Ensures natural paragraph alignment */
-    line-height: 1.6;
-    overflow-y: auto; /* ✅ Allows scrolling when needed */
-    scrollbar-width: none; /* ✅ Hide scrollbar (for Firefox) */
+    margin: 40px auto;
+    padding: 30px;
+    text-align: left;
+    font-family: "Cormorant Garamond", serif;
+    font-size: 1.2rem;
+    line-height: 1.9; /* Increase line height for better readability */
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease-in-out;
+    height: 80vh;
+    overflow-y: auto;
+    scrollbar-width: none;
 }
 
+/* Hide scrollbar for Webkit-based browsers */
 .about-container::-webkit-scrollbar {
-    display: none; /* ✅ Hide scrollbar (for Chrome, Safari) */
+    display: none;
 }
 
+/* ✍️ Adjust Paragraph Spacing */
 .about-container p {
-    margin-bottom: 1rem; /* ✅ Proper spacing between paragraphs */
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    margin-bottom: 1.5rem; /* Extra space between paragraphs */
 }
 
-.about-container h1, .about-container h2, .about-container h3 {
-    margin-top: 1.5rem;
-    font-weight: bold;
+/* 🎭 Increase spacing between sections */
+.about-container h2,
+.about-container h3 {
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 2.5rem; /* More spacing above headers */
+    margin-bottom: 1.2rem; /* Spacing before the next content */
 }
 
-.about-container strong {
-    font-weight: bold;
+/* ✅ Improve List Spacing */
+.about-container ul {
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-.about-container em {
-    font-style: italic;
+/* Improve readability for blockquotes */
+.about-container blockquote {
+    font-family: "Dancing Script", cursive;
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.7);
+    border-left: 3px solid rgba(255, 255, 255, 0.5);
+    padding-left: 15px;
+    margin: 25px 0; /* More spacing around blockquotes */
+    opacity: 0.8;
+}
+
+/* 📱 Mobile Adjustments */
+@media (max-width: 768px) {
+    .about-container {
+        width: 90%;
+        height: 85vh;
+        padding: 20px;
+    }
+
+    .about-container p {
+        font-size: 1rem;
+    }
+
+    .about-container blockquote {
+        font-size: 1.1rem;
+    }
 }

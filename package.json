@@ -28,6 +28,7 @@
     "react-markdown": "^10.1.0",
     "react-medium-image-zoom": "^5.2.14",
     "react-router-dom": "^7.3.0",
+    "react-swipeable": "^7.0.2",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "yet-another-react-lightbox": "^3.21.8"
