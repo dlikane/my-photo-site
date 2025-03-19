@@ -6,16 +6,14 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { playlist } = req.query; // ✅ Updated to use 'playlist' instead of 'videoType'
-
+    const { playlist } = req.query;
     console.log(`📺 Requested Playlist: ${playlist}`);
 
     try {
-        // ✅ Fetch playlists from Dropbox
+        // Fetch playlists from Dropbox
         const playlists = await getDropboxPlaylists();
         console.log("🎵 Retrieved Playlists from Dropbox:", playlists);
 
-        // ✅ Extract the correct playlist ID based on the name
         const playlistId = playlists[playlist];
 
         if (!playlistId) {
@@ -25,26 +23,45 @@ export default async function handler(req, res) {
 
         console.log(`✅ Found Playlist ID: ${playlistId}`);
 
-        // ✅ Build YouTube API request
+        // Fetch videos from YouTube Playlist
         const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
         const youtubeApiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${YOUTUBE_API_KEY}`;
 
-        console.log(`🔗 Fetching videos from YouTube API: ${youtubeApiUrl}`);
+        const playlistResponse = await axios.get(youtubeApiUrl);
 
-        const response = await axios.get(youtubeApiUrl);
-
-        if (!response.data.items || response.data.items.length === 0) {
+        if (!playlistResponse.data.items || playlistResponse.data.items.length === 0) {
             console.warn("⚠️ No videos found in this playlist.");
             return res.status(404).json({ error: "No videos found in this playlist." });
         }
 
-        // ✅ Format the videos list
-        const videos = response.data.items.map((item) => ({
-            id: item.snippet.resourceId.videoId,
-            title: item.snippet.title,
-            thumbnail: item.snippet.thumbnails.medium.url,
-            description: item.snippet.description,
-        }));
+        // Get video IDs for statistics lookup
+        const videoIds = playlistResponse.data.items.map(item => item.snippet.resourceId.videoId).join(",");
+
+        // Fetch video statistics (views & likes)
+        const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
+        const statsResponse = await axios.get(statsUrl);
+
+        // Map statistics to video IDs
+        const statsMap = {};
+        statsResponse.data.items.forEach(item => {
+            statsMap[item.id] = {
+                views: item.statistics.viewCount || "0",
+                likes: item.statistics.likeCount || "0",
+            };
+        });
+
+        // Format the videos list with stats
+        const videos = playlistResponse.data.items.map(item => {
+            const id = item.snippet.resourceId.videoId;
+            return {
+                id,
+                title: item.snippet.title,
+                thumbnail: item.snippet.thumbnails.medium.url,
+                description: item.snippet.description,
+                views: statsMap[id]?.views || "0",
+                likes: statsMap[id]?.likes || "0",
+            };
+        });
 
         console.log(`🎬 Returning ${videos.length} videos.`);
         res.status(200).json(videos);
