@@ -47,7 +47,7 @@ const Videos = () => {
                                         <div className="video-details">
                                             <img src={video.thumbnail} alt={video.title} className="details-thumb" />
                                             <div className="details-text">
-                                                <p>{video.description.slice(0, 200)}...</p>
+                                                <p>{video.description.slice(0, 300)}...</p>
                                             </div>
                                         </div>
                                         <a
