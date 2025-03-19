@@ -17,10 +17,11 @@
     padding: 20px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    grid-auto-rows: calc(100vw / 16 * 9 / 5); /* Ensures 16:9 ratio for grid cells */
+    grid-auto-rows: calc(100vw / 16 * 9 / 3); /* Keeps 16:9 ratio */
     gap: 15px;
     align-items: start;
     overflow-y: auto; /* Restores scrolling */
+    max-width: 900px; /* Ensures max 3 columns */
 }
 
 /* Hide scrollbar */
@@ -91,9 +92,9 @@
 .video-title {
     width: 100%;
     font-size: 1rem;
+    font-weight: 400;
     color: white;
     text-align: center;
-    font-weight: bold;
     margin-bottom: 8px;
 }
 
@@ -122,17 +123,18 @@
     justify-content: center;
 }
 
-/* Shortened description */
+/* Shortened description (50% smaller font) */
 .details-text p {
-    font-size: 0.8rem;
+    font-size: 0.5rem;
+    font-weight: 400;
     color: #ccc;
     margin-bottom: 8px;
 }
 
-/* Centered YouTube Play Button */
+/* Centered YouTube Play Button (Reduced by 20% for desktop) */
 .yt-button {
-    width: 40px;
-    height: 40px;
+    width: 32px; /* Reduced from 40px */
+    height: 32px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -150,22 +152,32 @@
     display: none;
 }
 
-/* Responsive grid adjustments */
-@media (min-width: 1200px) {
-    .videos-container {
-        grid-template-columns: repeat(5, 1fr);
-    }
-}
+/* RESPONSIVE FIXES */
 
-@media (max-width: 1199px) and (min-width: 769px) {
-    .videos-container {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
+/* Mobile Fixes */
 @media (max-width: 768px) {
     .videos-container {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr); /* Max 2 columns on mobile */
         padding: 10px;
+        grid-auto-rows: calc(100vw / 16 * 9 / 2); /* Keep 16:9 ratio */
+    }
+
+    .video-title {
+        font-size: 0.8rem; /* Reduce font size by 50% */
+        font-weight: 300; /* Keep it thin */
+    }
+
+    .details-text p {
+        font-size: 0.4rem; /* Reduce text size */
+        font-weight: 300;
+    }
+
+    .video-stats {
+        font-size: 0.6rem; /* Make numbers smaller */
+    }
+
+    .yt-button {
+        width: 25px; /* Reduce by 30% */
+        height: 25px;
     }
 }
