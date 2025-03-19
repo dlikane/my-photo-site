@@ -1,85 +1,171 @@
-/* ✅ Video Feed Container */
-.video-feed {
+/* Wrapper ensures correct layout and spacing */
+.videos-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
     width: 100%;
+    height: 100vh;
+    margin-top: 80px; /* Push grid below header */
     background-color: black;
+    overflow: hidden; /* Prevents body scroll */
+}
+
+/* Video Grid */
+.videos-container {
+    width: 100%;
+    flex-grow: 1; /* Ensures it fills available space */
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-auto-rows: calc(100vw / 16 * 9 / 5); /* Ensures 16:9 ratio for grid cells */
+    gap: 15px;
+    align-items: start;
+    overflow-y: auto; /* Restores scrolling */
+}
+
+/* Hide scrollbar */
+.videos-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Tile wrapper - maintains aspect ratio */
+.video-tile-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+}
+
+/* Tile content */
+.video-tile {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    background-color: rgba(30, 30, 30, 0.9);
+    border-radius: 8px;
     overflow: hidden;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: transform 0.3s, background-color 0.3s;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-/* ✅ Video Title (Smaller Font) */
-.video-title {
-    font-size: 1.2rem; /* Smaller font size */
-    font-weight: 300;
+/* Tile hover effect */
+.video-tile:hover {
+    transform: scale(1.03);
+}
+
+/* Closed state */
+.video-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Video stats */
+.video-stats {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px 6px;
+    font-size: 0.75rem;
     color: white;
-    text-align: center;
-    margin-bottom: 5px;
+    border-radius: 4px;
 }
 
-/* ✅ Video Frame (Fullscreen Width) */
-.video-frame {
-    width: 100vw; /* Full viewport width */
-    height: 56.25vw; /* 16:9 Aspect Ratio */
-    max-height: 100vh; /* Ensure it doesn't exceed screen height */
-    border: none;
-    background: black;
+/* OPEN TILE */
+.video-tile.active {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    justify-content: space-between;
 }
 
-/* ✅ Video Counter */
-.video-counter {
-    margin-top: 10px;
+/* Title spans full width */
+.video-title {
+    width: 100%;
     font-size: 1rem;
     color: white;
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 8px;
 }
 
-/* ✅ Navigation Buttons */
-.video-nav {
+/* Content layout */
+.video-details {
     display: flex;
+    flex-grow: 1;
+    gap: 10px;
+    align-items: center;
     justify-content: space-between;
-    width: 80%;
-    max-width: 800px;
-    margin-top: 10px;
 }
 
-.nav-button {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border-radius: 5px;
-    opacity: 0.8;
-    transition: opacity 0.3s, background 0.3s;
+/* Thumbnail on the left */
+.details-thumb {
+    width: 35%;
+    height: auto;
+    border-radius: 4px;
+    flex-shrink: 0;
 }
 
-/* ✅ Hover Effect */
-.nav-button:hover {
-    opacity: 1;
-    background: rgba(255, 255, 255, 0.3);
+/* Description on the right */
+.details-text {
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-/* ✅ Disabled State */
-.nav-button:disabled {
-    opacity: 0.5;
-    cursor: default;
+/* Shortened description */
+.details-text p {
+    font-size: 0.8rem;
+    color: #ccc;
+    margin-bottom: 8px;
 }
 
-/* ✅ Responsive Adjustments for Mobile */
+/* Centered YouTube Play Button */
+.yt-button {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.yt-button img {
+    width: 100%;
+    height: 100%;
+}
+
+/* Hide stats when tile is open */
+.video-tile.active .video-thumbnail,
+.video-tile.active .video-stats {
+    display: none;
+}
+
+/* Responsive grid adjustments */
+@media (min-width: 1200px) {
+    .videos-container {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1199px) and (min-width: 769px) {
+    .videos-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
-    .video-frame {
-        height: 56.25vw; /* Keep 16:9 aspect ratio */
-    }
-
-    .video-title {
-        font-size: 1rem; /* Smaller title for mobile */
-    }
-
-    .nav-button {
-        font-size: 0.8rem;
-        padding: 6px 10px;
+    .videos-container {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 10px;
     }
 }

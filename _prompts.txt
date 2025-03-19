@@ -1,3 +1,33 @@
+20250319
+    Let's completely change Videos. I want it to display all videos from the list as tiles. 2 columns on desktop an 1 on mobile.
+    Each tile would have Thumbnail for video, title and the beginning of the description with some way to extend it if clicked.
+    There should be some way to click to open video in Youtube (site or application on mobile). Everything should look very elegant
+    and match the rest of site.
+
+    Tiles are not lined up properly. Let's redesign it a bit.
+    Keep tile design, up to 5 column on desktop, no less than 2 on both mobile and desktop.
+    Show thumbnail for video first (put number of likes/number of views in the left corner).
+    Allow to scroll tiles (don't show scroll bar)
+    If tile clicked, show 25% thumb, title and beginning of the description and a small youtube button (to open video on youtube or in app)
+    Only one tile should show details. If other tile clicked, change other back to thumbnail.
+
+    Tiles shouldn't overlap. I believe we need to get # of likes and # of views from API, At the moment I see N/A
+    When I click tile it still shows thumb taking full tile. I want to see all on tile: small thumb, title and beginning of the description
+    # of likes and # of views should be in the left bottom of tile which was not clicked (all of them) and hidden once we have tile open
+    with other information.
+
+    New design for Videos.
+    - let's have grid of tiles, tiles are not overlapping and hold grid position. There should be no less than 2 columns no more than 5.
+    - the grid should be scrollable without scrollbar
+    - tiles should be 16:9
+    - each tile associated with one video
+    - tile can be "open" or "closed", initial state for all tiles "closed"
+    - in closed state tile shows video thumbnail taking whole space with # likes and # of views in the left corner (keep font small)
+    - once tile clicked it changes state "open"
+    - only one tile can be open at the time
+    - in "open" state, tile shows small thumbnail, title and the beginning of description and youtube button to open video in youtube or app
+
+
 20250318
     We need a few fixes. Let's fix title first. It appears in different fonts for desktop and mobil. I prefer mobile.
     But on mobile it takes about 90% of screen width, let change aspect to make it look slim
