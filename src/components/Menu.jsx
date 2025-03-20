@@ -47,43 +47,33 @@ const Menu = () => {
                         transition={{ duration: 0.3 }}
                     >
                         <ul>
-                            <li className="menu-item" onClick={() => handleNavigate("/")}>Home</li>
-
-                            <li className="submenu-title">Categories</li>
-                            <ul className="submenu">
-                                {categories.map((category) => (
+                            <li className="menu-item" onClick={() => handleNavigate("/")}>home</li>
+                            {categories.map((category) => (
+                                <li
+                                    key={category}
+                                    className="menu-item"
+                                    onClick={() => handleNavigate(`/category/${encodeURIComponent(category)}`)}
+                                >
+                                    {category}
+                                </li>
+                            ))}
+                            {Object.keys(playlists).length > 0 ? (
+                                Object.keys(playlists).map((name) => (
                                     <li
-                                        key={category}
+                                        key={name}
                                         className="menu-item"
-                                        onClick={() => handleNavigate(`/category/${encodeURIComponent(category)}`)}
+                                        onClick={() => handleNavigate(`/videos/${encodeURIComponent(name)}`)}
                                     >
-                                        {category}
+                                        {name}
                                     </li>
-                                ))}
-                            </ul>
-
-                            <li className="submenu-title">Videos</li>
-                            <ul className="submenu">
-                                {Object.keys(playlists).length > 0 ? (
-                                    Object.keys(playlists).map((name) => (
-                                        <li
-                                            key={name}
-                                            className="menu-item"
-                                            onClick={() => handleNavigate(`/videos/${encodeURIComponent(name)}`)}
-                                        >
-                                            {name}
-                                        </li>
-                                    ))
-                                ) : (
-                                    <li className="menu-item disabled">Loading...</li>
-                                )}
-                            </ul>
-
+                                ))
+                            ) : (
+                                <li className="menu-item disabled">Loading...</li>
+                            )}
                             <li className="menu-item" onClick={() => window.open("https://instagram.com/dlikane", "_blank")}>
-                                Contact
+                                contact
                             </li>
-
-                            <li className="menu-item" onClick={() => handleNavigate("/about")}>About</li>
+                            <li className="menu-item" onClick={() => handleNavigate("/about")}>about</li>
                         </ul>
                     </motion.div>
                 )}

@@ -21,11 +21,21 @@
     z-index: 3000;
 }
 
-/* ✅ Menu Items */
+.dropdown-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&display=swap');
+
 .menu-item {
     padding: 10px;
     cursor: pointer;
+    font-family: "PT Sans Narrow", "Futura", "Helvetica Neue", sans-serif;
     font-size: 1rem;
+    font-weight: 100;
+    text-align: left;
     transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
@@ -34,23 +44,6 @@
     color: #fff;
 }
 
-/* ✅ Non-clickable Items */
-.submenu-title {
-    font-weight: bold;
-    font-size: 1.1rem;
-    padding: 10px;
-    cursor: default;
-    color: #aaa;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-/* ✅ Submenu */
-.submenu .menu-item {
-    padding: 8px;
-    font-size: 0.9rem;
-    cursor: pointer;
-}
-/* ✅ Reduce Menu Button Size */
 .menu-container .button {
     padding: 6px 12px; /* ✅ Smaller padding */
     font-size: 0.9rem; /* ✅ Smaller text */

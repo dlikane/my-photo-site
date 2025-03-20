@@ -1,3 +1,16 @@
+20250320
+    Let's redesign menu
+    It will only have one level of menu items
+    Keep font thin and light
+    Items should be as the following:
+    home - same as current Home
+    list of categories
+    list of playlists
+    contact - same as current Contact
+    about - same as current About
+
+
+
 20250319
     Let's completely change Videos. I want it to display all videos from the list as tiles. 2 columns on desktop an 1 on mobile.
     Each tile would have Thumbnail for video, title and the beginning of the description with some way to extend it if clicked.
@@ -33,8 +46,6 @@
     But on mobile it takes about 90% of screen width, let change aspect to make it look slim
 
     Please use older files for reference only if you have any. Here is list of current files:
-
-
 
 20250317
     Generate full project.
