@@ -1,6 +1,7 @@
 20250320
     Let's redesign menu
     It will only have one level of menu items
+    Keep font thin and light
     Items should be as the following:
     home - same as current Home
     list of categories

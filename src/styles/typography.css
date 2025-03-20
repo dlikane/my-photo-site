@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@400;700&display=swap');
+
 .title {
-    font-family: "Avenir Next", "Futura", "Gill Sans", "Helvetica Neue", sans-serif;
+    font-family: "Big Shoulders", "Futura", "Gill Sans", "Helvetica Neue", sans-serif;
     font-size: 2.2rem; /* Keep font size */
     font-variant: small-caps;
     font-weight: 100;
-    letter-spacing: 30px; /* Increased by 50% (default ~1px, now 1.5px) */
+    letter-spacing: 10px;
     color: white;
     margin: 0 auto;
     text-transform: lowercase;
@@ -11,7 +13,6 @@
     white-space: nowrap; /* Prevents breaking into two lines */
     overflow: hidden;
     text-overflow: ellipsis;
-    transform: scaleX(0.5);
 }
 
 /* Adjustments for mobile */
@@ -25,6 +26,7 @@
 
 /* ✅ Tagline Styling */
 .tagline {
+    font-family: "Big Shoulders", "Futura", "Gill Sans", "Helvetica Neue", sans-serif;
     font-size: 1.2rem;
     font-weight: 50;
     color: white;

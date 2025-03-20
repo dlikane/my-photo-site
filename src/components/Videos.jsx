@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 
+const formatViews = (views) => {
+    if (views < 1000) return views.toLocaleString();
+    if (views < 1_000_000) return (views / 1000).toFixed(1).replace(/\.0$/, '') + "K";
+    if (views < 1_000_000_000) return (views / 1_000_000).toFixed(1).replace(/\.0$/, '') + "M";
+    return (views / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + "B";
+};
+
 const Videos = () => {
     const { videoType } = useParams();
     const [videos, setVideos] = useState([]);
@@ -23,6 +30,7 @@ const Videos = () => {
         setSelectedVideoId(prevId => (prevId === videoId ? null : videoId));
     };
 
+
     return (
         <div className="videos-wrapper">
             <div className="videos-container">
@@ -38,7 +46,8 @@ const Videos = () => {
                                     <>
                                         <img src={video.thumbnail} alt={video.title} className="video-thumbnail" />
                                         <div className="video-stats">
-                                            👍 {video.likes} | ▶ {video.views}
+                                            ▶ {formatViews(video.views)} | 👍 {video.likes.toLocaleString()}
+
                                         </div>
                                     </>
                                 ) : (
