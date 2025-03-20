@@ -21,6 +21,10 @@ endif
 grab-all: ## grab full source code
 	img grab "./api/..." "./src/..." index.html package.json | $(CLIP_COMMAND)
 
+.PHONY: grab-all
+grab-tailwind: ## grab full source code
+	img grab postcss.config.jsx tailwind.config.js vite.config.js index.html package.json src/styles/index.css src/App.jsx src/main.jsx | $(CLIP_COMMAND)
+
 .PHONY: grab
 grab: ## grab full source code
 	img grab "./src/..." index.html | $(CLIP_COMMAND)

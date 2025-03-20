@@ -22,7 +22,3 @@ body {
     color: var(--text-color);
     transition: background-color 0.3s, color 0.3s;
 }
-
-.test-box {
-    @apply w-8 h-8 bg-red-500;
-}

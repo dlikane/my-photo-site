@@ -13,12 +13,11 @@ const App = () => {
 
     return (
         <Router>
-            {/* ✅ Tailwind Test Box */}
             <div className="p-4 bg-red-500 text-white text-lg font-bold text-center">
                 Tailwind is working!
             </div>
 
-            <Main theme={theme} setTheme={setTheme} />
+            {/*<Main theme={theme} setTheme={setTheme} />*/}
         </Router>
     );
 };
