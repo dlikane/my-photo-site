@@ -6,14 +6,24 @@ help: ## Display this help message
 	@echo Available commands:
 	@awk 'BEGIN {FS = ":.*?## "}; /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+# Detect OS and set the correct clipboard command
+ifeq ($(OS),Windows_NT)
+  CLIP_COMMAND = clip
+else
+  ifeq ($(shell uname), Darwin)
+    CLIP_COMMAND = pbcopy
+  else
+    CLIP_COMMAND = cat
+  endif
+endif
+
 .PHONY: grab-all
 grab-all: ## grab full source code
-	img grab "./api/..." "./src/..." index.html package.json | clip
+	img grab "./api/..." "./src/..." index.html package.json | $(CLIP_COMMAND)
 
 .PHONY: grab
 grab: ## grab full source code
-	img grab "./src/..." index.html | clip
-
+	img grab "./src/..." index.html | $(CLIP_COMMAND)
 
 
 

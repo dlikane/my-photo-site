@@ -1,10 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@400;700&display=swap');
 @import "./base.css";
 @import "./layout.css";
 @import "./slideshow.css";
 @import "./menu.css";
-@import "./typography.css";
 @import "./categories.css";
-@import "./videos.css";
 @import "./about.css";
 @import "./quotes.css";
 @import "./buttons.css";

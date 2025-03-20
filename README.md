@@ -8,9 +8,14 @@ https://www.dropbox.com/developers/apps
 app name: dlikane.my-photo-site
 the folder is Apps/my-photo-site (!)
 
+pnpm add -g vercel
+vercel login
+
 vercel env add DROPBOX_APP_KEY your_app_key
 vercel env add DROPBOX_APP_SECRET your_app_secret
 vercel env add DROPBOX_REFRESH_TOKEN your_refresh_token
+
+Copy .env across :)
 
 Dropbox
 https://www.dropbox.com/developers/apps/info/knp5qbzp4zyo0z9

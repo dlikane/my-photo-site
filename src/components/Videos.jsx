@@ -30,32 +30,30 @@ const Videos = () => {
         setSelectedVideoId(prevId => (prevId === videoId ? null : videoId));
     };
 
-
     return (
-        <div className="videos-wrapper">
-            <div className="videos-container">
+        <div className="flex flex-col items-center w-full h-screen mt-20 bg-black overflow-hidden">
+            <div className="w-full flex-grow p-5 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto max-w-full">
                 {videos.map((video) => {
                     const isActive = selectedVideoId === video.id;
                     return (
-                        <div key={video.id} className="video-tile-wrapper">
+                        <div key={video.id} className="relative w-full pt-[56.25%]">
                             <div
-                                className={`video-tile ${isActive ? "active" : ""}`}
+                                className={`absolute inset-0 bg-gray-900/90 rounded-lg overflow-hidden shadow-md transition-transform duration-300 cursor-pointer ${isActive ? "p-3" : "hover:scale-105"}`}
                                 onClick={() => handleTileClick(video.id)}
                             >
                                 {!isActive ? (
                                     <>
-                                        <img src={video.thumbnail} alt={video.title} className="video-thumbnail" />
-                                        <div className="video-stats">
+                                        <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs p-1 rounded">
                                             ▶ {formatViews(video.views)} | 👍 {video.likes.toLocaleString()}
-
                                         </div>
                                     </>
                                 ) : (
                                     <>
-                                        <h3 className="video-title">{video.title}</h3>
-                                        <div className="video-details">
-                                            <img src={video.thumbnail} alt={video.title} className="details-thumb" />
-                                            <div className="details-text">
+                                        <h3 className="text-white text-sm md:text-lg text-center mb-4">{video.title}</h3>
+                                        <div className="flex gap-2">
+                                            <img src={video.thumbnail} alt={video.title} className="w-2/5 rounded-lg" />
+                                            <div className="w-3/5 text-xs text-gray-300">
                                                 <p>{video.description.slice(0, 300)}...</p>
                                             </div>
                                         </div>
@@ -63,7 +61,7 @@ const Videos = () => {
                                             href={`https://youtube.com/watch?v=${video.id}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="yt-button"
+                                            className="block w-8 h-8 mx-auto mt-2"
                                         >
                                             <img src="/youtube-play.svg" alt="Play on YouTube" />
                                         </a>
