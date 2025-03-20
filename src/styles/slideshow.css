@@ -1,29 +1,13 @@
-/* ✅ Unified Content Container */
-.content-container {
-    flex: 1;
+.slideshow-container {
     display: flex;
-    justify-content: center;
     align-items: center;
-    width: 100%;
-    overflow: hidden;
-    position: relative;
-}
-
-/* ✅ Individual Section Containers */
-.slideshow-container,
-.categories-container,
-.videos-container,
-.about-container {
-    width: 100%;
+    justify-content: center;
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: absolute;
-    transition: opacity 0.5s ease-in-out;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
 }
 
-/* ✅ Slideshow Image */
 .slideshow-image {
     width: auto;
     height: 100%;

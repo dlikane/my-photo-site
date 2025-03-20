@@ -1,36 +1,30 @@
-/* ✅ Base Button Styles */
 .button {
     display: inline-block;
     padding: 8px 16px;
-    font-size: 1rem; /* ✅ Normal size */
+    font-size: 1rem;
     font-weight: 400;
-    color: white;
-    background: rgba(255, 255, 255, 0.1); /* ✅ Subtle transparent background */
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--button-text);
+    background: var(--button-bg);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease-in-out;
 }
 
-/* ✅ Button Hover Effect */
 .button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: white;
+    background: var(--button-hover);
 }
 
-/* ✅ Button Active Effect */
 .button:active {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(0.98); /* ✅ Slight press effect */
+    background: var(--button-hover);
+    transform: scale(0.98);
 }
 
-/* ✅ Large Button Variant */
 .button.large {
     padding: 12px 24px;
     font-size: 1.2rem;
 }
 
-/* ✅ Small Button Variant */
 .button.small {
     padding: 6px 12px;
     font-size: 0.9rem;
