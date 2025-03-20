@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const Menu = () => {
+const Menu = ({ theme, setTheme }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [categories, setCategories] = useState([]);
     const [playlists, setPlaylists] = useState({});
@@ -23,57 +23,54 @@ const Menu = () => {
     }, []);
 
     const handleNavigate = (path) => {
-        console.log(`🔗 Navigating to: ${path}`);
         setIsOpen(false);
         navigate(path);
     };
 
+    const toggleTheme = () => {
+        setTheme(theme === "dark" ? "light" : "dark");
+    };
+
     return (
-        <div className="menu-container">
+        <div className="absolute left-5 top-5 z-50">
             <img
                 src="/menu.svg"
-                className="menu-icon"
+                className="w-8 h-8 cursor-pointer transition-transform hover:scale-110"
                 alt="Menu"
                 onClick={() => setIsOpen(!isOpen)}
             />
-
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        className="dropdown-menu"
+                        className="absolute top-12 left-0 bg-black dark:bg-gray-900 text-white dark:text-gray-300 rounded-lg shadow-lg w-48 p-4"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <ul>
-                            <li className="menu-item" onClick={() => handleNavigate("/")}>home</li>
+                        <ul className="space-y-2">
+                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/")}>Home</li>
                             {categories.map((category) => (
-                                <li
-                                    key={category}
-                                    className="menu-item"
-                                    onClick={() => handleNavigate(`/category/${encodeURIComponent(category)}`)}
-                                >
+                                <li key={category} className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate(`/category/${category}`)}>
                                     {category}
                                 </li>
                             ))}
                             {Object.keys(playlists).length > 0 ? (
                                 Object.keys(playlists).map((name) => (
-                                    <li
-                                        key={name}
-                                        className="menu-item"
-                                        onClick={() => handleNavigate(`/videos/${encodeURIComponent(name)}`)}
-                                    >
+                                    <li key={name} className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate(`/videos/${name}`)}>
                                         {name}
                                     </li>
                                 ))
                             ) : (
-                                <li className="menu-item disabled">Loading...</li>
+                                <li className="text-gray-500">Loading...</li>
                             )}
-                            <li className="menu-item" onClick={() => window.open("https://instagram.com/dlikane", "_blank")}>
-                                contact
+                            <li className="cursor-pointer hover:text-gray-400" onClick={() => window.open("https://instagram.com/dlikane", "_blank")}>
+                                Contact
                             </li>
-                            <li className="menu-item" onClick={() => handleNavigate("/about")}>about</li>
+                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/about")}>About</li>
+                            <li className="cursor-pointer hover:text-gray-400 font-bold" onClick={toggleTheme}>
+                                {theme === "dark" ? "☀ Light Mode" : "🌙 Dark Mode"}
+                            </li>
                         </ul>
                     </motion.div>
                 )}

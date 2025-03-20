@@ -1,11 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@400;700&display=swap');
-@import "./base.css";
-@import "./layout.css";
-@import "./slideshow.css";
-@import "./menu.css";
-@import "./categories.css";
-@import "./about.css";
-@import "./quotes.css";
-@import "./buttons.css";
-@import "./category.css";
-@import "./fullscreeenviewer.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bg-color: white;
+    --text-color: black;
+}
+
+.light {
+    --bg-color: white;
+    --text-color: black;
+}
+
+.dark {
+    --bg-color: black;
+    --text-color: white;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.test-box {
+    @apply w-8 h-8 bg-red-500;
+}

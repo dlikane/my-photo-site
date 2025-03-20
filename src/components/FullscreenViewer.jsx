@@ -5,7 +5,6 @@ import "react-image-gallery/styles/css/image-gallery.css";
 const FullscreenViewer = ({ images, currentIndex, onClose }) => {
     const [index, setIndex] = useState(currentIndex);
 
-    // Close viewer when pressing Escape key
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === "Escape") {
@@ -22,32 +21,38 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
     }));
 
     return (
-        <div className="fullscreen-overlay">
-            <button className="close-btn" onClick={onClose}>✖</button>
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-white dark:bg-black/90 z-50">
+            <button
+                className="absolute top-4 right-4 text-black dark:text-white text-3xl p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/20 transition"
+                onClick={onClose}
+            >
+                ✖
+            </button>
 
-            {/* Image Counter */}
-            <div className="image-counter">
+            <div className="absolute bottom-4 text-black dark:text-white text-lg bg-black/60 px-4 py-2 rounded-md">
                 {index + 1} / {images.length}
             </div>
 
-            <ImageGallery
-                items={formattedImages}
-                startIndex={index}
-                showFullscreenButton={false}
-                showPlayButton={false}
-                showThumbnails={false} // No thumbnails
-                showNav={false} // No navigation arrows
-                showIndex={false} // Prevent double counter
-                slideDuration={200} // Faster transitions
-                swipeThreshold={10} // More responsive swiping
-                disableSwipe={false} // Keep swiping enabled
-                lazyLoad={true} // Optimize loading
-                useTranslate3D={true} // Improve performance
-                onSlide={(currentIndex) => setIndex(currentIndex)} // Update counter
-                onScreenChange={(isFullscreen) => {
-                    if (!isFullscreen) onClose(); // Close when exiting fullscreen
-                }}
-            />
+            <div className="w-full max-w-5xl">
+                <ImageGallery
+                    items={formattedImages}
+                    startIndex={index}
+                    showFullscreenButton={false}
+                    showPlayButton={false}
+                    showThumbnails={false}
+                    showNav={false}
+                    showIndex={false}
+                    slideDuration={200}
+                    swipeThreshold={10}
+                    disableSwipe={false}
+                    lazyLoad={true}
+                    useTranslate3D={true}
+                    onSlide={(currentIndex) => setIndex(currentIndex)}
+                    onScreenChange={(isFullscreen) => {
+                        if (!isFullscreen) onClose();
+                    }}
+                />
+            </div>
         </div>
     );
 };

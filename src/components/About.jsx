@@ -31,8 +31,8 @@ const About = () => {
     }, []);
 
     return (
-        <div className="about-container">
-            <ReactMarkdown>{aboutContent}</ReactMarkdown>
+        <div className="w-11/12 max-w-3xl mx-auto my-10 p-6 bg-white dark:bg-black text-black dark:text-white text-lg rounded-lg shadow-md dark:shadow-lg backdrop-blur-md dark:backdrop-blur-md overflow-y-auto h-[80vh] scrollbar-hide">
+            <ReactMarkdown className="space-y-4">{aboutContent}</ReactMarkdown>
         </div>
     );
 };
