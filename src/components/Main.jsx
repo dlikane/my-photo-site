@@ -11,10 +11,10 @@ const Main = ({ theme, setTheme }) => {
         <div className="flex h-screen flex-col">
             <Header theme={theme} setTheme={setTheme} />
             <main className="grow overflow-auto scrollbar-hide bg-white dark:bg-black">
-v                <Routes>
+                <Routes>
                     <Route path="/" element={<Slideshow/>}/>
-                    <Route path="/category/:categoryName" element={<Category/>}/>
-                    <Route path="/videos/:videoType" element={<Videos/>}/>
+                    <Route path="/category/*" element={<Category/>}/>
+                    <Route path="/videos/:playlist" element={<Videos/>}/>
                     <Route path="/about" element={<About/>}/>
                 </Routes>
             </main>
