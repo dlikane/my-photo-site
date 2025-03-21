@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+/* eslint-disable no-unused-vars */
 import { motion } from "framer-motion";
 import FullscreenViewer from "./FullscreenViewer";
 
@@ -79,30 +80,30 @@ const Category = () => {
     }, [images, visibleImages]);
 
     return (
-        <div ref={containerRef} className="flex flex-col items-center justify-start w-full p-5 bg-white dark:bg-black">
-            {loading && <p className="text-black dark:text-white text-lg">Loading images...</p>}
+        <div ref={containerRef} className="flex w-full flex-col items-center justify-start bg-white p-5 dark:bg-black">
+            {loading && <p className="text-lg text-black dark:text-white">Loading images...</p>}
 
             {/* 👇 Ensures 2 images per row on mobile, 3 images per row on larger screens */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full max-w-6xl">
+            <div className="grid w-full max-w-6xl grid-cols-2 gap-4 sm:grid-cols-3">
                 {visibleImages?.map(({img, globalIndex}) => (
                     <motion.div
                         key={globalIndex}
                         initial={{opacity: 0, scale: 0.9}}
                         animate={{opacity: 1, scale: 1}}
                         transition={{duration: 0.3, ease: "easeOut"}}
-                        className="w-full aspect-square overflow-hidden rounded-lg shadow-md cursor-pointer"
+                        className="aspect-square w-full cursor-pointer overflow-hidden rounded-lg shadow-md"
                         onClick={() => setSelectedImage({url: img.url, index: globalIndex})}
                     >
                         <img
                             src={img.url}
                             alt={img.name}
-                            className="w-full h-full object-cover"
+                            className="size-full object-cover"
                         />
                     </motion.div>
                 ))}
             </div>
 
-            {hasMoreImages.current && <div ref={observerRef} className="w-full h-10"></div>}
+            {hasMoreImages.current && <div ref={observerRef} className="h-10 w-full"></div>}
 
             {selectedImage && (
                 <FullscreenViewer

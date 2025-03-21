@@ -3,8 +3,11 @@ import fetch from 'node-fetch';
 
 dotenv.config();
 
+// eslint-disable-next-line no-undef
 const DROPBOX_APP_KEY = process.env.DROPBOX_APP_KEY;
+// eslint-disable-next-line no-undef
 const DROPBOX_APP_SECRET = process.env.DROPBOX_APP_SECRET;
+// eslint-disable-next-line no-undef
 const DROPBOX_REFRESH_TOKEN = process.env.DROPBOX_REFRESH_TOKEN;
 
 export async function getAccessToken() {

@@ -21,15 +21,15 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
     }));
 
     return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center bg-white dark:bg-black/90 z-50">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-black/90">
             <button
-                className="absolute top-4 right-4 text-black dark:text-white text-3xl p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/20 transition"
+                className="absolute right-4 top-4 rounded-full p-2 text-3xl text-black transition hover:bg-black/10 dark:text-white dark:hover:bg-white/20"
                 onClick={onClose}
             >
                 ✖
             </button>
 
-            <div className="absolute bottom-4 text-black dark:text-white text-lg bg-black/60 px-4 py-2 rounded-md">
+            <div className="absolute bottom-4 rounded-md bg-black/60 px-4 py-2 text-lg text-black dark:text-white">
                 {index + 1} / {images.length}
             </div>
 

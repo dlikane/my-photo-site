@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
 
 const ImageDisplay = ({ currentImages, index, isPaused }) => {
@@ -8,7 +9,7 @@ const ImageDisplay = ({ currentImages, index, isPaused }) => {
             {currentImage && (
                 <motion.div
                     key={index}
-                    className="relative flex justify-center items-center w-full h-full"
+                    className="relative flex size-full items-center justify-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: isPaused ? 1 : 0 }}
@@ -16,11 +17,11 @@ const ImageDisplay = ({ currentImages, index, isPaused }) => {
                 >
                     <img
                         src={currentImage.url}
-                        className="w-auto h-full max-w-full max-h-full object-contain"
+                        className="h-full max-h-full w-auto max-w-full object-contain"
                         alt={currentImage.name}
                     />
                     <motion.div
-                        className="absolute top-1 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 text-lg rounded-md shadow-md"
+                        className="absolute left-1/2 top-1 -translate-x-1/2 rounded-md bg-black/70 px-4 py-2 text-lg text-white shadow-md"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: isPaused ? 1 : 0 }}

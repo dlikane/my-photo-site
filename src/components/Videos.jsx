@@ -31,15 +31,15 @@ const Videos = () => {
     };
 
     return (
-        <div className="flex flex-col items-center w-full bg-white dark:bg-black">
-            <div className="w-full p-5 grid grid-cols-2 md:grid-cols-3 gap-6 max-w-full">
+        <div className="flex w-full flex-col items-center bg-white dark:bg-black">
+            <div className="grid w-full max-w-full grid-cols-2 gap-6 p-5 md:grid-cols-3">
                 {videos.map((video) => {
                     const isActive = selectedVideoId === video.id;
                     return (
                         <div key={video.id} className="relative w-full pt-[56.25%]">
                             <div
-                                className={`absolute inset-0 bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden shadow-md transition-transform duration-300 flex flex-col ${
-                                    isActive ? "p-4" : "hover:scale-105 cursor-pointer"
+                                className={`absolute inset-0 flex flex-col overflow-hidden rounded-lg bg-gray-100 shadow-md transition-transform duration-300 dark:bg-gray-900 ${
+                                    isActive ? "p-4" : "cursor-pointer hover:scale-105"
                                 }`}
                                 onClick={() => handleTileClick(video.id)}
                             >
@@ -48,45 +48,49 @@ const Videos = () => {
                                         <img
                                             src={video.thumbnail}
                                             alt={video.title}
-                                            className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                                            className="size-full object-cover transition-opacity hover:opacity-80"
                                         />
                                         <div
-                                            className="absolute bottom-2 left-2 bg-black/60 text-white text-xs p-1 rounded">
+                                            className="absolute bottom-2 left-2 rounded bg-black/60 p-1 text-xs text-white">
                                             ▶ {formatViews(video.views)} | 👍 {video.likes.toLocaleString()}
                                         </div>
                                     </>
                                 ) : (
-                                    <>
-                                        <h3 className="text-black dark:text-white text-sm md:text-lg text-center mb-3">
+                                    <div
+                                        className="absolute inset-0 flex flex-col overflow-hidden rounded-lg bg-gray-100 p-4 shadow-md transition-transform duration-300 dark:bg-gray-900">
+                                        <h3 className="mb-3 text-center text-sm text-black md:text-lg dark:text-white">
                                             {video.title}
                                         </h3>
-                                        <div className="flex gap-3 mb-3 flex-grow overflow-hidden">
+
+                                        <div className="mb-3 flex grow gap-3 overflow-hidden">
                                             <div className="w-2/5">
-                                                <div className="relative w-full pt-[56.25%] rounded-lg overflow-hidden">
+                                                <div className="relative w-full overflow-hidden rounded-lg pt-[56.25%]">
                                                     <img
                                                         src={video.thumbnail}
                                                         alt={video.title}
-                                                        className="absolute inset-0 w-full h-full object-cover"
+                                                        className="absolute inset-0 size-full object-cover"
                                                     />
                                                 </div>
                                             </div>
                                             <div
-                                                className="w-3/5 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line overflow-auto flex-grow">
-                                                {video.description}
+                                                className="w-3/5 overflow-hidden whitespace-pre-line text-xs text-gray-700 dark:text-gray-300">
+                                                <div className="animate-[scroll-description_30s_linear_infinite]">
+                                                    {video.description}
+                                                </div>
                                             </div>
                                         </div>
+
                                         <div className="mt-auto flex justify-center">
                                             <a
                                                 href={`https://youtube.com/watch?v=${video.id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="block w-16 h-16"
+                                                className="block size-16"
                                             >
                                                 <img src="/youtube-play.svg" alt="Play on YouTube"/>
                                             </a>
                                         </div>
-                                    </>
-                                )}
+                                    </div>)}
                             </div>
                         </div>
                     );
