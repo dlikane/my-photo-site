@@ -6,7 +6,7 @@ import QuoteDisplay from "./QuoteDisplay";
 
 const Slideshow = () => {
     const images = useFetchImages();
-    const { quote, fetchQuote, setQuote } = useFetchQuote();
+    const { quote, fetchQuote } = useFetchQuote();
     const [currentImages, setCurrentImages] = useState([]);
     const [index, setIndex] = useState(0);
     const [showPlaceholder, setShowPlaceholder] = useState(true);
@@ -66,15 +66,17 @@ const Slideshow = () => {
         return () => clearInterval(interval);
     }, [currentImages, index]);
 
+/*
     const handleClick = () => {
         console.log("🟠 Slideshow clicked! Restarting...");
         setShowQuote(false);
         setQuote(null);
         startNewCycle();
     };
+*/
 
     return (
-        <div className="relative flex items-center justify-center w-full h-full bg-white dark:bg-black overflow-hidden">
+        <div className="relative flex size-full items-center justify-center overflow-hidden bg-white dark:bg-black">
             {showPlaceholder ? (
                 <ImageDisplay currentImages={[{url: "/me.jpg", name: "Welcome"}]} index={0}/>
             ) : (

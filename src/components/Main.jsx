@@ -8,9 +8,9 @@ import About from "./About";
 
 const Main = ({ theme, setTheme }) => {
     return (
-        <div className="flex flex-col h-screen">
+        <div className="flex h-screen flex-col">
             <Header theme={theme} setTheme={setTheme} />
-            <main className="flex-grow overflow-auto scrollbar-hide">
+            <main className="grow overflow-auto scrollbar-hide">
                 <Routes>
                     <Route path="/" element={<Slideshow />} />
                     <Route path="/category/:categoryName" element={<Category />} />

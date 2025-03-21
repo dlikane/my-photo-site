@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 
@@ -14,7 +15,7 @@ const Caption = ({ caption, index }) => {
 
     return (
         <motion.div
-            className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 text-lg rounded-md shadow-md"
+            className="absolute left-1/2 top-5 -translate-x-1/2 rounded-md bg-black/70 px-4 py-2 text-lg text-white shadow-md"
             key={index}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

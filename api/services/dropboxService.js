@@ -92,8 +92,8 @@ export async function getDropboxAbout() {
 
         return file.result.fileBinary.toString("utf-8");
     } catch (error) {
-        console.error("❌ Dropbox about.md not found.");
-        return null; // ✅ Return null instead of handling local fallback
+        console.error("❌ Dropbox about.md not found.", error);
+        return null;
     }
 }
 

@@ -1,10 +1,10 @@
 const Footer = () => {
     return (
-        <footer className="text-center text-sm text-gray-600 dark:text-gray-400 p-4 bg-white dark:bg-black">
+        <footer className="bg-white p-4 text-center text-sm text-gray-600 dark:bg-black dark:text-gray-400">
             <p>
                 Instagram: <a
                 href="https://instagram.com/dlikane"
-                className="text-black dark:text-white hover:underline"
+                className="text-black hover:underline dark:text-white"
                 target="_blank"
                 rel="noopener noreferrer"
             >

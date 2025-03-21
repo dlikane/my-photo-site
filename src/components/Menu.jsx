@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+/* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -27,22 +28,24 @@ const Menu = ({ theme, setTheme }) => {
         navigate(path);
     };
 
+/*
     const toggleTheme = () => {
         setTheme(theme === "dark" ? "light" : "dark");
     };
+*/
 
     return (
         <div className="absolute left-5 top-5 z-50">
             <img
                 src="/menu.svg"
-                className="w-8 h-8 cursor-pointer transition-transform hover:scale-110"
+                className="size-8 cursor-pointer transition-transform hover:scale-110"
                 alt="Menu"
                 onClick={() => setIsOpen(!isOpen)}
             />
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        className="absolute top-12 left-0 bg-white/80 dark:bg-black/70 backdrop-blur-sm text-black dark:text-white rounded-lg shadow-lg w-48 p-4"
+                        className="absolute left-0 top-12 w-48 rounded-lg bg-white/80 p-4 text-black shadow-lg backdrop-blur-sm dark:bg-black/70 dark:text-white"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}

@@ -24,6 +24,7 @@ export default async function handler(req, res) {
         console.log(`✅ Found Playlist ID: ${playlistId}`);
 
         // Fetch all videos from YouTube Playlist with pagination
+        // eslint-disable-next-line no-undef
         const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
         let videos = [];
         let nextPageToken = "";
@@ -38,7 +39,7 @@ export default async function handler(req, res) {
             }
 
             // Collect video IDs for statistics lookup
-            const videoIds = playlistResponse.data.items.map(item => item.snippet.resourceId.videoId);
+            playlistResponse.data.items.map(item => item.snippet.resourceId.videoId);
             videos.push(...playlistResponse.data.items);
 
             // Get the nextPageToken
