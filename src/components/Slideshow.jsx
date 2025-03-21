@@ -24,7 +24,7 @@ const Slideshow = () => {
         setIndex(0);
         setShowQuote(false);
         fetchQuote();
-    }, [images]);
+    }, [images, fetchQuote]);
 
     useEffect(() => {
         if (images.length > 0) {
@@ -32,7 +32,7 @@ const Slideshow = () => {
             setTimeout(() => setShowPlaceholder(false), 2000);
             startNewCycle();
         }
-    }, [images]);
+    }, [images, startNewCycle]);
 
     useEffect(() => {
         if (currentImages.length === 0) return;
