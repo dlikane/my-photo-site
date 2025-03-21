@@ -49,7 +49,7 @@ const Menu = ({ theme, setTheme }) => {
                         transition={{ duration: 0.3 }}
                     >
                         <ul className="space-y-2">
-                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/")}>Home</li>
+                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/")}>home</li>
                             {categories.map((category) => (
                                 <li key={category} className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate(`/category/${category}`)}>
                                     {category}
@@ -65,9 +65,9 @@ const Menu = ({ theme, setTheme }) => {
                                 <li className="text-gray-500">Loading...</li>
                             )}
                             <li className="cursor-pointer hover:text-gray-400" onClick={() => window.open("https://instagram.com/dlikane", "_blank")}>
-                                Contact
+                                contact
                             </li>
-                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/about")}>About</li>
+                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/about")}>about</li>
                             <li className="cursor-pointer hover:text-gray-400 font-bold" onClick={toggleTheme}>
                                 {theme === "dark" ? "☀ Light Mode" : "🌙 Dark Mode"}
                             </li>

@@ -74,7 +74,7 @@ const Slideshow = () => {
     };
 
     return (
-        <div className="relative flex items-center justify-center w-full h-screen bg-white dark:bg-black overflow-hidden" onClick={handleClick}>
+        <div className="relative flex items-center justify-center w-full flex-grow bg-white dark:bg-black overflow-hidden" onClick={handleClick}>
             {showPlaceholder ? (
                 <ImageDisplay currentImages={[{ url: "/me.jpg", name: "Welcome" }]} index={0} />
             ) : (

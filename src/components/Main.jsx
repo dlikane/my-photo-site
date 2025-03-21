@@ -8,10 +8,10 @@ import About from "./About";
 
 const Main = ({ theme, setTheme }) => {
     return (
-        <div className="app-container">
-            <Header  theme={theme} setTheme={setTheme} />
+        <div className="flex flex-col min-h-screen">
+            <Header theme={theme} setTheme={setTheme} />
 
-            <div className="content-wrapper">
+            <div className="flex-grow">
                 <Routes>
                     <Route path="/" element={<Slideshow />} />
                     <Route path="/category/:categoryName" element={<Category />} />

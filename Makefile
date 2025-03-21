@@ -23,7 +23,7 @@ grab-all: ## grab full source code
 
 .PHONY: grab-all
 grab-tailwind: ## grab full source code
-	img grab postcss.config.jsx tailwind.config.js vite.config.js index.html package.json src/styles/index.css src/App.jsx src/main.jsx | $(CLIP_COMMAND)
+	img grab postcss.config.js tailwind.config.ts vite.config.ts index.html package.json src/styles/index.css src/App.jsx src/main.jsx | $(CLIP_COMMAND)
 
 .PHONY: grab
 grab: ## grab full source code

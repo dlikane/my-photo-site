@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { motion } from "framer-motion";
 import FullscreenViewer from "./FullscreenViewer";
 
 const IMAGE_BATCH_SIZE = 20;
@@ -17,22 +18,18 @@ const Category = () => {
     const hasMoreImages = useRef(true);
 
     useEffect(() => {
-        if (!categoryName) {
-            console.error("⚠️ Category name is undefined!");
-            return;
-        }
-
-        console.log(`📁 Opening category: ${categoryName}`);
+        if (!categoryName) return;
 
         const fetchImages = async () => {
-            console.log(`📸 Fetching images for category: ${categoryName}`);
             try {
                 const response = await axios.get(`/api/images?category=${encodeURIComponent(categoryName)}`);
-                console.log(`✅ Successfully fetched ${response.data.length} images.`);
+                const data = response.data || [];
 
-                setImages(response.data);
-                setVisibleImages(response.data.slice(0, IMAGE_BATCH_SIZE));
-                hasMoreImages.current = response.data.length > IMAGE_BATCH_SIZE;
+                setImages(data);
+                setVisibleImages(
+                    data.slice(0, IMAGE_BATCH_SIZE).map((img, i) => ({ img, globalIndex: i }))
+                );
+                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE;
             } catch (error) {
                 console.error("❌ Error fetching images:", error);
             } finally {
@@ -56,11 +53,19 @@ const Category = () => {
                 const lastEntry = entries[0];
 
                 if (lastEntry.isIntersecting) {
-                    setVisibleImages((prev) => {
-                        const nextBatch = images.slice(prev.length, prev.length + IMAGE_BATCH_SIZE);
-                        hasMoreImages.current = nextBatch.length > 0;
-                        return [...prev, ...nextBatch];
-                    });
+                    setTimeout(() => {
+                        setVisibleImages((prev) => {
+                            const nextBatch = images.slice(prev.length, prev.length + IMAGE_BATCH_SIZE);
+                            hasMoreImages.current = nextBatch.length > 0;
+                            return [
+                                ...prev,
+                                ...nextBatch.map((img, i) => ({
+                                    img,
+                                    globalIndex: prev.length + i,
+                                })),
+                            ];
+                        });
+                    }, 300);
                 }
             },
             { root: containerRef.current, threshold: OBSERVER_THRESHOLD }
@@ -77,15 +82,23 @@ const Category = () => {
         <div ref={containerRef} className="flex flex-col items-center justify-start w-full min-h-screen p-5 bg-white dark:bg-black overflow-y-auto">
             {loading && <p className="text-black dark:text-white text-lg">Loading images...</p>}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 w-full max-w-6xl">
-                {visibleImages.map((img, index) => (
-                    <img
-                        key={index}
-                        src={img.url}
-                        alt={img.name}
-                        className="w-full h-auto object-cover rounded-lg shadow-md cursor-pointer transition-transform duration-300 hover:scale-105"
-                        onClick={() => setSelectedImage({ url: img.url, index })}
-                    />
+            {/* 👇 Ensures 2 images per row on mobile, 3 images per row on larger screens */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full max-w-6xl">
+                {visibleImages?.map(({ img, globalIndex }) => (
+                    <motion.div
+                        key={globalIndex}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="w-full aspect-square overflow-hidden rounded-lg shadow-md cursor-pointer"
+                        onClick={() => setSelectedImage({ url: img.url, index: globalIndex })}
+                    >
+                        <img
+                            src={img.url}
+                            alt={img.name}
+                            className="w-full h-full object-cover"
+                        />
+                    </motion.div>
                 ))}
             </div>
 

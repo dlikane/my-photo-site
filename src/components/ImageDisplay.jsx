@@ -20,7 +20,7 @@ const ImageDisplay = ({ currentImages, index, isPaused }) => {
                         alt={currentImage.name}
                     />
                     <motion.div
-                        className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 text-lg rounded-md shadow-md"
+                        className="absolute top-1 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 text-lg rounded-md shadow-md"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: isPaused ? 1 : 0 }}
