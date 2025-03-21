@@ -37,8 +37,8 @@ const Slideshow = () => {
     useEffect(() => {
         if (currentImages.length === 0) return;
 
-        const transitionDuration = 2000; // 2 sec transition
-        const displayDuration = 3000; // 3 sec display
+        const transitionDuration = 2000;
+        const displayDuration = 3000;
         const totalDuration = transitionDuration + displayDuration;
 
         const interval = setInterval(() => {
@@ -48,12 +48,12 @@ const Slideshow = () => {
                 if (nextIndex >= currentImages.length) {
                     console.log("🛑 Reached last image. Stopping cycle...");
 
-                    clearInterval(interval); // ✅ Stops interval immediately
+                    clearInterval(interval);
 
                     setTimeout(() => {
                         console.log("💬 Showing quote...");
-                        setShowQuote(true); // ✅ Actually triggers quote display
-                    }, displayDuration); // ✅ Delay before showing quote
+                        setShowQuote(true);
+                    }, displayDuration);
 
                     return prevIndex;
                 }
@@ -68,19 +68,19 @@ const Slideshow = () => {
 
     const handleClick = () => {
         console.log("🟠 Slideshow clicked! Restarting...");
-        setShowQuote(false); // ✅ Hide quote on restart
+        setShowQuote(false);
         setQuote(null);
         startNewCycle();
     };
 
     return (
-        <div className="slideshow-container" onClick={handleClick}>
+        <div className="relative flex items-center justify-center w-full h-full bg-white dark:bg-black overflow-hidden">
             {showPlaceholder ? (
-                <ImageDisplay currentImages={[{ url: "/me.jpg", name: "Welcome" }]} index={0} />
+                <ImageDisplay currentImages={[{url: "/me.jpg", name: "Welcome"}]} index={0}/>
             ) : (
                 <>
-                    <ImageDisplay currentImages={currentImages} index={index} />
-                    {showQuote && <QuoteDisplay quote={quote} />}
+                    <ImageDisplay currentImages={currentImages} index={index}/>
+                    {showQuote && <QuoteDisplay quote={quote}/>}
                 </>
             )}
         </div>

@@ -6,27 +6,24 @@ const QuoteDisplay = ({ quote }) => {
     return (
         <AnimatePresence>
             <motion.div
-                className="quote-container"
+                className="absolute bottom-5 right-5 w-1/3 text-right bg-white dark:bg-black/70 text-black dark:text-white p-4 rounded-lg shadow-md dark:shadow-lg"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ opacity: { duration: 2, ease: "easeInOut", delay: 1 } }} // ✅ Delayed fade-in
+                transition={{ opacity: { duration: 2, ease: "easeInOut", delay: 1 } }}
             >
-                {/* ✅ Next Button Appears with Quote */}
                 <motion.div
-                    className="next-button-container"
+                    className="flex justify-center items-center mb-2"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 2, ease: "easeInOut" }}
                 >
-                    <span className="next-tooltip">Click anywhere for more...</span>
-                    <img src="/next.svg" alt="Next" className="next-icon" />
+                    <img src="/next.svg" alt="Next" className="w-6 h-6 ml-2 transition-transform hover:scale-110" />
                 </motion.div>
 
-                {/* ✅ Animated Quote Text */}
                 <motion.p
-                    className="quote-text"
+                    className="text-lg italic"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -35,9 +32,8 @@ const QuoteDisplay = ({ quote }) => {
                     "{quote.text}"
                 </motion.p>
 
-                {/* ✅ Animated Author Name */}
                 <motion.p
-                    className="quote-author"
+                    className="mt-2 text-sm text-gray-600 dark:text-gray-300"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 const Caption = ({ caption, index }) => {
     const [displayedCaption, setDisplayedCaption] = useState("");
 
-    // ✅ Ensure caption changes only after fade-out completes
     useEffect(() => {
         const timeout = setTimeout(() => {
             setDisplayedCaption(caption);
@@ -15,8 +14,8 @@ const Caption = ({ caption, index }) => {
 
     return (
         <motion.div
-            className="image-caption"
-            key={index} // ✅ Ensures animation resets for each new image
+            className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 text-lg rounded-md shadow-md"
+            key={index}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
