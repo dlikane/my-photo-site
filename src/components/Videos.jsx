@@ -56,10 +56,12 @@ const Videos = () => {
                                         </div>
                                     </>
                                 ) : (
-                                    <>
+                                    <div
+                                        className="absolute inset-0 bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden shadow-md transition-transform duration-300 flex flex-col p-4">
                                         <h3 className="text-black dark:text-white text-sm md:text-lg text-center mb-3">
                                             {video.title}
                                         </h3>
+
                                         <div className="flex gap-3 mb-3 flex-grow overflow-hidden">
                                             <div className="w-2/5">
                                                 <div className="relative w-full pt-[56.25%] rounded-lg overflow-hidden">
@@ -71,10 +73,13 @@ const Videos = () => {
                                                 </div>
                                             </div>
                                             <div
-                                                className="w-3/5 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line overflow-auto flex-grow">
-                                                {video.description}
+                                                className="w-3/5 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line overflow-hidden">
+                                                <div className="animate-[scroll-description_30s_linear_infinite]">
+                                                    {video.description}
+                                                </div>
                                             </div>
                                         </div>
+
                                         <div className="mt-auto flex justify-center">
                                             <a
                                                 href={`https://youtube.com/watch?v=${video.id}`}
@@ -85,8 +90,7 @@ const Videos = () => {
                                                 <img src="/youtube-play.svg" alt="Play on YouTube"/>
                                             </a>
                                         </div>
-                                    </>
-                                )}
+                                    </div>)}
                             </div>
                         </div>
                     );

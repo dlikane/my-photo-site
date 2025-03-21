@@ -29,3 +29,9 @@ html, body, #root {
     margin: 0;
     padding: 0;
 }
+
+@keyframes scroll-description {
+    0% { transform: translateY(0%); }
+    10% { transform: translateY(0%); }   /* pause at start */
+    100% { transform: translateY(-100%); }
+}
