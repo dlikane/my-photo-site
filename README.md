@@ -29,7 +29,7 @@ https://console.cloud.google.com/
 
 vercel env add YOUTUBE_API_KEY 
 vercel env add YOUTUBE_PLAYLIST_ID
-
+vercel env add ENABLE_EXPERIMENTAL_COREPACK
 
 ## dev
 
