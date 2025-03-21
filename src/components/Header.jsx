@@ -2,10 +2,10 @@ import Menu from "./Menu";
 
 const Header = ({ theme, setTheme }) => {
     return (
-        <header className="relative flex flex-col items-center bg-white py-3 sm:py-6 text-black dark:bg-black dark:text-white">
+        <header className="relative flex flex-col items-center bg-white py-0 sm:py-6 text-black dark:bg-black dark:text-white">
             <Menu theme={theme} setTheme={setTheme} />
             <div className="text-center">
-                <h1 className="overflow-hidden text-ellipsis font-title text-[35.2px] font-light lowercase tracking-[5px] sm:text-[28.8px] sm:tracking-[20px]">
+                <h1 className="overflow-hidden text-ellipsis font-title text-[35.2px] font-light lowercase tracking-[1px] sm:text-[28.8px] sm:tracking-[20px]">
                     Dmitry&nbsp;&middot;&nbsp;Likane
                 </h1>
                 <p className="mt-1 text-[19.2px] font-light">with</p>

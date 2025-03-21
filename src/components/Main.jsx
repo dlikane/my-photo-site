@@ -10,15 +10,15 @@ const Main = ({ theme, setTheme }) => {
     return (
         <div className="flex h-screen flex-col">
             <Header theme={theme} setTheme={setTheme} />
-            <main className="grow overflow-auto scrollbar-hide">
-                <Routes>
-                    <Route path="/" element={<Slideshow />} />
-                    <Route path="/category/:categoryName" element={<Category />} />
-                    <Route path="/videos/:videoType" element={<Videos />} />
-                    <Route path="/about" element={<About />} />
+            <main className="grow overflow-auto scrollbar-hide bg-white dark:bg-black">
+v                <Routes>
+                    <Route path="/" element={<Slideshow/>}/>
+                    <Route path="/category/:categoryName" element={<Category/>}/>
+                    <Route path="/videos/:videoType" element={<Videos/>}/>
+                    <Route path="/about" element={<About/>}/>
                 </Routes>
             </main>
-            <Footer />
+            <Footer/>
         </div>
     );
 };
