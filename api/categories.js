@@ -7,8 +7,10 @@ export default async function handler(req, res) {
 
     console.log("📂 Received request to /api/categories");
 
+    const includeHidden = req.query.includeHidden === "true";
+
     try {
-        const categories = await getDropboxCategories();
+        const categories = await getDropboxCategories(includeHidden);
         res.status(200).json(categories);
     } catch (error) {
         res.status(500).json({ error: error.message });

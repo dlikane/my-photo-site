@@ -48,21 +48,22 @@ export async function getDropboxImages(category = "") {
 }
 
 /** ✅ Fetch category list from Dropbox based on folder names */
-export async function getDropboxCategories() {
+export async function getDropboxCategories(includeHidden = false) {
     try {
         const dbx = await getDropboxInstance();
-        const response = await dbx.filesListFolder({ path: "" }); // ✅ List root folder
+        const response = await dbx.filesListFolder({ path: "" });
 
         if (!response.result.entries) {
             throw new Error("No categories found");
         }
 
-        // ✅ Filter folders and ignore names starting with "." or "_"
-        const categories = response.result.entries
-            .filter(entry => entry[".tag"] === "folder" && !entry.name.startsWith(".") && !entry.name.startsWith("_"))
+        return response.result.entries
+            .filter(entry =>
+                entry[".tag"] === "folder" &&
+                !entry.name.startsWith(".") &&
+                (includeHidden || !entry.name.startsWith("_"))
+            )
             .map(entry => entry.name);
-
-        return categories;
     } catch (error) {
         console.error("❌ Error fetching categories:", error);
         throw error;
