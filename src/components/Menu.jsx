@@ -52,7 +52,7 @@ const Menu = ({ theme, setTheme }) => {
                         transition={{ duration: 0.3 }}
                     >
                         <ul className="space-y-2">
-                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/")}>home</li>
+                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/")}>welcome</li>
                             {categories.map((category) => (
                                 <li key={category} className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate(`/category/${category}`)}>
                                     {category}

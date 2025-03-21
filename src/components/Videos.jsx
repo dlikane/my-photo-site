@@ -32,7 +32,7 @@ const Videos = () => {
 
     return (
         <div className="flex w-full flex-col items-center bg-white dark:bg-black">
-            <div className="grid w-full max-w-full grid-cols-2 gap-6 p-5 md:grid-cols-3">
+            <div className="grid w-full max-w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-5">
                 {videos.map((video) => {
                     const isActive = selectedVideoId === video.id;
                     return (
