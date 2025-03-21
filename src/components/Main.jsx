@@ -8,18 +8,16 @@ import About from "./About";
 
 const Main = ({ theme, setTheme }) => {
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col h-screen">
             <Header theme={theme} setTheme={setTheme} />
-
-            <div className="flex-grow">
+            <main className="flex-grow overflow-auto scrollbar-hide">
                 <Routes>
                     <Route path="/" element={<Slideshow />} />
                     <Route path="/category/:categoryName" element={<Category />} />
                     <Route path="/videos/:videoType" element={<Videos />} />
                     <Route path="/about" element={<About />} />
                 </Routes>
-            </div>
-
+            </main>
             <Footer />
         </div>
     );

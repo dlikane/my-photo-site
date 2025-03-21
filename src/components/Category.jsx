@@ -79,19 +79,19 @@ const Category = () => {
     }, [images, visibleImages]);
 
     return (
-        <div ref={containerRef} className="flex flex-col items-center justify-start w-full min-h-screen p-5 bg-white dark:bg-black overflow-y-auto">
+        <div ref={containerRef} className="flex flex-col items-center justify-start w-full p-5 bg-white dark:bg-black">
             {loading && <p className="text-black dark:text-white text-lg">Loading images...</p>}
 
             {/* 👇 Ensures 2 images per row on mobile, 3 images per row on larger screens */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full max-w-6xl">
-                {visibleImages?.map(({ img, globalIndex }) => (
+                {visibleImages?.map(({img, globalIndex}) => (
                     <motion.div
                         key={globalIndex}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        initial={{opacity: 0, scale: 0.9}}
+                        animate={{opacity: 1, scale: 1}}
+                        transition={{duration: 0.3, ease: "easeOut"}}
                         className="w-full aspect-square overflow-hidden rounded-lg shadow-md cursor-pointer"
-                        onClick={() => setSelectedImage({ url: img.url, index: globalIndex })}
+                        onClick={() => setSelectedImage({url: img.url, index: globalIndex})}
                     >
                         <img
                             src={img.url}

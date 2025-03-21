@@ -74,13 +74,13 @@ const Slideshow = () => {
     };
 
     return (
-        <div className="relative flex items-center justify-center w-full flex-grow bg-white dark:bg-black overflow-hidden" onClick={handleClick}>
+        <div className="relative flex items-center justify-center w-full h-full bg-white dark:bg-black overflow-hidden">
             {showPlaceholder ? (
-                <ImageDisplay currentImages={[{ url: "/me.jpg", name: "Welcome" }]} index={0} />
+                <ImageDisplay currentImages={[{url: "/me.jpg", name: "Welcome"}]} index={0}/>
             ) : (
                 <>
-                    <ImageDisplay currentImages={currentImages} index={index} />
-                    {showQuote && <QuoteDisplay quote={quote} />}
+                    <ImageDisplay currentImages={currentImages} index={index}/>
+                    {showQuote && <QuoteDisplay quote={quote}/>}
                 </>
             )}
         </div>

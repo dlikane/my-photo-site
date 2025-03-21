@@ -42,7 +42,7 @@ const Menu = ({ theme, setTheme }) => {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        className="absolute top-12 left-0 bg-black dark:bg-gray-900 text-white dark:text-gray-300 rounded-lg shadow-lg w-48 p-4"
+                        className="absolute top-12 left-0 bg-white/80 dark:bg-black/70 backdrop-blur-sm text-black dark:text-white rounded-lg shadow-lg w-48 p-4"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
@@ -68,9 +68,13 @@ const Menu = ({ theme, setTheme }) => {
                                 contact
                             </li>
                             <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/about")}>about</li>
+{/*
+
                             <li className="cursor-pointer hover:text-gray-400 font-bold" onClick={toggleTheme}>
                                 {theme === "dark" ? "☀ Light Mode" : "🌙 Dark Mode"}
                             </li>
+
+*/}
                         </ul>
                     </motion.div>
                 )}

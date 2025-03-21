@@ -19,7 +19,6 @@ const QuoteDisplay = ({ quote }) => {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 2, ease: "easeInOut" }}
                 >
-                    <span className="text-sm text-gray-600 dark:text-gray-300">Click anywhere for more...</span>
                     <img src="/next.svg" alt="Next" className="w-6 h-6 ml-2 transition-transform hover:scale-110" />
                 </motion.div>
 
