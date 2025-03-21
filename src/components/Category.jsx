@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import {useEffect, useRef, useState} from "react";
+import {useLocation} from "react-router-dom";
 import axios from "axios";
 /* eslint-disable no-unused-vars */
-import { motion } from "framer-motion";
+import {motion} from "framer-motion";
 import FullscreenViewer from "./FullscreenViewer";
 
 const IMAGE_BATCH_SIZE = 20;
 const OBSERVER_THRESHOLD = 0.8;
 
 const Category = () => {
-    const { categoryName } = useParams();
+    const location = useLocation();
+    const categoryName = location.pathname.replace("/category/", "");
     const [images, setImages] = useState([]);
     const [visibleImages, setVisibleImages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -81,7 +82,13 @@ const Category = () => {
 
     return (
         <div ref={containerRef} className="flex w-full flex-col items-center justify-start bg-white p-5 dark:bg-black">
-            {loading && <p className="text-lg text-black dark:text-white">Loading images...</p>}
+            {/*{loading && <p className="text-lg text-black dark:text-white">Loading images...</p>}*/}
+            {loading && (
+                <div className="flex flex-col items-center justify-center gap-4 py-10 text-black dark:text-white">
+                    <div className="relative h-16 w-16 animate-spin rounded-full border-4 border-t-black dark:border-t-white border-transparent" />
+                    <p className="text-lg font-light italic">Developing your gallery…</p>
+                </div>
+            )}
 
             {/* 👇 Ensures 2 images per row on mobile, 3 images per row on larger screens */}
             <div className="grid w-full max-w-6xl grid-cols-2 gap-4 sm:grid-cols-3">

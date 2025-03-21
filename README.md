@@ -46,3 +46,16 @@ NOTE:
 look at scripts:
 getRefreshToken.ps
 refreshAccessToken.ps
+
+## folder structure
+
+
+
+
+
+
+
+
+
+
+

@@ -1,3 +1,15 @@
+20250322
+    add new component Hidden
+    I want a new component to list all folder on dropbox which start with "_" I name them hidden because we don't want
+    them to be used for Category,
+    I want Hidden to routed but not on a menu
+    To get names from dropbox can reuse api/categories but need to toggle if we get as it is now
+    Once we have list of hidden categories we expect them in format _2005_name
+    For each we need to give 4 Year Name and 2 links, the first link to Small (category/_2005_name/small) and Large (category/_2005_name/large)
+    Allow to filter by year or name, and sort by year or name
+    Name is very short so be creative with design so it doesn't look too empty
+
+
 20250320
     Let's redesign menu
     It will only have one level of menu items

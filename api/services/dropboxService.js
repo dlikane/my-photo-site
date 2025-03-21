@@ -3,7 +3,6 @@ import fetch from "node-fetch";
 import yaml from "js-yaml";
 import { getAccessToken } from "./auth.js";
 
-/** ✅ Get authenticated Dropbox instance */
 async function getDropboxInstance() {
     const accessToken = await getAccessToken();
     if (!accessToken) {
@@ -15,9 +14,8 @@ async function getDropboxInstance() {
 export async function getDropboxImages(category = "") {
     try {
         const dbx = await getDropboxInstance();
-        const folderPath = category ? `/${category}` : ""; // ✅ Use root if category is empty
-
-        console.log(`📂 Fetching images from folder: ${folderPath || "Slideshow"}`);
+        const folderPath = category ? `/${category}` : "";
+        console.log(`📂 Requesting images from: ${folderPath || "root"}`);
 
         const response = await dbx.filesListFolder({ path: folderPath });
 
@@ -29,14 +27,11 @@ export async function getDropboxImages(category = "") {
             .filter(file => file[".tag"] === "file" && file.name.toLowerCase().endsWith(".jpg"))
             .map(async (file) => {
                 const link = await dbx.filesGetTemporaryLink({ path: file.path_lower });
-
-                // ✅ Format filename correctly
                 let parts = file.name.replace(/\.[^/.]+$/, "").split("_");
                 if (parts.length > 1) {
-                    parts.pop(); // ✅ Remove last part if multiple
+                    parts.pop();
                 }
                 const formattedName = parts.join(" | ");
-
                 return { url: link.result.link, name: formattedName };
             });
 
@@ -47,33 +42,56 @@ export async function getDropboxImages(category = "") {
     }
 }
 
-/** ✅ Fetch category list from Dropbox based on folder names */
-export async function getDropboxCategories() {
+export async function getFirstDropboxImage(category) {
     try {
         const dbx = await getDropboxInstance();
-        const response = await dbx.filesListFolder({ path: "" }); // ✅ List root folder
+        console.log(`🖼️ Requesting first image from: ${category}`);
+
+        const response = await dbx.filesListFolder({ path: category });
+
+        const file = response.result.entries.find(entry =>
+            entry[".tag"] === "file" && entry.name.toLowerCase().endsWith(".jpg")
+        );
+
+        if (!file) throw new Error("No image found");
+
+        const link = await dbx.filesGetTemporaryLink({ path: file.path_lower });
+        return { url: link.result.link };
+    } catch (error) {
+        console.error("❌ Error fetching image:", error);
+        throw error;
+    }
+}
+
+export async function getDropboxCategories(includeHidden = false) {
+    try {
+        const dbx = await getDropboxInstance();
+        console.log("📁 Requesting categories list");
+
+        const response = await dbx.filesListFolder({ path: "" });
 
         if (!response.result.entries) {
             throw new Error("No categories found");
         }
 
-        // ✅ Filter folders and ignore names starting with "." or "_"
-        const categories = response.result.entries
-            .filter(entry => entry[".tag"] === "folder" && !entry.name.startsWith(".") && !entry.name.startsWith("_"))
+        return response.result.entries
+            .filter(entry =>
+                entry[".tag"] === "folder" &&
+                !entry.name.startsWith(".") &&
+                (includeHidden || !entry.name.startsWith("_"))
+            )
             .map(entry => entry.name);
-
-        return categories;
     } catch (error) {
         console.error("❌ Error fetching categories:", error);
         throw error;
     }
 }
 
-
-/** ✅ Fetch quote list from Dropbox */
 export async function getDropboxQuotes() {
     try {
         const dbx = await getDropboxInstance();
+        console.log("📜 Requesting quotes");
+
         const filePath = "/quotes_list.txt";
         const file = await dbx.filesDownload({ path: filePath });
 
@@ -87,6 +105,8 @@ export async function getDropboxQuotes() {
 export async function getDropboxAbout() {
     try {
         const dbx = await getDropboxInstance();
+        console.log("ℹ️ Requesting about.md");
+
         const filePath = "/about.md";
         const file = await dbx.filesDownload({ path: filePath });
 
@@ -100,14 +120,15 @@ export async function getDropboxAbout() {
 export async function getDropboxPlaylists() {
     try {
         const dbx = await getDropboxInstance();
-        const filePath = "/playlists.yml"; // ✅ Make sure this file exists in Dropbox
+        console.log("🎶 Requesting playlists.yml");
+
+        const filePath = "/playlists.yml";
         const file = await dbx.filesDownload({ path: filePath });
 
-        // ✅ Convert file to string and parse as YAML
         const content = file.result.fileBinary.toString("utf-8");
         const parsedData = yaml.load(content);
 
-        return parsedData?.playlists || {}; // ✅ Return playlists object or empty object
+        return parsedData?.playlists || {};
     } catch (error) {
         console.error("❌ Error fetching playlists:", error);
         throw error;
