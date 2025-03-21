@@ -6,7 +6,7 @@ import QuoteDisplay from "./QuoteDisplay";
 
 const Slideshow = () => {
     const images = useFetchImages();
-    const { quote, fetchQuote } = useFetchQuote();
+    const { quote, fetchQuote, setQuote } = useFetchQuote();
     const [currentImages, setCurrentImages] = useState([]);
     const [index, setIndex] = useState(0);
     const [showPlaceholder, setShowPlaceholder] = useState(true);
@@ -24,7 +24,7 @@ const Slideshow = () => {
         setIndex(0);
         setShowQuote(false);
         fetchQuote();
-    }, [images, fetchQuote]);
+    }, [images]);
 
     useEffect(() => {
         if (images.length > 0) {
@@ -32,7 +32,7 @@ const Slideshow = () => {
             setTimeout(() => setShowPlaceholder(false), 2000);
             startNewCycle();
         }
-    }, [images, startNewCycle]);
+    }, [images]);
 
     useEffect(() => {
         if (currentImages.length === 0) return;
@@ -66,14 +66,12 @@ const Slideshow = () => {
         return () => clearInterval(interval);
     }, [currentImages, index]);
 
-/*
     const handleClick = () => {
         console.log("🟠 Slideshow clicked! Restarting...");
         setShowQuote(false);
         setQuote(null);
         startNewCycle();
     };
-*/
 
     return (
         <div className="relative flex size-full items-center justify-center overflow-hidden bg-white dark:bg-black">
