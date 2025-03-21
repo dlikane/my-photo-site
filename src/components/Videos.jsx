@@ -85,7 +85,7 @@ const Videos = () => {
                                                 href={`https://youtube.com/watch?v=${video.id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="block size-16"
+                                                className="block size-8 sm:size-16"
                                             >
                                                 <img src="/youtube-play.svg" alt="Play on YouTube"/>
                                             </a>
