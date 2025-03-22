@@ -1,4 +1,19 @@
 20250322
+We are talking about my current project (code below). I hope vercel provide some free DB/storage.
+How much effort would it be to do
+- admin login/secure
+- super simple
+- capture client name, contacts (priority) facebook messager, insta, whatsapp, telegram, mobile; some notes
+- capture photo(s) on mobile directly to contact (or take from phone gallery)
+- history of client contact (date, notes)
+- Past and coming projects: date, location, status: done, confirmed, planned, suggested, idea
+- For done: a few links to shared folders
+- most of the time single client per project but could be more
+- client per multiple project
+- Quick search by client, date, project location
+- quick access to information on desktop and mob
+
+20250322
     add new component Hidden
     I want a new component to list all folder on dropbox which start with "_" I name them hidden because we don't want
     them to be used for Category,

@@ -26,10 +26,17 @@ const About = () => {
     }, []);
 
     return (
-        <div className="prose dark:prose-invert hover:scrollbar-thin hover:scrollbar-track-transparent hover:scrollbar-thumb-gray-400 mx-auto w-11/12 max-w-3xl overflow-y-auto rounded-lg bg-white p-6 text-lg text-black shadow-md backdrop-blur-md scrollbar-hide dark:bg-black dark:text-white dark:shadow-lg dark:backdrop-blur-md">
+        <div
+            className="prose dark:prose-invert hover:scrollbar-thin hover:scrollbar-track-transparent hover:scrollbar-thumb-gray-400 mx-auto w-11/12 max-w-3xl overflow-y-auto rounded-lg bg-white p-6 text-lg text-black shadow-md backdrop-blur-md scrollbar-hide dark:bg-black dark:text-white dark:shadow-lg dark:backdrop-blur-md">
             <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                 {aboutContent}
             </ReactMarkdown>
+            <a
+                href="/hidden"
+                className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-red-500/40"
+            >
+                <span className="sr-only">Hidden</span>
+            </a>
         </div>
     );
 };
