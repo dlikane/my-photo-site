@@ -31,6 +31,10 @@ vercel env add YOUTUBE_API_KEY
 vercel env add YOUTUBE_PLAYLIST_ID
 vercel env add ENABLE_EXPERIMENTAL_COREPACK
 
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_ANON_KEY 
+
+
 ## dev
 
 Running locally:
@@ -49,8 +53,13 @@ refreshAccessToken.ps
 
 ## folder structure
 
-
-
+## supabase
+```
+import { createClient } from '@supabase/supabase-js'
+const supabaseUrl = 'https://sxgjyughfvmhsjtdkjoe.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
+```
 
 
 
