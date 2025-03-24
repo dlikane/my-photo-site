@@ -78,8 +78,8 @@ const Menu = ({ theme, setTheme }) => {
                                 <>
                                     <li className="mt-2 font-semibold uppercase text-gray-400">admin</li>
                                     <li onClick={() => handleNavigate("/admin")} className="cursor-pointer hover:text-gray-400">dashboard</li>
-                                    <li onClick={() => handleNavigate("/admin/client-new")} className="cursor-pointer hover:text-gray-400">+ client</li>
-                                    <li onClick={() => handleNavigate("/admin/project-new")} className="cursor-pointer hover:text-gray-400">+ project</li>
+                                    <li onClick={() => handleNavigate("/admin/client-list")} className="cursor-pointer hover:text-gray-400">+ clients</li>
+                                    <li onClick={() => handleNavigate("/admin/project-list")} className="cursor-pointer hover:text-gray-400">+ projects</li>
                                 </>
                             )}
                         </ul>

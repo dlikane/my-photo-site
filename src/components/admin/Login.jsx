@@ -1,48 +1,61 @@
 import { useState } from "react"
 import { supabase } from "../../lib/supabaseClient"
+import { allowedEmails } from "../../resources/adminEmails"
 import { useNavigate } from "react-router-dom"
-import { useAuth } from "../AuthProvider"
 
 const Login = () => {
     const [email, setEmail] = useState("")
-    const [submitted, setSubmitted] = useState(false)
+    const [status, setStatus] = useState("")
     const navigate = useNavigate()
-    const { user } = useAuth()
 
     const handleLogin = async (e) => {
         e.preventDefault()
-        if (!email) return
+        const trimmedEmail = email.trim().toLowerCase()
 
-        const { error } = await supabase.auth.signInWithOtp({ email })
-        if (!error) setSubmitted(true)
-    }
+        if (!allowedEmails.includes(trimmedEmail)) {
+            setStatus("❌ Access denied.")
+            return
+        }
 
-    if (user) {
-        navigate("/admin", { replace: true })
-        return null
+        const { error } = await supabase.auth.signInWithOtp({ email: trimmedEmail })
+        if (error) {
+            setStatus("❌ " + error.message)
+        } else {
+            setStatus("✅ Check your email for a login link.")
+        }
     }
 
     return (
-        <div className="max-w-sm mx-auto p-6 space-y-4 text-sm">
-            <h2 className="text-xl font-bold">Admin Login</h2>
-
-            {submitted ? (
-                <p className="text-green-600">Check your email for a login link.</p>
-            ) : (
-                <form onSubmit={handleLogin} className="space-y-3">
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Your email"
-                        required
-                        className="w-full border p-2 rounded dark:bg-black"
-                    />
-                    <button type="submit" className="w-full bg-black text-white py-2 rounded">
-                        Send Login Link
-                    </button>
-                </form>
-            )}
+        <div className="mx-auto mt-20 max-w-md rounded-lg bg-white p-6 shadow dark:bg-black dark:text-white">
+            <h2 className="mb-4 text-center text-2xl font-light">Admin Login</h2>
+            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => {
+                        setEmail(e.target.value)
+                        setStatus("")
+                    }}
+                    className="rounded border border-gray-300 px-4 py-2 dark:bg-black dark:text-white dark:border-white"
+                    required
+                />
+                {status && (
+                    <div
+                        className={`text-sm ${
+                            status.startsWith("✅") ? "text-green-600" : "text-red-500"
+                        }`}
+                    >
+                        {status}
+                    </div>
+                )}
+                <button
+                    type="submit"
+                    className="rounded bg-black px-4 py-2 text-white transition hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
+                >
+                    Send Login Link
+                </button>
+            </form>
         </div>
     )
 }

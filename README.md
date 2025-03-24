@@ -110,7 +110,17 @@ __clients/{client_id}.jpg
 __projects/{project_id}.jpg
 ```
 
----
+#### Refreshing Dropbox Tokens
+
+To refresh your Dropbox refresh token (only required if permissions change or tokens expire):
+
+1. Go to your Dropbox App Console and ensure correct permissions (scopes) are set.
+2. Generate a temporary Access Token on the App Console.
+3. Run the PowerShell script from your project root:
+
+```powershell
+pnpm dotenv -e .env -- pwsh ./scripts/getRefreshToken.ps1
+```
 
 ### 3. 📺 YouTube (optional)
 

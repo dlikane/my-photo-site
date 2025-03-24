@@ -17,17 +17,13 @@ else
   endif
 endif
 
-.PHONY: grab-all
-grab-all: ## grab full source code
-	img grab "./api/..." "./src/..." index.html package.json | $(CLIP_COMMAND)
+.PHONY: grab-api
+grab-api: ## grab full source code
+	img grab "./api/..." package.json | $(CLIP_COMMAND)
 
-.PHONY: grab-all
-grab-tailwind: ## grab full source code
-	img grab postcss.config.js tailwind.config.ts vite.config.ts index.html package.json src/styles/index.css src/App.jsx src/main.jsx | $(CLIP_COMMAND)
-
-.PHONY: grab
-grab: ## grab full source code
-	img grab "./src/..." index.html | $(CLIP_COMMAND)
+.PHONY: grab-src
+grab-src: ## grab full source code
+	img grab "./src/..." package.json index.html postcss.config.js tailwind.config.ts vercel.json vite.config.ts | $(CLIP_COMMAND)
 
 
 

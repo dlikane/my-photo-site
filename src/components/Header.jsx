@@ -22,12 +22,19 @@ const Header = ({ theme, setTheme }) => {
                 <p className="mt-1 text-[19.2px] font-light">with</p>
             </div>
 
-            {user && (
+            {user ? (
                 <button
                     onClick={handleLogout}
                     className="absolute right-4 top-4 text-xs rounded px-3 py-1 border dark:border-white dark:text-white"
                 >
                     Logout
+                </button>
+            ) : (
+                <button
+                    onClick={() => navigate("/admin/login")}
+                    className="absolute right-4 top-4 text-xs rounded px-3 py-1 border dark:border-white dark:text-white"
+                >
+                    Admin
                 </button>
             )}
         </header>

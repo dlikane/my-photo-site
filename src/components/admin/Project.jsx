@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
 import { supabase } from "../../lib/supabaseClient"
 
-const ProjectDetails = () => {
+const Project = () => {
   const { id } = useParams()
   const [project, setProject] = useState(null)
   const [clients, setClients] = useState([])
@@ -87,4 +87,4 @@ const ProjectDetails = () => {
   )
 }
 
-export default ProjectDetails
+export default Project

@@ -1,33 +1,50 @@
-import formidable from "formidable"
-import sharp from "sharp"
-import { uploadToDropbox } from "../src/lib/dropbox"
+import formidable from "formidable";
+import sharp from "sharp";
+import { uploadToDropbox } from "./services/dropboxService.js";
 
-export const config = {
-    api: { bodyParser: false }
-}
+export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
-    if (req.method !== "POST") return res.status(405).end()
+    if (req.method !== "POST") return res.status(405).end();
 
-    const form = formidable({ maxFileSize: 10 * 1024 * 1024 }) // 10MB
+    const form = formidable({ maxFileSize: 10 * 1024 * 1024 }); // 10MB
 
     form.parse(req, async (err, fields, files) => {
-        if (err) return res.status(500).json({ error: "Parse error" })
+        if (err) return res.status(500).json({ error: "Parse error" });
 
-        const file = files.image?.[0]
-        const path = fields.path?.[0]
-        if (!file || !path) return res.status(400).json({ error: "Missing file or path" })
+        const file = files.file?.[0];
+        const path = fields.path?.[0];
+
+        if (!file || !path) {
+            return res.status(400).json({ error: "Missing file or path" });
+        }
+
+        let imageBuffer;
 
         try {
-            const imageBuffer = await sharp(file.filepath)
-                .resize(600, 600, { fit: "cover" })
-                .jpeg({ quality: 70 })
-                .toBuffer()
+            if (path.startsWith("__clients/")) {
+                imageBuffer = await sharp(file.filepath)
+                    .resize(800) // Client photos: resize width to 800px
+                    .jpeg({ quality: 70 })
+                    .toBuffer();
+            } else if (path.startsWith("__projects/")) {
+                imageBuffer = await sharp(file.filepath)
+                    .resize(600, 600, { fit: "cover" }) // Project images: crop to 600x600
+                    .jpeg({ quality: 70 })
+                    .toBuffer();
+            } else {
+                // Default: no resize
+                imageBuffer = await sharp(file.filepath)
+                    .jpeg({ quality: 70 })
+                    .toBuffer();
+            }
 
-            const result = await uploadToDropbox(path, imageBuffer)
-            res.status(200).json({ url: result?.link || null })
+            const result = await uploadToDropbox(`/${path}`, imageBuffer);
+
+            res.status(200).json({ url: result?.link || null });
         } catch (e) {
-            res.status(500).json({ error: "Upload failed" })
+            console.error("❌ Upload failed:", e);
+            res.status(500).json({ error: "Upload failed" });
         }
-    })
+    });
 }

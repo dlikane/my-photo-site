@@ -1,3 +1,12 @@
+20250324
+ClientForm screwed up. There are no labels for text fields shown and only populated text boxes are there.
+
+Let's use symbols for Instagram, mobile, name, notes, telegram and whatsapp
+from FontAwesome?
+Use symbols instead of text for Client as well.
+
+
+
 20250323
 admin/client if have link (insts) follow
 

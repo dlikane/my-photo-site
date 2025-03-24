@@ -29,8 +29,8 @@ const AdminDashboard = () => {
                 <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-black dark:border-gray-700">
                     <h2 className="text-lg font-semibold mb-3">Quick Links</h2>
                     <ul className="text-sm space-y-2">
-                        <li><Link to="/admin/clients" className="text-blue-600 hover:underline">All Clients</Link></li>
-                        <li><Link to="/admin/projects" className="text-blue-600 hover:underline">All Projects</Link></li>
+                        <li><Link to="/admin/client-list" className="text-blue-600 hover:underline">All Clients</Link></li>
+                        <li><Link to="/admin/project-list" className="text-blue-600 hover:underline">All Projects</Link></li>
                         <li><Link to="/admin/search" className="text-blue-600 hover:underline">Search</Link></li>
                         <li><Link to="/admin/client-new" className="text-blue-600 hover:underline">+ New Client</Link></li>
                         <li><Link to="/admin/project-new" className="text-blue-600 hover:underline">+ New Project</Link></li>
