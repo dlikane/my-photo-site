@@ -7,7 +7,6 @@ import Videos from "./Videos"
 import About from "./About"
 import Hidden from "./Hidden"
 import ClientList from "./admin/ClientList.jsx"
-import CallForm from "./admin/CallForm.jsx"
 import AdminDashboard from "./admin/AdminDashboard.jsx"
 import ProjectList from "./admin/ProjectList.jsx"
 import Client from "./admin/Client.jsx"
@@ -43,7 +42,6 @@ const Main = ({ theme, setTheme }) => {
                     <Route path="/admin/client-new" element={protect(<ClientForm />)} />
                     <Route path="/admin/project-new" element={protect(<ProjectForm />)} />
                     <Route path="/admin/client-list" element={protect(<ClientList />)} />
-                    <Route path="/admin/calls" element={protect(<CallForm />)} />
                     <Route path="/admin/project-list" element={protect(<ProjectList />)} />
                     <Route path="/admin/client/:id" element={protect(<Client />)} />
                     <Route path="/admin/project/:id" element={protect(<Project />)} />

@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabaseClient"
 import ContactLinks from "./ContactLinks"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { iconMap } from "../../lib/icons.js"
+import Calls from "./Calls.jsx";
 
 const Client = () => {
     const { id } = useParams()
@@ -86,6 +87,8 @@ const Client = () => {
             >
                 ← Back to list
             </Link>
+
+            <Calls clientId={client.id} />
         </div>
     )
 }
