@@ -55,6 +55,9 @@ const ClientForm = () => {
         if (file) {
             const filename = `${uuidv4()}.jpg`
             const path = `__clients/${filename}`
+            console.log("📸 File selected:", file.name)
+            console.log("📤 Uploading to Dropbox:", path)
+
             const formData = new FormData()
             formData.append("file", file)
             formData.append("path", path)
@@ -65,6 +68,8 @@ const ClientForm = () => {
             })
 
             const data = await res.json()
+            console.log("📥 Dropbox response:", data)
+
             if (res.ok && data.url) photoPath = path
         }
 
