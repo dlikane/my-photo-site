@@ -1,3 +1,20 @@
+20250324
+ClientForm screwed up. There are no labels for text fields shown and only populated text boxes are there.
+
+Let's use symbols for Instagram, mobile, name, notes, telegram and whatsapp
+from FontAwesome?
+Use symbols instead of text for Client as well.
+
+
+
+20250323
+admin/client if have link (insts) follow
+
+📦 Optional: export CSV of clients/projects
+🖼 Add lightbox for viewing client/project photo
+💾 Backups — maybe export Supabase tables weekly
+📱 PWA manifest for quick launch from mobile
+
 20250322
 We are talking about my current project (code below). I hope vercel provide some free DB/storage.
 How much effort would it be to do

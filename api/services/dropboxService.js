@@ -134,3 +134,26 @@ export async function getDropboxPlaylists() {
         throw error;
     }
 }
+
+export async function uploadToDropbox(path, buffer) {
+    try {
+        const dbx = await getDropboxInstance();
+        const uploadRes = await dbx.filesUpload({
+            path,
+            contents: buffer,
+            mode: "add",
+        });
+
+        const linkRes = await dbx.filesGetTemporaryLink({ path: uploadRes.result.path_lower });
+        return { link: linkRes.result.link };
+    } catch (err) {
+        console.error("Dropbox upload error:", err);
+        return null;
+    }
+}
+
+export async function getTemporaryDropboxLink(path) {
+    const dbx = await getDropboxInstance();
+    const link = await dbx.filesGetTemporaryLink({ path: `/${path}` });
+    return link.result;
+}

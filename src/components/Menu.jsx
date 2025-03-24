@@ -1,38 +1,40 @@
-import { useState, useEffect } from "react";
-/* eslint-disable no-unused-vars */
-import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useNavigate } from "react-router-dom"
+import axios from "axios"
+import { supabase } from "../lib/supabaseClient"
 
 const Menu = ({ theme, setTheme }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [categories, setCategories] = useState([]);
-    const [playlists, setPlaylists] = useState({});
-    const navigate = useNavigate();
+    const [isOpen, setIsOpen] = useState(false)
+    const [categories, setCategories] = useState([])
+    const [playlists, setPlaylists] = useState({})
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const navigate = useNavigate()
 
     useEffect(() => {
         axios.get("/api/categories")
             .then((res) => setCategories(res.data))
-            .catch((err) => console.error("❌ Error fetching categories:", err));
+            .catch((err) => console.error("❌ Error fetching categories:", err))
 
         axios.get("/api/playlists")
             .then((res) => setPlaylists(res.data))
-            .catch((err) => {
-                console.error("❌ Error fetching playlists:", err);
-                setPlaylists({});
-            });
-    }, []);
+            .catch(() => setPlaylists({}))
+
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setIsLoggedIn(!!session)
+        })
+
+        const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+            setIsLoggedIn(!!session)
+        })
+
+        return () => listener.subscription.unsubscribe()
+    }, [])
 
     const handleNavigate = (path) => {
-        setIsOpen(false);
-        navigate(path);
-    };
-
-/*
-    const toggleTheme = () => {
-        setTheme(theme === "dark" ? "light" : "dark");
-    };
-*/
+        setIsOpen(false)
+        navigate(path)
+    }
 
     return (
         <div className="absolute left-5 top-5 z-50">
@@ -45,45 +47,47 @@ const Menu = ({ theme, setTheme }) => {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        className="absolute left-0 top-12 w-48 rounded-lg bg-white/80 p-4 text-black shadow-lg backdrop-blur-sm dark:bg-black/70 dark:text-white"
+                        className="absolute left-0 top-12 w-52 rounded-lg bg-white/80 p-4 text-black shadow-lg backdrop-blur-sm dark:bg-black/70 dark:text-white"
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <ul className="space-y-2">
-                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/")}>welcome</li>
+                        <ul className="space-y-2 text-sm">
+                            <li onClick={() => handleNavigate("/")} className="cursor-pointer hover:text-gray-400">welcome</li>
                             {categories.map((category) => (
-                                <li key={category} className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate(`/category/${category}`)}>
+                                <li key={category} onClick={() => handleNavigate(`/category/${category}`)} className="cursor-pointer hover:text-gray-400">
                                     {category}
                                 </li>
                             ))}
                             {Object.keys(playlists).length > 0 ? (
                                 Object.keys(playlists).map((name) => (
-                                    <li key={name} className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate(`/videos/${name}`)}>
+                                    <li key={name} onClick={() => handleNavigate(`/videos/${name}`)} className="cursor-pointer hover:text-gray-400">
                                         {name}
                                     </li>
                                 ))
                             ) : (
-                                <li className="text-gray-500">Loading...</li>
+                                <li className="text-gray-500">Loading…</li>
                             )}
-                            <li className="cursor-pointer hover:text-gray-400" onClick={() => window.open("https://instagram.com/dlikane", "_blank")}>
+                            <li onClick={() => window.open("https://instagram.com/dlikane", "_blank")} className="cursor-pointer hover:text-gray-400">
                                 contact
                             </li>
-                            <li className="cursor-pointer hover:text-gray-400" onClick={() => handleNavigate("/about")}>about</li>
-{/*
+                            <li onClick={() => handleNavigate("/about")} className="cursor-pointer hover:text-gray-400">about</li>
 
-                            <li className="cursor-pointer hover:text-gray-400 font-bold" onClick={toggleTheme}>
-                                {theme === "dark" ? "☀ Light Mode" : "🌙 Dark Mode"}
-                            </li>
-
-*/}
+                            {isLoggedIn && (
+                                <>
+                                    <li className="mt-2 font-semibold uppercase text-gray-400">admin</li>
+                                    <li onClick={() => handleNavigate("/admin")} className="cursor-pointer hover:text-gray-400">dashboard</li>
+                                    <li onClick={() => handleNavigate("/admin/client-list")} className="cursor-pointer hover:text-gray-400">+ clients</li>
+                                    <li onClick={() => handleNavigate("/admin/project-list")} className="cursor-pointer hover:text-gray-400">+ projects</li>
+                                </>
+                            )}
                         </ul>
                     </motion.div>
                 )}
             </AnimatePresence>
         </div>
-    );
-};
+    )
+}
 
-export default Menu;
+export default Menu

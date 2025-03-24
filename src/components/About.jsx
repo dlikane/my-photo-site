@@ -1,44 +1,52 @@
-import { useState, useEffect } from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import axios from "axios";
+import { useState, useEffect } from "react"
+import ReactMarkdown from "react-markdown"
+import rehypeRaw from "rehype-raw"
+import axios from "axios"
+import { useNavigate } from "react-router-dom"
 
 const About = () => {
-    const [aboutContent, setAboutContent] = useState("");
+    const [aboutContent, setAboutContent] = useState("")
+    const [ready, setReady] = useState(false)
+    const navigate = useNavigate()
 
     useEffect(() => {
         const fetchAbout = async () => {
             try {
-                const response = await axios.get("/api/about");
+                const response = await axios.get("/api/about")
                 if (response.data?.content) {
-                    setAboutContent(response.data.content);
-                    return;
+                    setAboutContent(response.data.content)
+                } else {
+                    const res = await fetch("/about.md")
+                    const text = await res.text()
+                    setAboutContent(text)
                 }
-                throw new Error("Empty content from Dropbox");
             } catch {
-                const res = await fetch("/about.md");
-                const text = await res.text();
-                setAboutContent(text);
+                const res = await fetch("/about.md")
+                const text = await res.text()
+                setAboutContent(text)
+            } finally {
+                setTimeout(() => setReady(true), 200)
             }
-        };
+        }
 
-        fetchAbout();
-    }, []);
+        fetchAbout()
+    }, [])
 
     return (
-        <div
-            className="prose dark:prose-invert hover:scrollbar-thin hover:scrollbar-track-transparent hover:scrollbar-thumb-gray-400 mx-auto w-11/12 max-w-3xl overflow-y-auto rounded-lg bg-white p-6 text-lg text-black shadow-md backdrop-blur-md scrollbar-hide dark:bg-black dark:text-white dark:shadow-lg dark:backdrop-blur-md">
+        <div className="relative mx-auto w-11/12 max-w-3xl overflow-y-auto rounded-lg bg-white p-6 text-lg text-black shadow-md backdrop-blur-md scrollbar-hide dark:bg-black dark:text-white dark:shadow-lg dark:backdrop-blur-md">
             <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                 {aboutContent}
             </ReactMarkdown>
-            <a
-                href="/hidden"
-                className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full bg-red-500/40"
-            >
-                <span className="sr-only">Hidden</span>
-            </a>
-        </div>
-    );
-};
 
-export default About;
+            <div
+                onClick={() => navigate("/hidden")}
+                className={`absolute bottom-4 right-4 h-4 w-4 cursor-pointer rounded-full bg-red-600 shadow-md transition-opacity ${
+                    ready ? "opacity-20 hover:opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+                title="hidden"
+            />
+        </div>
+    )
+}
+
+export default About
