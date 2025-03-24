@@ -155,6 +155,7 @@ playlists:
     - `DROPBOX_APP_SECRET`
     - `DROPBOX_REFRESH_TOKEN`
     - `YOUTUBE_API_KEY` *(optional)*
+    - Note: to add to vercel environment run `vercel env add <VARIABLE>` it will prompt you for value and env
 4. Set **Build Command** to: `pnpm run build`
 5. Set **Output Directory** to: `dist`
 6. Set **Install Command** to: `pnpm install`

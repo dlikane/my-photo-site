@@ -2,6 +2,9 @@ import Menu from "./Menu"
 import { useAuth } from "./AuthProvider"
 import { supabase } from "../lib/supabaseClient"
 import { useNavigate } from "react-router-dom"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faLock, faLockOpen } from "@fortawesome/free-solid-svg-icons"
+
 
 const Header = ({ theme, setTheme }) => {
     const { user } = useAuth()
@@ -25,16 +28,18 @@ const Header = ({ theme, setTheme }) => {
             {user ? (
                 <button
                     onClick={handleLogout}
-                    className="absolute right-4 top-4 text-xs rounded px-3 py-1 border dark:border-white dark:text-white"
+                    className="absolute right-4 top-4 text-xl"
+                    title="Logout"
                 >
-                    Logout
+                    <FontAwesomeIcon icon={faLockOpen} />
                 </button>
             ) : (
                 <button
                     onClick={() => navigate("/admin/login")}
-                    className="absolute right-4 top-4 text-xs rounded px-3 py-1 border dark:border-white dark:text-white"
+                    className="absolute right-4 top-4 text-xl"
+                    title="Admin Login"
                 >
-                    Admin
+                    <FontAwesomeIcon icon={faLock} />
                 </button>
             )}
         </header>

@@ -12,13 +12,24 @@ const Login = () => {
         e.preventDefault()
         const trimmedEmail = email.trim().toLowerCase()
 
+        console.log("✉️ Attempting login with:", trimmedEmail)
+
         if (!allowedEmails.includes(trimmedEmail)) {
             setStatus("❌ Access denied.")
             return
         }
 
-        const { error } = await supabase.auth.signInWithOtp({ email: trimmedEmail })
+        const redirectTo = `${window.location.origin}/admin`
+        console.log("🌐 window.location.origin:", window.location.origin)
+        console.log("➡️ redirectTo:", redirectTo)
+
+        const { error } = await supabase.auth.signInWithOtp({
+            email: trimmedEmail,
+            options: { redirectTo }
+        })
+
         if (error) {
+            console.error("❌ Login error:", error.message)
             setStatus("❌ " + error.message)
         } else {
             setStatus("✅ Check your email for a login link.")
