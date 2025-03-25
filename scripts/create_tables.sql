@@ -36,3 +36,12 @@ create table if not exists project_clients (
 alter table clients
     add column contacts jsonb;
 alter table clients drop column if exists photos;
+
+-- Add full_name to clients
+ALTER TABLE clients
+    ADD COLUMN full_name TEXT;
+
+-- Add contact_type to calls
+ALTER TABLE calls
+    ADD COLUMN contact_type TEXT;
+

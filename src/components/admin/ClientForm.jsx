@@ -17,12 +17,11 @@ const ClientForm = () => {
     const { id } = useParams()
     const isEdit = Boolean(id)
     const navigate = useNavigate()
-    const [client, setClient] = useState({ name: "", contacts: emptyContacts, notes: "", photo_path: "" })
+    const [client, setClient] = useState({ name: "", full_name: "", contacts: emptyContacts, notes: "", photo_path: "" })
     const [file, setFile] = useState(null)
 
     useEffect(() => {
         if (!isEdit) return
-
         const load = async () => {
             const { data } = await supabase.from("clients").select("*").eq("id", id).single()
             if (data) {
@@ -30,7 +29,6 @@ const ClientForm = () => {
                 setClient({ ...data, contacts: fullContacts })
             }
         }
-
         load()
     }, [id, isEdit])
 
@@ -51,13 +49,9 @@ const ClientForm = () => {
         e.preventDefault()
 
         let photoPath = client.photo_path
-
         if (file) {
             const filename = `${uuidv4()}.jpg`
             const path = `__clients/${filename}`
-            console.log("📸 File selected:", file.name)
-            console.log("📤 Uploading to Dropbox:", path)
-
             const formData = new FormData()
             formData.append("file", file)
             formData.append("path", path)
@@ -68,13 +62,12 @@ const ClientForm = () => {
             })
 
             const data = await res.json()
-            console.log("📥 Dropbox response:", data)
-
             if (res.ok && data.url) photoPath = path
         }
 
         const payload = {
             name: client.name,
+            full_name: client.full_name,
             contacts: client.contacts,
             notes: client.notes,
             photo_path: photoPath,
@@ -96,10 +89,21 @@ const ClientForm = () => {
                 <FontAwesomeIcon icon={iconMap.name} className="mr-2"/>
                 <input
                     name="name"
-                    placeholder="Name"
+                    placeholder="Short Name / Alias"
                     value={client.name}
                     onChange={handleChange}
                     required
+                    className="w-full p-2 border"
+                />
+            </div>
+
+            <div className="flex items-center">
+                <FontAwesomeIcon icon={iconMap.name} className="mr-2"/>
+                <input
+                    name="full_name"
+                    placeholder="Full Name"
+                    value={client.full_name}
+                    onChange={handleChange}
                     className="w-full p-2 border"
                 />
             </div>
