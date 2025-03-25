@@ -10,7 +10,7 @@ const ClientList = () => {
         const load = async () => {
             const { data } = await supabase
                 .from("clients")
-                .select("id, name, created_at, photo_path")
+                .select("id, name, full_name, created_at, photo_path")
                 .order("name")
 
             if (!data) return
@@ -64,8 +64,11 @@ const ClientList = () => {
                                 className="text-blue-600 hover:underline"
                             >
                                 <FontAwesomeIcon icon={["fas", "user"]} className="mr-2" />
-                                {c.name}
+                                {c.full_name || c.name}
                             </Link>
+                            {c.full_name && c.full_name !== c.name && (
+                                <div className="text-xs text-gray-400 italic">{c.name}</div>
+                            )}
                             <div className="text-xs text-gray-500">
                                 <FontAwesomeIcon icon={["fas", "calendar-alt"]} className="mr-1" />
                                 {c.created_at?.slice(0, 10)}

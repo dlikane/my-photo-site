@@ -2,11 +2,21 @@ import { useState } from "react"
 import { supabase } from "../../lib/supabaseClient"
 import { allowedEmails } from "../../resources/adminEmails"
 import { useNavigate } from "react-router-dom"
+import { useEffect } from "react"
+import { useAuth } from "../AuthProvider"
+
 
 const Login = () => {
     const [email, setEmail] = useState("")
     const [status, setStatus] = useState("")
+    const { user } = useAuth()
     const navigate = useNavigate()
+
+    useEffect(() => {
+        if (user) {
+            navigate("/admin", { replace: true })
+        }
+    }, [user])
 
     const handleLogin = async (e) => {
         e.preventDefault()
@@ -27,7 +37,6 @@ const Login = () => {
             email: trimmedEmail,
             options: { redirectTo }
         })
-
         if (error) {
             console.error("❌ Login error:", error.message)
             setStatus("❌ " + error.message)

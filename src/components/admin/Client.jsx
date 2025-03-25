@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabaseClient"
 import ContactLinks from "./ContactLinks"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { iconMap } from "../../lib/icons.js"
-import Calls from "./Calls.jsx";
+import Calls from "./Calls"
 
 const Client = () => {
     const { id } = useParams()
@@ -23,18 +23,14 @@ const Client = () => {
                 return
             }
 
-            console.log("Loaded client:", data)
             setClient(data)
         }
 
         load()
     }, [id])
 
-    const getImageUrl = (path) => {
-        const url = path ? `/api/dropbox-url?path=${encodeURIComponent(path)}` : "/placeholder.svg"
-        console.log("🔗 Image URL:", url)
-        return url
-    }
+    const getImageUrl = (path) =>
+        path ? `/api/dropbox-url?path=${encodeURIComponent(path)}` : "/placeholder.svg"
 
     if (!client) return null
 
@@ -45,17 +41,16 @@ const Client = () => {
                     src={getImageUrl(client.photo_path)}
                     alt={client.name}
                     className="h-20 w-20 rounded-full object-cover"
-                    onLoad={() => console.log("✅ Image loaded")}
-                    onError={(e) => {
-                        console.log("❌ Image failed to load:", e.target.src)
-                        e.target.src = "/placeholder.svg"
-                    }}
+                    onError={(e) => (e.target.src = "/placeholder.svg")}
                 />
                 <div>
                     <h2 className="text-2xl font-bold">
                         <FontAwesomeIcon icon={iconMap.name} className="mr-2" />
-                        {client.name}
+                        {client.full_name || client.name}
                     </h2>
+                    {client.full_name && client.full_name !== client.name && (
+                        <p className="text-sm text-gray-500 italic">aka {client.name}</p>
+                    )}
                     <p className="text-sm text-gray-500">Joined {client.created_at?.slice(0, 10)}</p>
                 </div>
             </div>
@@ -78,17 +73,17 @@ const Client = () => {
                 to={`/admin/client-edit/${id}`}
                 className="inline-block rounded bg-black px-4 py-2 text-white dark:bg-white dark:text-black"
             >
-                Edit
+                Edit Contact
             </Link>
+
+            <Calls clientId={id} />
 
             <Link
                 to="/admin/client-list"
-                className="ml-4 inline-block text-sm text-blue-600 hover:underline"
+                className="inline-block text-sm text-blue-600 hover:underline"
             >
                 ← Back to list
             </Link>
-
-            <Calls clientId={client.id} />
         </div>
     )
 }

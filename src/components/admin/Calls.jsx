@@ -1,91 +1,81 @@
 import { useEffect, useState } from "react"
 import { supabase } from "../../lib/supabaseClient"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
+import CallItem from "./calls/CallItem"
+import CallForm from "./calls/CallForm"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 
 const Calls = ({ clientId }) => {
     const [calls, setCalls] = useState([])
-    const [date, setDate] = useState("")
-    const [note, setNote] = useState("")
+    const [editingId, setEditingId] = useState(null)
+    const [newCallOpen, setNewCallOpen] = useState(false)
+
+    const loadCalls = async () => {
+        const { data } = await supabase
+            .from("calls")
+            .select("*")
+            .eq("client_id", clientId)
+            .order("date", { ascending: false })
+
+        setCalls(data || [])
+    }
 
     useEffect(() => {
-        const now = new Date().toISOString().slice(0, 16)
-        setDate(now)
-    }, [])
-
-    useEffect(() => {
-        if (!clientId) return
-
-        const loadCalls = async () => {
-            const { data } = await supabase
-                .from("calls")
-                .select("id, date, note")
-                .eq("client_id", clientId)
-                .order("date", { ascending: false })
-
-            setCalls(data || [])
-        }
-
         loadCalls()
     }, [clientId])
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        if (!date || !note.trim()) return
+    const handleSave = async () => {
+        setNewCallOpen(false)
+        setEditingId(null)
+        loadCalls()
+    }
 
-        const { error } = await supabase.from("calls").insert([{ client_id: clientId, date, note }])
-        if (!error) {
-            setNote("")
-            setDate(new Date().toISOString().slice(0, 16))
-            const { data: updated } = await supabase
-                .from("calls")
-                .select("id, date, note")
-                .eq("client_id", clientId)
-                .order("date", { ascending: false })
-            setCalls(updated || [])
-        }
+    const handleDelete = async (id) => {
+        await supabase.from("calls").delete().eq("id", id)
+        loadCalls()
     }
 
     return (
         <div className="mt-6 space-y-4">
-            <h3 className="text-lg font-semibold">Calls</h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Calls</h3>
+                {!newCallOpen && (
+                    <button
+                        type="button"
+                        onClick={() => setNewCallOpen(true)}
+                        className="rounded-full bg-black text-white dark:bg-white dark:text-black size-6 flex items-center justify-center"
+                        title="Add Call"
+                    >
+                        <FontAwesomeIcon icon={["fas", "plus"]} />
+                    </button>
+                )}
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-2">
-                <input
-                    type="datetime-local"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full border p-2 rounded dark:bg-black"
-                    required
+            {newCallOpen && (
+                <CallForm
+                    clientId={clientId}
+                    call={{}} // ensure stable reference
+                    onSave={handleSave}
+                    onCancel={() => setNewCallOpen(false)}
                 />
-                <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Call notes (markdown supported)"
-                    className="w-full border p-2 rounded dark:bg-black"
-                    rows={3}
-                    required
-                />
-                <button type="submit" className="bg-black text-white px-4 py-2 rounded dark:bg-white dark:text-black">
-                    Add Call
-                </button>
-            </form>
+            )}
 
-            {calls.length > 0 && (
-                <ul className="space-y-4 text-sm">
-                    {calls.map((call) => (
-                        <li key={call.id} className="rounded border p-3 dark:border-white/20">
-                            <div className="text-gray-500 mb-1">
-                                {new Date(call.date).toLocaleString()}
-                            </div>
-                            <div className="prose dark:prose-invert max-w-none text-sm">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {call.note}
-                                </ReactMarkdown>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+            {calls.map((call) =>
+                editingId === call.id ? (
+                    <CallForm
+                        key={call.id}
+                        clientId={clientId}
+                        call={call}
+                        onSave={handleSave}
+                        onCancel={() => setEditingId(null)}
+                    />
+                ) : (
+                    <CallItem
+                        key={call.id}
+                        call={call}
+                        onEdit={() => setEditingId(call.id)}
+                        onDelete={() => handleDelete(call.id)}
+                    />
+                )
             )}
         </div>
     )

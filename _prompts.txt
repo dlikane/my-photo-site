@@ -1,3 +1,27 @@
+20250325
+- do ux :)
+
+- when opening login page if we have use redirect to main
+- full name for client
+- menu to dashboard only
+- backup db to json on dropbox with date. mayte a button on dashboard
+- always back link on top, where appropriate
+- client to have collapsable calls and projects
+- for calls make the editable, deletable, don't show new one until + clicked
+- call to have contact mean (icon) additional option in-person
+- projects view, diff color for state:  future no date, tentative, confirmed, wip, done, filter by client (can be reused on Client with forced filter on)
+- location: studio or address / map
+- dropbox naming convention 2005_name person per year, _2005_name admin only (_ prefix), show in admin only
+- rethink loading files list, do full list similar to currently Hidden (cache it, refresh if restarted),
+  get files from all dirs, capture if they are small or large, admin
+- for slideshow use from full list with tag: fav
+- for category use full list filtered by (admin, small, tag/category)
+- create categories.txt which would have tags, those to be used for menu and get files from full list
+- change filename convention: name_2005_tag1_tag2_tag3_fav.jpg
+
+- maybe later - add custom reviews: from, review, my comment
+
+
 20250324
 ClientForm screwed up. There are no labels for text fields shown and only populated text boxes are there.
 
