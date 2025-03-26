@@ -2,10 +2,8 @@ import type { Config } from 'tailwindcss';
 import scrollbarHide from 'tailwind-scrollbar-hide'
 
 const config: Config = {
-    content: [
-        "./index.html",
-        "./src/**/*.{js,jsx,ts,tsx}",
-    ],
+    darkMode: "class", // ✅ Switch from 'media' to 'class'
+    content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
     theme: {
         extend: {
             colors: {
@@ -20,6 +18,6 @@ const config: Config = {
         },
     },
     plugins: [scrollbarHide],
-};
+}
 
 export default config;

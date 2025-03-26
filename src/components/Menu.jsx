@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import { supabase } from "../lib/supabaseClient"
+import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 
 const Menu = ({ theme, setTheme }) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -76,7 +78,11 @@ const Menu = ({ theme, setTheme }) => {
 
                             {isLoggedIn && (
                                 <>
-                                    <li onClick={() => handleNavigate("/admin")} className="cursor-pointer hover:text-gray-400">dashboard</li>
+                                    <li onClick={() => handleNavigate("/admin")}
+                                        className="cursor-pointer hover:text-gray-400">
+                                        <FontAwesomeIcon icon={faLockOpen} className="mr-1"/>
+                                        dashboard
+                                    </li>
                                 </>
                             )}
                         </ul>

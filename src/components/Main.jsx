@@ -16,7 +16,7 @@ import Login from "./admin/Login.jsx"
 import { allowedEmails } from "../resources/adminEmails"
 import { useAuth } from "./AuthProvider"
 import ClientForm from "./admin/ClientForm.jsx";
-import ProjectForm from "./admin/ProjectForm.jsx";
+import ProjectForm from "./admin/projects/ProjectForm.jsx";
 
 const Main = ({ theme, setTheme }) => {
     const { user } = useAuth()
