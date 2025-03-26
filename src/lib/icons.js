@@ -4,7 +4,12 @@ import {
     faPhone,
     faNoteSticky,
     faCalendarAlt,
-    faPlus
+    faPlus,
+    faPen,
+    faTrash,
+    faChevronDown,
+    faChevronRight,
+    faLockOpen
 } from "@fortawesome/free-solid-svg-icons"
 import {
     faInstagram,
@@ -19,13 +24,17 @@ library.add(
     faNoteSticky,
     faCalendarAlt,
     faPlus,
+    faPen,
+    faTrash,
+    faChevronDown,
+    faChevronRight,
+    faLockOpen,
     faInstagram,
     faWhatsapp,
     faTelegram,
     faFacebookMessenger
 )
 
-// 🔹 Used for contact types only
 export const contactTypeMap = {
     name: ["fas", "user"],
     mobile: ["fas", "phone"],
@@ -35,10 +44,14 @@ export const contactTypeMap = {
     messenger: ["fab", "facebook-messenger"]
 }
 
-// 🔹 Used everywhere
 export const iconMap = {
     ...contactTypeMap,
     notes: ["fas", "note-sticky"],
     date: ["fas", "calendar-alt"],
-    plus: ["fas", "plus"]
+    plus: ["fas", "plus"],
+    pen: ["fas", "pen"],
+    trash: ["fas", "trash"],
+    chevronDown: ["fas", "chevron-down"],
+    chevronRight: ["fas", "chevron-right"],
+    lockOpen: ["fas", "lock-open"]
 }
