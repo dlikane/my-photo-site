@@ -1,12 +1,11 @@
-import { getTemporaryDropboxLink } from "./services/dropboxService.js";
+import {getTempDropboxLink} from "./services/catalog.js";
 
 export default async function handler(req, res) {
     const { path } = req.query;
-
     if (!path) return res.status(400).json({ error: "Missing path" });
 
     try {
-        const result = await getTemporaryDropboxLink(path);
+        const result = await getTempDropboxLink(path);
         if (!result?.link) return res.status(404).json({ error: "File not found" });
 
         res.redirect(result.link);

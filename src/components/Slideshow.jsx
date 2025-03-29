@@ -1,16 +1,25 @@
 import { useState, useEffect, useCallback } from "react"
 import useFetchImages from "../hooks/useFetchImages"
-import useFetchQuote from "../hooks/useFetchQuote"
+import { catalogHelper } from "../lib/catalogHelper."
 import ImageDisplay from "./ImageDisplay"
-import QuoteDisplay from "./QuoteDisplay"
+import Quote from "./Quote.jsx"
 
 const Slideshow = () => {
     const images = useFetchImages()
-    const { quote, fetchQuote, setQuote } = useFetchQuote()
+    const [quote, setQuote] = useState(null)
     const [currentImages, setCurrentImages] = useState([])
     const [index, setIndex] = useState(0)
     const [showPlaceholder, setShowPlaceholder] = useState(true)
     const [showQuote, setShowQuote] = useState(false)
+
+    const fetchQuote = async () => {
+        try {
+            const quote = await catalogHelper.getQuote()
+            setQuote(quote)
+        } catch (err) {
+            console.error("❌ Error fetching quote", err)
+        }
+    }
 
     const startNewCycle = useCallback(() => {
         if (images.length === 0) return
@@ -82,7 +91,7 @@ const Slideshow = () => {
             ) : (
                 <>
                     <ImageDisplay currentImages={currentImages} index={index} isPaused={showQuote} />
-                    {showQuote && <QuoteDisplay quote={quote} />}
+                    {showQuote && <Quote quote={quote} />}
                 </>
             )}
         </div>

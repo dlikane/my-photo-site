@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import axios from "axios"
 import { supabase } from "../lib/supabaseClient"
+import { catalogHelper } from "../lib/catalogHelper."
 import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 
@@ -14,12 +14,17 @@ const Menu = ({ theme, setTheme }) => {
     const navigate = useNavigate()
 
     useEffect(() => {
-        axios.get("/api/categories")
-            .then((res) => setCategories(res.data))
+        catalogHelper.getCatalog()
+            .then((res) => {
+                const cats = res
+                    .filter(item => item.tags?.includes("image"))
+                    .map(item => item.name)
+                setCategories(cats)
+            })
             .catch((err) => console.error("❌ Error fetching categories:", err))
 
-        axios.get("/api/playlists")
-            .then((res) => setPlaylists(res.data))
+        catalogHelper.getVideoPlaylist("all")
+            .then((res) => setPlaylists(res || {}))
             .catch(() => setPlaylists({}))
 
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -77,13 +82,11 @@ const Menu = ({ theme, setTheme }) => {
                             <li onClick={() => handleNavigate("/about")} className="cursor-pointer hover:text-gray-400">about</li>
 
                             {isLoggedIn && (
-                                <>
-                                    <li onClick={() => handleNavigate("/admin")}
-                                        className="cursor-pointer hover:text-gray-400">
-                                        <FontAwesomeIcon icon={faLockOpen} className="mr-1"/>
-                                        dashboard
-                                    </li>
-                                </>
+                                <li onClick={() => handleNavigate("/admin")}
+                                    className="cursor-pointer hover:text-gray-400">
+                                    <FontAwesomeIcon icon={faLockOpen} className="mr-1" />
+                                    dashboard
+                                </li>
                             )}
                         </ul>
                     </motion.div>

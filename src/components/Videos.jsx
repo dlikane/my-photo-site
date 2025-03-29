@@ -1,6 +1,7 @@
+// src/components/Videos.jsx
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import { catalogHelper } from "../lib/catalogHelper.";
 
 const formatViews = (views) => {
     if (views < 1000) return views.toLocaleString();
@@ -17,8 +18,8 @@ const Videos = () => {
     useEffect(() => {
         const fetchVideos = async () => {
             try {
-                const response = await axios.get(`/api/videos?playlist=${playlist}`);
-                setVideos(response.data);
+                const data = await catalogHelper.getVideoPlaylist(playlist);
+                setVideos(data);
             } catch (error) {
                 console.error("❌ Error fetching videos:", error);
             }
@@ -50,14 +51,12 @@ const Videos = () => {
                                             alt={video.title}
                                             className="size-full object-cover transition-opacity hover:opacity-80"
                                         />
-                                        <div
-                                            className="absolute bottom-2 left-2 rounded bg-black/60 p-1 text-xs text-white">
+                                        <div className="absolute bottom-2 left-2 rounded bg-black/60 p-1 text-xs text-white">
                                             ▶ {formatViews(video.views)} | 👍 {video.likes.toLocaleString()}
                                         </div>
                                     </>
                                 ) : (
-                                    <div
-                                        className="absolute inset-0 flex flex-col overflow-hidden rounded-lg bg-gray-100 p-4 shadow-md transition-transform duration-300 dark:bg-gray-900">
+                                    <div className="absolute inset-0 flex flex-col overflow-hidden rounded-lg bg-gray-100 p-4 shadow-md transition-transform duration-300 dark:bg-gray-900">
                                         <h3 className="mb-3 text-center text-sm text-black md:text-lg dark:text-white">
                                             {video.title}
                                         </h3>
@@ -72,8 +71,7 @@ const Videos = () => {
                                                     />
                                                 </div>
                                             </div>
-                                            <div
-                                                className="w-3/5 overflow-hidden whitespace-pre-line text-xs text-gray-700 dark:text-gray-300">
+                                            <div className="w-3/5 overflow-hidden whitespace-pre-line text-xs text-gray-700 dark:text-gray-300">
                                                 <div className="animate-[scroll-description_30s_linear_infinite]">
                                                     {video.description}
                                                 </div>
@@ -87,10 +85,11 @@ const Videos = () => {
                                                 rel="noopener noreferrer"
                                                 className="block size-8 sm:size-16"
                                             >
-                                                <img src="/youtube-play.svg" alt="Play on YouTube"/>
+                                                <img src="/youtube-play.svg" alt="Play on YouTube" />
                                             </a>
                                         </div>
-                                    </div>)}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );

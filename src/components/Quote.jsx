@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
 
-const QuoteDisplay = ({ quote }) => {
+const Quote = ({ quote }) => {
     if (!quote) return null;
 
     return (
@@ -47,4 +47,4 @@ const QuoteDisplay = ({ quote }) => {
     );
 };
 
-export default QuoteDisplay;
+export default Quote;
