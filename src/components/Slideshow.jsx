@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from "react"
-import useFetchImages from "../hooks/useFetchImages"
-import { catalogHelper } from "../lib/catalogHelper."
 import ImageDisplay from "./ImageDisplay"
 import Quote from "./Quote.jsx"
+import axios from "axios"
 
 const Slideshow = () => {
-    const images = useFetchImages()
     const [quote, setQuote] = useState(null)
     const [currentImages, setCurrentImages] = useState([])
     const [index, setIndex] = useState(0)
@@ -14,34 +12,37 @@ const Slideshow = () => {
 
     const fetchQuote = async () => {
         try {
-            const quote = await catalogHelper.getQuote()
-            setQuote(quote)
+            const res = await axios.get("/api/resource/quote")
+            setQuote(res.data)
         } catch (err) {
             console.error("❌ Error fetching quote", err)
         }
     }
 
-    const startNewCycle = useCallback(() => {
-        if (images.length === 0) return
+    const fetchImages = async () => {
+        try {
+            const res = await axios.get("/api/images/small_public_fav?random=3")
+            return res.data || []
+        } catch (err) {
+            console.error("❌ Error fetching images", err)
+            return []
+        }
+    }
 
+    const startNewCycle = useCallback(async () => {
         console.log("🔄 Starting new cycle...")
 
-        const numImages = Math.floor(Math.random() * 3) + 3
-        const selectedImages = [...images].sort(() => Math.random() - 0.5).slice(0, numImages)
-
+        const selectedImages = await fetchImages()
         setCurrentImages(selectedImages)
         setIndex(0)
         setShowQuote(false)
         fetchQuote()
-    }, [images])
+    }, [])
 
     useEffect(() => {
-        if (images.length > 0) {
-            console.log("🟢 Images fetched, preparing slideshow...")
-            setTimeout(() => setShowPlaceholder(false), 2000)
-            startNewCycle()
-        }
-    }, [images])
+        setTimeout(() => setShowPlaceholder(false), 2000)
+        startNewCycle()
+    }, [])
 
     useEffect(() => {
         if (currentImages.length === 0) return
@@ -87,7 +88,7 @@ const Slideshow = () => {
             onClick={handleClick}
         >
             {showPlaceholder ? (
-                <ImageDisplay currentImages={[{ url: "/me.jpg", name: "Welcome" }]} index={0} />
+                <ImageDisplay currentImages={[{ url: "/me.jpg", caption: "Welcome" }]} index={0} />
             ) : (
                 <>
                     <ImageDisplay currentImages={currentImages} index={index} isPaused={showQuote} />

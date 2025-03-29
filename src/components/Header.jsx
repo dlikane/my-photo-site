@@ -1,5 +1,5 @@
 import Menu from "./Menu"
-import {useAuth} from "./AuthProvider"
+import {useAuth} from "./auth/AuthProvider.jsx"
 import {supabase} from "../lib/supabaseClient"
 import {useNavigate} from "react-router-dom"
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";

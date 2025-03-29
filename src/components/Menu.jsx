@@ -1,41 +1,33 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { supabase } from "../lib/supabaseClient"
-import { catalogHelper } from "../lib/catalogHelper."
-import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
+import axios from "axios"
+import { useAuth } from "./auth/AuthProvider"
 
 const Menu = ({ theme, setTheme }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [categories, setCategories] = useState([])
     const [playlists, setPlaylists] = useState({})
-    const [isLoggedIn, setIsLoggedIn] = useState(false)
     const navigate = useNavigate()
+    const { isLoggedIn } = useAuth()
 
     useEffect(() => {
-        catalogHelper.getCatalog()
-            .then((res) => {
-                const cats = res
-                    .filter(item => item.tags?.includes("image"))
-                    .map(item => item.name)
-                setCategories(cats)
+        axios.get("/api/resource/menutags")
+            .then(res => {
+                setCategories(res.data?.menu?.tags || [])
             })
-            .catch((err) => console.error("❌ Error fetching categories:", err))
+            .catch(err => console.error("❌ Error fetching menu tags:", err))
 
-        catalogHelper.getVideoPlaylist("all")
-            .then((res) => setPlaylists(res || {}))
-            .catch(() => setPlaylists({}))
-
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setIsLoggedIn(!!session)
-        })
-
-        const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-            setIsLoggedIn(!!session)
-        })
-
-        return () => listener.subscription.unsubscribe()
+        axios.get("/api/resource/playlists")
+            .then(res => {
+                setPlaylists(res.data || {})
+            })
+            .catch(err => {
+                console.error("❌ Error fetching playlists:", err)
+                setPlaylists({})
+            })
     }, [])
 
     const handleNavigate = (path) => {

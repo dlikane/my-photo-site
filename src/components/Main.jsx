@@ -5,7 +5,6 @@ import Slideshow from "./Slideshow"
 import Category from "./Category"
 import Videos from "./Videos"
 import About from "./About"
-import Hidden from "./Hidden"
 import ClientList from "./admin/ClientList.jsx"
 import AdminDashboard from "./admin/AdminDashboard.jsx"
 import ProjectList from "./admin/ProjectList.jsx"
@@ -14,7 +13,7 @@ import Project from "./admin/Project.jsx"
 import AdminSearch from "./admin/AdminSearch.jsx"
 import Login from "./admin/Login.jsx"
 import { allowedEmails } from "../resources/adminEmails"
-import { useAuth } from "./AuthProvider"
+import { useAuth } from "./auth/AuthProvider.jsx"
 import ClientForm from "./admin/ClientForm.jsx";
 import ProjectForm from "./admin/projects/ProjectForm.jsx";
 
@@ -35,7 +34,6 @@ const Main = ({ theme, setTheme }) => {
                     <Route path="/category/*" element={<Category />} />
                     <Route path="/videos/:playlist" element={<Videos />} />
                     <Route path="/about" element={<About />} />
-                    <Route path="/hidden" element={<Hidden />} />
 
                     {/* Admin Routes (protected) */}
                     <Route path="/admin" element={protect(<AdminDashboard />)} />

@@ -27,7 +27,7 @@ const ImageDisplay = ({ currentImages, index, isPaused }) => {
                         exit={{ opacity: isPaused ? 1 : 0 }}
                         transition={{ opacity: { duration: 2, ease: "easeInOut" } }}
                     >
-                        {currentImage.name}
+                        {currentImage.caption}
                     </motion.div>
                 </motion.div>
             )}

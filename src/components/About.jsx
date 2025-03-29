@@ -12,7 +12,7 @@ const About = () => {
     useEffect(() => {
         const fetchAbout = async () => {
             try {
-                const response = await axios.get("/api/about")
+                const response = await axios.get("/api/resource/about")
                 if (response.data?.content) {
                     setAboutContent(response.data.content)
                 } else {
@@ -37,14 +37,6 @@ const About = () => {
             <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                 {aboutContent}
             </ReactMarkdown>
-
-            <div
-                onClick={() => navigate("/hidden")}
-                className={`absolute bottom-4 right-4 h-4 w-4 cursor-pointer rounded-full bg-red-600 shadow-md transition-opacity ${
-                    ready ? "opacity-20 hover:opacity-100" : "opacity-0 pointer-events-none"
-                }`}
-                title="hidden"
-            />
         </div>
     )
 }

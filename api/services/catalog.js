@@ -1,5 +1,5 @@
 import {
-    getTempDropboxLinkImpl,
+    allocateUrls, getImageUrl,
     loadCatalogFromDropbox,
     uploadToDropboxImpl
 } from "./catalogLoader.js";
@@ -28,12 +28,16 @@ export async function getMenuTags() {
     return catalog.menulist || {};
 }
 
-export async function getImagesByTags(tagString, isLoggedIn = false) {
+export async function getImagesByTags(tagString) {
     const tags = tagString.split("_").filter(Boolean);
     const catalog = await getCatalog();
-    return catalog.images.filter(img =>
-        tags.every(tag => img.tags.includes(tag) || (tag === "public" && !isLoggedIn))
-    );
+    return catalog.images.filter(img => tags.every(tag => {
+        if (!img.tags) {
+            console.log("not tags for image:", img);
+            return false;
+        }
+        return img.tags.includes(tag)
+    }));
 }
 
 export async function getAbout() {
@@ -58,11 +62,35 @@ export async function getQuote() {
     return { quote, author };
 }
 
-export async function getTempDropboxLink(path) {
-    return getTempDropboxLinkImpl(path)
-}
-
 export async function uploadToDropbox(path, buffer){
     return uploadToDropboxImpl(path, buffer)
 
+}
+
+export async function verifyUrls(images) {
+    const updated = await allocateUrls(images);
+
+    const catalog = await getCatalog();
+    for (const updatedImg of updated) {
+        const original = catalog.images.find(img => img.filename === updatedImg.filename);
+        if (original) {
+            original.url = updatedImg.url;
+        }
+    }
+    return allocateUrls(images);
+}
+
+export async function getImageUrlByName(imageName) {
+    const catalog = await getCatalog();
+    const image = catalog.images.find(img => img.filename === imageName);
+    if (!image) return null;
+
+    if (!image.url) {
+        const result = await getImageUrl(image.path);
+        if (result?.link) {
+            image.url = result.link;
+        }
+    }
+
+    return image.url || null;
 }

@@ -1,8 +1,10 @@
-// src/components/Category.jsx
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
+import { useAuth } from "./auth/AuthProvider"
+
 import FullscreenViewer from "./FullscreenViewer"
+import axios from "axios"
 
 const IMAGE_BATCH_SIZE = 20
 const OBSERVER_THRESHOLD = 0.8
@@ -10,6 +12,8 @@ const OBSERVER_THRESHOLD = 0.8
 const Category = () => {
     const location = useLocation()
     const categoryName = location.pathname.replace("/category/", "")
+    const { isLoggedIn } = useAuth()
+
     const [images, setImages] = useState([])
     const [visibleImages, setVisibleImages] = useState([])
     const [loading, setLoading] = useState(true)
@@ -22,8 +26,12 @@ const Category = () => {
         if (!categoryName) return
 
         const fetchImages = async () => {
+            const tags = [categoryName, "small"]
+            if (!isLoggedIn) tags.push("public")
+
             try {
-                const data = await catalogHelper.getFilteredImagesByTag(categoryName)
+                const res = await axios.get(`/api/images/${tags.join("_")}`)
+                const data = res.data || []
                 setImages(data)
                 setVisibleImages(
                     data.slice(0, IMAGE_BATCH_SIZE).map((img, i) => ({ img, globalIndex: i }))
@@ -42,7 +50,7 @@ const Category = () => {
         hasMoreImages.current = true
 
         fetchImages()
-    }, [categoryName])
+    }, [categoryName, isLoggedIn])
 
     useEffect(() => {
         if (!images.length || !containerRef.current || !hasMoreImages.current) return
@@ -50,7 +58,6 @@ const Category = () => {
         const observer = new IntersectionObserver(
             (entries) => {
                 const lastEntry = entries[0]
-
                 if (lastEntry.isIntersecting) {
                     setTimeout(() => {
                         setVisibleImages((prev) => {
@@ -70,10 +77,7 @@ const Category = () => {
             { root: containerRef.current, threshold: OBSERVER_THRESHOLD }
         )
 
-        if (observerRef.current) {
-            observer.observe(observerRef.current)
-        }
-
+        if (observerRef.current) observer.observe(observerRef.current)
         return () => observer.disconnect()
     }, [images, visibleImages])
 
@@ -97,8 +101,8 @@ const Category = () => {
                         onClick={() => setSelectedImage({ url: img.url, index: globalIndex })}
                     >
                         <img
-                            src={img.url}
-                            alt={img.name}
+                            src={`/api/image/${encodeURIComponent(img.filename)}/url`}
+                            alt={img.caption}
                             className="size-full object-cover"
                         />
                     </motion.div>
