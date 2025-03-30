@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import { useAuth } from "./auth/AuthProvider"
-
 import FullscreenViewer from "./FullscreenViewer"
-import axios from "axios"
+import CachedImage from "./CachedImage"
+import {getImagesByTags} from "../lib/catalog.js";
 
 const IMAGE_BATCH_SIZE = 20
 const OBSERVER_THRESHOLD = 0.8
@@ -26,23 +26,23 @@ const Category = () => {
         if (!categoryName) return
 
         const fetchImages = async () => {
-            const tags = [categoryName, "small"]
-            if (!isLoggedIn) tags.push("public")
+            const tags = [categoryName, "small"];
+            if (!isLoggedIn) tags.push("public");
 
             try {
-                const res = await axios.get(`/api/images/${tags.join("_")}`)
-                const data = res.data || []
-                setImages(data)
+                const data = await getImagesByTags(tags);
+                console.log(`images for category ${categoryName} with tags (${tags.join(", ")}): ${data.length}`);
+                setImages(data);
                 setVisibleImages(
                     data.slice(0, IMAGE_BATCH_SIZE).map((img, i) => ({ img, globalIndex: i }))
-                )
-                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE
+                );
+                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE;
             } catch (error) {
-                console.error("❌ Error fetching images:", error)
+                console.error("❌ Error fetching images:", error);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
         setImages([])
         setVisibleImages([])
@@ -100,11 +100,7 @@ const Category = () => {
                         className="aspect-square w-full cursor-pointer overflow-hidden rounded-lg shadow-md"
                         onClick={() => setSelectedImage({ url: img.url, index: globalIndex })}
                     >
-                        <img
-                            src={`/api/image/${encodeURIComponent(img.filename)}/url`}
-                            alt={img.caption}
-                            className="size-full object-cover"
-                        />
+                        <CachedImage img={img} className="size-full object-cover" />
                     </motion.div>
                 ))}
             </div>

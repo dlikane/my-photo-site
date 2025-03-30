@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import {getVideosByPlaylist} from "../lib/catalog.js";
 
 const formatViews = (views) => {
     if (views < 1000) return views.toLocaleString();
@@ -17,8 +17,8 @@ const Videos = () => {
     useEffect(() => {
         const fetchVideos = async () => {
             try {
-                const res = await axios.get(`/api/videos?playlist=${playlist}`);
-                setVideos(res.data || []);
+                const data = await getVideosByPlaylist(playlist);
+                setVideos(data);
             } catch (error) {
                 console.error("❌ Error fetching videos:", error);
             }

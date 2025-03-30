@@ -2,8 +2,7 @@
 import express from "express";
 import { fileURLToPath } from "url";
 import path from "path";
-import resourceHandler from "./api/resource/[slug].js";
-import imagesHandler from "./api/images/[tags].js";
+import handler from "./api/image/[image]/url.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -24,16 +23,9 @@ app.get("/api/:handler", async (req, res) => {
     }
 });
 
-// /api/resource/:slug
-app.get("/api/resource/:slug", async (req, res) => {
-    req.query = { slug: req.params.slug };
-    await resourceHandler(req, res);
-});
-
-// /api/images/:tags
-app.get("/api/images/:tags", async (req, res) => {
+app.get("/api/image/:image/url", async (req, res) => {
     req.query = { tags: req.params.tags };
-    await imagesHandler(req, res);
+    await handler(req, res);
 });
 
 

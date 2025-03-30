@@ -4,9 +4,11 @@ import yaml from "js-yaml";
 import { getAccessToken } from "./auth.js";
 
 export async function uploadToDropboxImpl(path, buffer) {
+    console.log(`loader [START] uploadToDropboxImpl('${path}')`);
+    const start = Date.now();
+
     const accessToken = await getAccessToken();
     if (!accessToken) throw new Error("Failed to get access token");
-
     const dbx = new Dropbox({ accessToken, fetch });
 
     const result = await dbx.filesUpload({
@@ -16,10 +18,15 @@ export async function uploadToDropboxImpl(path, buffer) {
     });
 
     const linkRes = await dbx.filesGetTemporaryLink({ path: result.result.path_lower });
+
+    console.log(`loader [END] uploadToDropboxImpl('${path}') - ${Date.now() - start}ms`);
     return linkRes.result;
 }
 
 export async function getImageUrl(path) {
+    // console.log(`loader [START] getImageUrl('${path}')`);
+    // const start = Date.now();
+
     if (!path || path === "." || path === "/") {
         throw new Error("Invalid Dropbox path");
     }
@@ -29,16 +36,19 @@ export async function getImageUrl(path) {
 
     let result = null;
     try {
-        const dbx = new Dropbox({accessToken, fetch});
-        result = await dbx.filesGetTemporaryLink({path: `${path}`});
-        return result.result;
-    } catch(err) {
-        console.log(`error for ${path}: ${err.message} ${result}`);
+        const dbx = new Dropbox({ accessToken, fetch });
+        result = await dbx.filesGetTemporaryLink({ path: `${path}` });
+        // console.log(`loader [END] getImageUrl('${path}') - ${Date.now() - start}ms`);
+        return result.result.link;
+    } catch (err) {
+        console.log(`[ERROR] getImageUrl('${path}') - ${err.message}`);
         return null;
     }
 }
 
 export async function allocateUrls(images) {
+    // console.log(`loader [START] allocateUrls`);
+    // const start = Date.now();
     const updated = [];
 
     for (const img of images) {
@@ -49,52 +59,76 @@ export async function allocateUrls(images) {
                     img.url = result.link;
                 }
             } catch (err) {
-                console.warn(`⚠️ Failed to get URL for ${img.path}: ${err.message}`);
+                console.warn(`⚠️ allocateUrls failed for ${img.path}: ${err.message}`);
             }
         }
         updated.push(img);
     }
+    // console.log(`loader [END] allocateUrls - ${Date.now() - start}ms`);
     return updated;
 }
 
 export async function parseImage(entry) {
+    // console.log(`loader [START] parseImage('${entry.path_lower}')`);
+    // const start = Date.now();
+
     const { path_lower, name: filename } = entry;
     const pathParts = path_lower.split("/");
-    const adminFolder = (pathParts.length > 1) && pathParts[0].startsWith("_")
+    const adminFolder = (pathParts.length > 1) && pathParts[0].startsWith("_");
     const isAdmin = adminFolder || filename.startsWith("_");
-    if (!/\.jpe?g$/i.test(filename)) return null;
+    if (!/\.jpe?g$/i.test(filename)) {
+        // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms (ignored: extension)`);
+        return null;
+    }
 
     const baseName = filename.replace(/\.jpe?g$/i, "");
     const parts = baseName.split("_");
-    if (parts.length < 3) return null;
+    if (parts.length < 3) {
+        // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms (ignored: parts)`);
+        return null;
+    }
 
     const year = parts[0];
     const name = parts[1];
-    const caption = name + " | " + year;
+    const caption = `${name} | ${year}`;
     const tags = parts.slice(2).filter(t => !/^\d+$/.test(t));
     if (!isAdmin)
         tags.push("public");
 
-    if (tags.length === 0) return null;
+    if (tags.length === 0) {
+        // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms (ignored: no tags)`);
+        return null;
+    }
 
-    return {
+    const parsed = {
         path: path_lower,
-        filename: filename,
+        filename,
         name,
         year,
         caption,
         tags,
-        url: null,
     };
+
+    // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms`);
+    return parsed;
 }
 
 async function getDropboxInstance() {
+    // console.log(`loader [START] getDropboxInstance`);
+    // const start = Date.now();
+
     const accessToken = await getAccessToken();
     if (!accessToken) throw new Error("Failed to get access token");
-    return new Dropbox({ accessToken, fetch });
+    const dbx = new Dropbox({ accessToken, fetch });
+
+    // console.log(`loader [END] getDropboxInstance - ${Date.now() - start}ms`);
+    return dbx;
 }
 
 async function getAllDropboxFiles() {
+    // console.log(`loader [START] getAllDropboxFiles`);
+    // const start = Date.now();
+
     const dbx = await getDropboxInstance();
     const response = await dbx.filesListFolder({ path: "", recursive: true });
     let entries = response.result.entries;
@@ -105,37 +139,47 @@ async function getAllDropboxFiles() {
         response.result = continueRes.result;
     }
 
+    // console.log(`loader [END] getAllDropboxFiles - ${Date.now() - start}ms (entries: ${entries.length})`);
     return entries;
 }
 
 async function getSupplementalFile(dbx, path, parseYaml = false) {
+    // console.log(`loader [START] getSupplementalFile('${path}')`);
+    // const start = Date.now();
+
     try {
         const file = await dbx.filesDownload({ path });
         const content = file.result.fileBinary.toString("utf-8");
-        if (parseYaml) return yaml.load(content);
-        return content;
-    } catch {
+        // console.log(`loader [END] getSupplementalFile('${path}') - ${Date.now() - start}ms`);
+        return parseYaml ? yaml.load(content) : content;
+    } catch (err) {
+        console.warn(`[ERROR] getSupplementalFile('${path}') - ${err.message}`);
         return null;
     }
 }
 
 function decodeQuotes(text) {
-    if (!text) return [];
-    return text
-        .split("\n")
-        .map(x => x.trim())
-        .filter(Boolean)
-        .map((text, id) => ({ id, text }));
+    // console.log(`loader [START] decodeQuotes`);
+    // const start = Date.now();
+
+    if (!text) {
+        // console.log(`loader [END] decodeQuotes - ${Date.now() - start}ms (no content)`);
+        return [];
+    }
+
+    const result = text.split("\n").map(x => x.trim()).filter(Boolean).map((text, id) => ({ id, text }));
+    // console.log(`loader [END] decodeQuotes - ${Date.now() - start}ms (quotes: ${result.length})`);
+    return result;
 }
 
 export async function loadCatalogFromDropbox() {
+    console.log(`loader [START] loadCatalogFromDropbox`);
+    const start = Date.now();
+
     const dbx = await getDropboxInstance();
     const entries = await getAllDropboxFiles();
 
-    const parseTasks = entries
-        .filter(entry => entry[".tag"] === "file")
-        .map(parseImage);
-
+    const parseTasks = entries.filter(entry => entry[".tag"] === "file").map(parseImage);
     const parsedResults = await Promise.all(parseTasks);
     const images = parsedResults.filter(Boolean);
 
@@ -145,5 +189,6 @@ export async function loadCatalogFromDropbox() {
     const quotesfile = await getSupplementalFile(dbx, "/quotes_list.txt");
     const quotes = decodeQuotes(quotesfile);
 
+    console.log(`loader [END] loadCatalogFromDropbox (images: ${images.length}, quotes: ${quotes.length}) - ${Date.now() - start}ms`);
     return { images, menulist, playlists, about, quotes };
 }

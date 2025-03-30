@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
-import axios from "axios"
 import { useAuth } from "./auth/AuthProvider"
+import {getMenuTags, getPlaylists, refreshCatalog} from "../lib/catalog.js";
 
 const Menu = ({ theme, setTheme }) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -14,21 +14,13 @@ const Menu = ({ theme, setTheme }) => {
     const { isLoggedIn } = useAuth()
 
     useEffect(() => {
-        axios.get("/api/resource/menutags")
-            .then(res => {
-                setCategories(res.data?.menu?.tags || [])
-            })
-            .catch(err => console.error("❌ Error fetching menu tags:", err))
+        const fetchData = async () => {
+            setCategories(await getMenuTags());
+            setPlaylists(await getPlaylists());
+        };
 
-        axios.get("/api/resource/playlists")
-            .then(res => {
-                setPlaylists(res.data || {})
-            })
-            .catch(err => {
-                console.error("❌ Error fetching playlists:", err)
-                setPlaylists({})
-            })
-    }, [])
+        fetchData();
+    }, []);
 
     const handleNavigate = (path) => {
         setIsOpen(false)
@@ -74,11 +66,21 @@ const Menu = ({ theme, setTheme }) => {
                             <li onClick={() => handleNavigate("/about")} className="cursor-pointer hover:text-gray-400">about</li>
 
                             {isLoggedIn && (
-                                <li onClick={() => handleNavigate("/admin")}
-                                    className="cursor-pointer hover:text-gray-400">
-                                    <FontAwesomeIcon icon={faLockOpen} className="mr-1" />
-                                    dashboard
-                                </li>
+                                <>
+                                    <li
+                                        onClick={() => handleNavigate("/admin")}
+                                        className="cursor-pointer hover:text-gray-400"
+                                    >
+                                        <FontAwesomeIcon icon={faLockOpen} className="mr-1" />
+                                        dashboard
+                                    </li>
+                                    <li
+                                        onClick={() => refreshCatalog()}
+                                        className="cursor-pointer hover:text-gray-400"
+                                    >
+                                        🔁 refresh catalog
+                                    </li>
+                                </>
                             )}
                         </ul>
                     </motion.div>

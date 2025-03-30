@@ -1,42 +1,26 @@
 import { useState, useEffect, useCallback } from "react"
 import ImageDisplay from "./ImageDisplay"
 import Quote from "./Quote.jsx"
-import axios from "axios"
+import {getImagesByTags, getQuote, getRandomImagesByTags} from "../lib/catalog.js";
 
 const Slideshow = () => {
     const [quote, setQuote] = useState(null)
+    const [meImages, setMeImages] = useState([])
     const [currentImages, setCurrentImages] = useState([])
     const [index, setIndex] = useState(0)
     const [showPlaceholder, setShowPlaceholder] = useState(true)
     const [showQuote, setShowQuote] = useState(false)
 
-    const fetchQuote = async () => {
-        try {
-            const res = await axios.get("/api/resource/quote")
-            setQuote(res.data)
-        } catch (err) {
-            console.error("❌ Error fetching quote", err)
-        }
-    }
-
-    const fetchImages = async () => {
-        try {
-            const res = await axios.get("/api/images/small_public_fav?random=3")
-            return res.data || []
-        } catch (err) {
-            console.error("❌ Error fetching images", err)
-            return []
-        }
-    }
-
     const startNewCycle = useCallback(async () => {
         console.log("🔄 Starting new cycle...")
 
-        const selectedImages = await fetchImages()
+        const meImages = await getImagesByTags(["me"]);
+        setMeImages(meImages);
+        const selectedImages = await getRandomImagesByTags(["small", "public", "fav"], 3)
         setCurrentImages(selectedImages)
         setIndex(0)
         setShowQuote(false)
-        fetchQuote()
+        setQuote(getQuote())
     }, [])
 
     useEffect(() => {
@@ -88,7 +72,7 @@ const Slideshow = () => {
             onClick={handleClick}
         >
             {showPlaceholder ? (
-                <ImageDisplay currentImages={[{ url: "/me.jpg", caption: "Welcome" }]} index={0} />
+                <ImageDisplay currentImages={meImages} index={0} />
             ) : (
                 <>
                     <ImageDisplay currentImages={currentImages} index={index} isPaused={showQuote} />
