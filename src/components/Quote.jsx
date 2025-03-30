@@ -1,8 +1,10 @@
 /* eslint-disable no-unused-vars */
 import { motion, AnimatePresence } from "framer-motion";
 
-const QuoteDisplay = ({ quote }) => {
+const Quote = ({ quote }) => {
     if (!quote) return null;
+
+    console.log(`Quote: ${JSON.stringify(quote)}`);
 
     return (
         <AnimatePresence>
@@ -47,4 +49,4 @@ const QuoteDisplay = ({ quote }) => {
     );
 };
 
-export default QuoteDisplay;
+export default Quote;

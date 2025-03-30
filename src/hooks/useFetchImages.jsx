@@ -1,31 +1,26 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+// src/hooks/useFetchImages.js
+import { useEffect, useState } from "react"
+import { catalogHelper } from "../lib/catalogHelper."
 
 const useFetchImages = () => {
-    const [images, setImages] = useState([]);
+    const [images, setImages] = useState([])
 
     useEffect(() => {
-        const fetchImages = async () => {
+        const fetch = async () => {
             try {
-                const response = await axios.get(`/api/images`, { params: { category: "" } });
-                console.log("✅ Successfully fetched images:", response.data);
-
-                if (!Array.isArray(response.data) || response.data.length === 0) {
-                    console.warn("⚠️ No images received from API.");
-                    return;
-                }
-
-                const validImages = response.data.filter(img => img.url && img.name);
-                setImages(validImages.sort(() => Math.random() - 0.5));
-            } catch (error) {
-                console.error("❌ Error fetching images:", error.response?.data || error.message);
+                const catalog = await catalogHelper.getCatalog()
+                const filtered = catalog?.images?.filter(
+                    (img) => img.tags?.includes("public") && img.tags?.includes("fav")
+                ) || []
+                setImages(filtered)
+            } catch (err) {
+                console.error("❌ Failed to fetch images:", err)
             }
-        };
+        }
+        fetch()
+    }, [])
 
-        fetchImages();
-    }, []);
+    return images
+}
 
-    return images;
-};
-
-export default useFetchImages;
+export default useFetchImages

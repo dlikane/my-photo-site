@@ -1,37 +1,26 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import axios from "axios"
-import { supabase } from "../lib/supabaseClient"
-import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
+import { useAuth } from "./auth/AuthProvider"
+import {getMenuTags, getPlaylists, refreshCatalog} from "../lib/catalog.js";
 
 const Menu = ({ theme, setTheme }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [categories, setCategories] = useState([])
     const [playlists, setPlaylists] = useState({})
-    const [isLoggedIn, setIsLoggedIn] = useState(false)
     const navigate = useNavigate()
+    const { isLoggedIn } = useAuth()
 
     useEffect(() => {
-        axios.get("/api/categories")
-            .then((res) => setCategories(res.data))
-            .catch((err) => console.error("❌ Error fetching categories:", err))
+        const fetchData = async () => {
+            setCategories(await getMenuTags());
+            setPlaylists(await getPlaylists());
+        };
 
-        axios.get("/api/playlists")
-            .then((res) => setPlaylists(res.data))
-            .catch(() => setPlaylists({}))
-
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setIsLoggedIn(!!session)
-        })
-
-        const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-            setIsLoggedIn(!!session)
-        })
-
-        return () => listener.subscription.unsubscribe()
-    }, [])
+        fetchData();
+    }, []);
 
     const handleNavigate = (path) => {
         setIsOpen(false)
@@ -78,10 +67,18 @@ const Menu = ({ theme, setTheme }) => {
 
                             {isLoggedIn && (
                                 <>
-                                    <li onClick={() => handleNavigate("/admin")}
-                                        className="cursor-pointer hover:text-gray-400">
-                                        <FontAwesomeIcon icon={faLockOpen} className="mr-1"/>
+                                    <li
+                                        onClick={() => handleNavigate("/admin")}
+                                        className="cursor-pointer hover:text-gray-400"
+                                    >
+                                        <FontAwesomeIcon icon={faLockOpen} className="mr-1" />
                                         dashboard
+                                    </li>
+                                    <li
+                                        onClick={() => refreshCatalog()}
+                                        className="cursor-pointer hover:text-gray-400"
+                                    >
+                                        🔁 refresh catalog
                                     </li>
                                 </>
                             )}

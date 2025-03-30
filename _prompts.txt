@@ -1,3 +1,21 @@
+20250327
+change the way we get data from dropbox
+Let's add new api and move our Slideshow, Category and Menu to use that. Later we will move Hidden to it to.
+I want to build full list of images on dropbox and cache it for say 1/2 hour
+look only in directories named _2005_name or 2005_name
+Each file has naming: 2005_name_0001_tag1_tag2_*.jpg so we will have number of tags,
+if directory and filename don't starts with _ - add tag public
+We added a new file to root: menulist.yml as the following
+menu:
+  tags:
+    - portraits
+    - bw
+    - dance
+That is our menu items (and tag for category)
+Ok, for slideshow we can use all files with tag: fav and small
+For, category, we want menu tag and: small and if user not logged in: public
+
+
 20250325
 - do ux :)
 

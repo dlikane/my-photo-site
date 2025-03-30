@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabaseClient"
 import { allowedEmails } from "../../resources/adminEmails"
 import { useNavigate } from "react-router-dom"
 import { useEffect } from "react"
-import { useAuth } from "../AuthProvider"
+import { useAuth } from "../auth/AuthProvider.jsx"
 
 
 const Login = () => {

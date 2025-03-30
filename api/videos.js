@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getDropboxPlaylists } from "./services/dropboxService.js";
+import {getPlaylists} from "./services/catalog.js";
 
 export default async function handler(req, res) {
     if (req.method !== "GET") {
@@ -10,10 +10,7 @@ export default async function handler(req, res) {
     console.log(`📺 Requested Playlist: ${playlist}`);
 
     try {
-        // Fetch playlists from Dropbox
-        const playlists = await getDropboxPlaylists();
-        console.log("🎵 Retrieved Playlists from Dropbox:", playlists);
-
+        const playlists = await getPlaylists()
         const playlistId = playlists[playlist];
 
         if (!playlistId) {
@@ -23,41 +20,29 @@ export default async function handler(req, res) {
 
         console.log(`✅ Found Playlist ID: ${playlistId}`);
 
-        // Fetch all videos from YouTube Playlist with pagination
-        // eslint-disable-next-line no-undef
         const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
         let videos = [];
         let nextPageToken = "";
 
         do {
             const youtubeApiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${YOUTUBE_API_KEY}${nextPageToken ? `&pageToken=${nextPageToken}` : ""}`;
+            const response = await axios.get(youtubeApiUrl);
 
-            const playlistResponse = await axios.get(youtubeApiUrl);
+            if (!response.data.items?.length) break;
 
-            if (!playlistResponse.data.items || playlistResponse.data.items.length === 0) {
-                break;
-            }
-
-            // Collect video IDs for statistics lookup
-            playlistResponse.data.items.map(item => item.snippet.resourceId.videoId);
-            videos.push(...playlistResponse.data.items);
-
-            // Get the nextPageToken
-            nextPageToken = playlistResponse.data.nextPageToken;
+            videos.push(...response.data.items);
+            nextPageToken = response.data.nextPageToken;
         } while (nextPageToken);
 
-        if (videos.length === 0) {
-            console.warn("⚠️ No videos found in this playlist.");
+        if (!videos.length) {
             return res.status(404).json({ error: "No videos found in this playlist." });
         }
 
-        // Fetch video statistics (views & likes) for all videos in chunks of 50
-        let statsMap = {};
+        const statsMap = {};
         for (let i = 0; i < videos.length; i += 50) {
-            const videoIdsChunk = videos.slice(i, i + 50).map(item => item.snippet.resourceId.videoId).join(",");
-            const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIdsChunk}&key=${YOUTUBE_API_KEY}`;
+            const ids = videos.slice(i, i + 50).map(v => v.snippet.resourceId.videoId).join(",");
+            const statsUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YOUTUBE_API_KEY}`;
             const statsResponse = await axios.get(statsUrl);
-
             statsResponse.data.items.forEach(item => {
                 statsMap[item.id] = {
                     views: item.statistics.viewCount || "0",
@@ -66,8 +51,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // Format the videos list with stats
-        const formattedVideos = videos.map(item => {
+        const result = videos.map(item => {
             const id = item.snippet.resourceId.videoId;
             return {
                 id,
@@ -79,10 +63,10 @@ export default async function handler(req, res) {
             };
         });
 
-        console.log(`🎬 Returning ${formattedVideos.length} videos.`);
-        res.status(200).json(formattedVideos);
-    } catch (error) {
-        console.error("❌ Error fetching videos:", error.message);
+        console.log(`🎬 Returning ${result.length} videos.`);
+        res.status(200).json(result);
+    } catch (err) {
+        console.error("❌ Error fetching videos:", err.message);
         res.status(500).json({ error: "Failed to fetch videos" });
     }
 }

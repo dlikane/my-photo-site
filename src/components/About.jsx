@@ -1,21 +1,19 @@
 import { useState, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
 import rehypeRaw from "rehype-raw"
-import axios from "axios"
-import { useNavigate } from "react-router-dom"
+import { getAbout } from "../lib/catalog.js";
 
 const About = () => {
     const [aboutContent, setAboutContent] = useState("")
-    const [ready, setReady] = useState(false)
-    const navigate = useNavigate()
 
     useEffect(() => {
         const fetchAbout = async () => {
             try {
-                const response = await axios.get("/api/about")
-                if (response.data?.content) {
-                    setAboutContent(response.data.content)
-                } else {
+                try {
+                    const content = await getAbout();
+                    setAboutContent(content || "");
+                } catch (err) {
+                    console.error("Failed to load about:", err);
                     const res = await fetch("/about.md")
                     const text = await res.text()
                     setAboutContent(text)
@@ -37,14 +35,6 @@ const About = () => {
             <ReactMarkdown rehypePlugins={[rehypeRaw]}>
                 {aboutContent}
             </ReactMarkdown>
-
-            <div
-                onClick={() => navigate("/hidden")}
-                className={`absolute bottom-4 right-4 h-4 w-4 cursor-pointer rounded-full bg-red-600 shadow-md transition-opacity ${
-                    ready ? "opacity-20 hover:opacity-100" : "opacity-0 pointer-events-none"
-                }`}
-                title="hidden"
-            />
         </div>
     )
 }

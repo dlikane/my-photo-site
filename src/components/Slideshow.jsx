@@ -1,38 +1,32 @@
 import { useState, useEffect, useCallback } from "react"
-import useFetchImages from "../hooks/useFetchImages"
-import useFetchQuote from "../hooks/useFetchQuote"
 import ImageDisplay from "./ImageDisplay"
-import QuoteDisplay from "./QuoteDisplay"
+import Quote from "./Quote.jsx"
+import {getImagesByTags, getQuote, getRandomImagesByTags} from "../lib/catalog.js";
 
 const Slideshow = () => {
-    const images = useFetchImages()
-    const { quote, fetchQuote, setQuote } = useFetchQuote()
+    const [quote, setQuote] = useState(null)
+    const [meImages, setMeImages] = useState([])
     const [currentImages, setCurrentImages] = useState([])
     const [index, setIndex] = useState(0)
     const [showPlaceholder, setShowPlaceholder] = useState(true)
     const [showQuote, setShowQuote] = useState(false)
 
-    const startNewCycle = useCallback(() => {
-        if (images.length === 0) return
-
+    const startNewCycle = useCallback(async () => {
         console.log("🔄 Starting new cycle...")
 
-        const numImages = Math.floor(Math.random() * 3) + 3
-        const selectedImages = [...images].sort(() => Math.random() - 0.5).slice(0, numImages)
-
+        const meImages = await getImagesByTags(["me"]);
+        setMeImages(meImages);
+        const selectedImages = await getRandomImagesByTags(["small", "public", "fav"], 3)
         setCurrentImages(selectedImages)
         setIndex(0)
         setShowQuote(false)
-        fetchQuote()
-    }, [images])
+        setQuote(await getQuote())
+    }, [])
 
     useEffect(() => {
-        if (images.length > 0) {
-            console.log("🟢 Images fetched, preparing slideshow...")
-            setTimeout(() => setShowPlaceholder(false), 2000)
-            startNewCycle()
-        }
-    }, [images])
+        setTimeout(() => setShowPlaceholder(false), 2000)
+        startNewCycle()
+    }, [])
 
     useEffect(() => {
         if (currentImages.length === 0) return
@@ -78,11 +72,11 @@ const Slideshow = () => {
             onClick={handleClick}
         >
             {showPlaceholder ? (
-                <ImageDisplay currentImages={[{ url: "/me.jpg", name: "Welcome" }]} index={0} />
+                <ImageDisplay currentImages={meImages} index={0} />
             ) : (
                 <>
                     <ImageDisplay currentImages={currentImages} index={index} isPaused={showQuote} />
-                    {showQuote && <QuoteDisplay quote={quote} />}
+                    {showQuote && <Quote quote={quote} />}
                 </>
             )}
         </div>
