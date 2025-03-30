@@ -42,15 +42,15 @@ export async function getPlaylists() {
 export async function getQuote() {
     await ensureCatalog();
     const quotes = catalog.quotes || [];
-
     if (quotes.length === 0) {
         return {};
     }
-
     const raw = quotes[Math.floor(Math.random() * quotes.length)].text;
     const [quote, author] = raw.split("|").map(x => x.trim());
+    const ret = { text: quote, author: author };
+    console.log(`Quote: ${JSON.stringify(ret)} of ${quotes.length}`);
 
-    return { quote, author };
+    return ret;
 }
 
 export async function getImagesByTags(tags) {
@@ -58,6 +58,7 @@ export async function getImagesByTags(tags) {
     const images = catalog.images.filter(img =>
         tags.every(tag => img.tags && img.tags.includes(tag))
     );
+    console.log(`getImagesByTags ${tags} got: ${images.length}`);
     return images;
 }
 
@@ -66,6 +67,7 @@ export async function getRandomImagesByTags(tags, count = 3) {
     const filtered = catalog.images.filter(img =>
         tags.every(tag => img.tags && img.tags.includes(tag))
     );
+    console.log(`getImagesByTags ${tags} got filtered: ${filtered.length} take: ${count}`);
 
     // Shuffle and select random images
     const shuffled = [...filtered].sort(() => 0.5 - Math.random());

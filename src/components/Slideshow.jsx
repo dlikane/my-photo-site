@@ -20,7 +20,7 @@ const Slideshow = () => {
         setCurrentImages(selectedImages)
         setIndex(0)
         setShowQuote(false)
-        setQuote(getQuote())
+        setQuote(await getQuote())
     }, [])
 
     useEffect(() => {

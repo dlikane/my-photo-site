@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 const Quote = ({ quote }) => {
     if (!quote) return null;
 
+    console.log(`Quote: ${JSON.stringify(quote)}`);
+
     return (
         <AnimatePresence>
             <motion.div
