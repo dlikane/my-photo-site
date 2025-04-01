@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import ImageGallery from "react-image-gallery";
+import { getImageUrlByPath } from "../lib/catalog.js";
 import "react-image-gallery/styles/css/image-gallery.css";
 
 const FullscreenViewer = ({ images, currentIndex, onClose }) => {
     const [index, setIndex] = useState(currentIndex);
+    const [formattedImages, setFormattedImages] = useState([]);
 
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -16,9 +18,23 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [onClose]);
 
-    const formattedImages = images.map((img) => ({
-        original: img.url,
-    }));
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const items = await Promise.all(
+                    images.map(async (img, i) => {
+                        const url = await getImageUrlByPath(img.path);
+                        return { original: url };
+                    })
+                );
+                setFormattedImages(items);
+            } catch (err) {
+                console.error("❌ Error loading fullscreen images:", err);
+            }
+        };
+
+        load();
+    }, [images]);
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-black/90">
@@ -29,30 +45,32 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
                 ✖
             </button>
 
-            <div className="absolute bottom-4 rounded-md bg-black/60 px-4 py-2 text-lg text-black dark:text-white">
+            <div className="absolute bottom-4 rounded-md bg-white/80 px-4 py-2 text-lg text-black shadow-md">
                 {index + 1} / {images.length}
             </div>
 
-            <div className="w-full max-w-5xl">
-                <ImageGallery
-                    items={formattedImages}
-                    startIndex={index}
-                    showFullscreenButton={false}
-                    showPlayButton={false}
-                    showThumbnails={false}
-                    showNav={false}
-                    showIndex={false}
-                    slideDuration={200}
-                    swipeThreshold={10}
-                    disableSwipe={false}
-                    lazyLoad={true}
-                    useTranslate3D={true}
-                    onSlide={(currentIndex) => setIndex(currentIndex)}
-                    onScreenChange={(isFullscreen) => {
-                        if (!isFullscreen) onClose();
-                    }}
-                />
-            </div>
+            {formattedImages.length > 0 && (
+                <div className="w-full max-w-5xl pb-16">
+                    <ImageGallery
+                        items={formattedImages}
+                        startIndex={index}
+                        showFullscreenButton={false}
+                        showPlayButton={false}
+                        showThumbnails={false}
+                        showNav={false}
+                        showIndex={false}
+                        slideDuration={200}
+                        swipeThreshold={10}
+                        disableSwipe={false}
+                        lazyLoad={true}
+                        useTranslate3D={true}
+                        onSlide={(currentIndex) => setIndex(currentIndex)}
+                        onScreenChange={(isFullscreen) => {
+                            if (!isFullscreen) onClose();
+                        }}
+                    />
+                </div>
+            )}
         </div>
     );
 };

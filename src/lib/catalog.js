@@ -19,6 +19,10 @@ async function ensureCatalog() {
     await loadingPromise;
 }
 
+export function isLoaded() {
+    return !!catalog
+}
+
 export async function refreshCatalog() {
     catalog = null;
     await ensureCatalog();
@@ -77,7 +81,15 @@ export async function getRandomImagesByTags(tags, count = 3) {
 export async function getVideosByPlaylist(playlistName) {
     await ensureCatalog();
     const playlists = catalog.playlists?.playlists || {};
-    return playlists[playlistName] || [];
+    const playlistId = playlists[playlistName];
+    if (!playlistId) {
+        console.warn(`❌ Playlist not found: ${playlistName}`);
+        return [];
+    }
+
+    const res = await fetch(`/api/videos/${playlistId}`);
+    if (!res.ok) throw new Error("Failed to fetch videos");
+    return await res.json();
 }
 
 const imageUrlCache = new Map();
