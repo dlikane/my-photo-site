@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
 import { useAuth } from "./auth/AuthProvider"
-import {getMenuTags, getPlaylists, refreshCatalog} from "../lib/catalog.js";
+import { getMenuTags, getPlaylists, refreshCatalog } from "../lib/catalog.js"
 
 const Menu = ({ theme, setTheme }) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -12,15 +12,32 @@ const Menu = ({ theme, setTheme }) => {
     const [playlists, setPlaylists] = useState({})
     const navigate = useNavigate()
     const { isLoggedIn } = useAuth()
+    const menuRef = useRef(null)
 
     useEffect(() => {
         const fetchData = async () => {
-            setCategories(await getMenuTags());
-            setPlaylists(await getPlaylists());
-        };
+            setCategories(await getMenuTags())
+            setPlaylists(await getPlaylists())
+        }
 
-        fetchData();
-    }, []);
+        fetchData()
+    }, [])
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsOpen(false)
+            }
+        }
+
+        if (isOpen) {
+            document.addEventListener("mousedown", handleClickOutside)
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside)
+        }
+    }, [isOpen])
 
     const handleNavigate = (path) => {
         setIsOpen(false)
@@ -28,7 +45,7 @@ const Menu = ({ theme, setTheme }) => {
     }
 
     return (
-        <div className="absolute left-5 top-5 z-50">
+        <div className="absolute left-5 top-5 z-50" ref={menuRef}>
             <img
                 src="/menu.svg"
                 className="size-8 cursor-pointer transition-transform hover:scale-110"
