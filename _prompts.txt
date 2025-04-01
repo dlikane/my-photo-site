@@ -1,3 +1,10 @@
+20250401
+Add to catalog isLoaded function (if (catalog) return true;)
+When entering Slideshow, show me.jpg from public local resource (with animation) for 5 seconds until catalog isLoaded
+and slide images are ready too.
+Make sure slideshow images are loading on the background at that time, not when they are shown
+
+
 20250327
 change the way we get data from dropbox
 Let's add new api and move our Slideshow, Category and Menu to use that. Later we will move Hidden to it to.

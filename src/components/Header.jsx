@@ -16,7 +16,7 @@ const Header = ({theme, setTheme}) => {
 
     return (
         <header
-            className="relative flex flex-col items-center bg-white py-0 sm:py-6 text-black dark:bg-black dark:text-white">
+            className="relative flex flex-col items-center bg-white py-0 sm:py-3 text-black dark:bg-black dark:text-white">
             <Menu theme={theme} setTheme={setTheme}/>
             <div className="text-center">
                 <h1 className="overflow-hidden text-ellipsis font-title text-[35.2px] font-light lowercase tracking-[1px] sm:text-[28.8px] sm:tracking-[20px]">

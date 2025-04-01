@@ -1,22 +1,26 @@
 import { useState, useEffect, useCallback } from "react"
 import ImageDisplay from "./ImageDisplay"
 import Quote from "./Quote.jsx"
-import {getImagesByTags, getQuote, getRandomImagesByTags} from "../lib/catalog.js";
+import { getQuote, getRandomImagesByTags, isLoaded } from "../lib/catalog.js"
 
 const Slideshow = () => {
     const [quote, setQuote] = useState(null)
-    const [meImages, setMeImages] = useState([])
     const [currentImages, setCurrentImages] = useState([])
     const [index, setIndex] = useState(0)
     const [showPlaceholder, setShowPlaceholder] = useState(true)
     const [showQuote, setShowQuote] = useState(false)
 
+    const preloadImages = (images) => {
+        images.forEach((img) => {
+            const i = new Image()
+            i.src = img.url
+        })
+    }
+
     const startNewCycle = useCallback(async () => {
         console.log("🔄 Starting new cycle...")
-
-        const meImages = await getImagesByTags(["me"]);
-        setMeImages(meImages);
         const selectedImages = await getRandomImagesByTags(["small", "public", "fav"], 3)
+        preloadImages(selectedImages)
         setCurrentImages(selectedImages)
         setIndex(0)
         setShowQuote(false)
@@ -24,7 +28,16 @@ const Slideshow = () => {
     }, [])
 
     useEffect(() => {
-        setTimeout(() => setShowPlaceholder(false), 2000)
+        const waitForCatalog = async () => {
+            const timeout = new Promise((resolve) => setTimeout(resolve, 5000))
+            while (!isLoaded()) {
+                await new Promise((resolve) => setTimeout(resolve, 100))
+            }
+            await timeout
+            setShowPlaceholder(false)
+        }
+
+        waitForCatalog()
         startNewCycle()
     }, [])
 
@@ -33,24 +46,18 @@ const Slideshow = () => {
 
         const transitionDuration = 2000
         const displayDuration = 3000
-        const totalDuration = transitionDuration + displayDuration
+        const extraHoldDuration = 2000 // 🆕 extra 2s hold per image
+        const totalDuration = transitionDuration + displayDuration + extraHoldDuration
 
         const interval = setInterval(() => {
             setIndex((prevIndex) => {
                 const nextIndex = prevIndex + 1
-
                 if (nextIndex >= currentImages.length) {
                     console.log("🛑 Reached last image. Stopping cycle...")
                     clearInterval(interval)
-
-                    setTimeout(() => {
-                        console.log("💬 Showing quote...")
-                        setShowQuote(true)
-                    }, displayDuration)
-
+                    setShowQuote(true)
                     return prevIndex
                 }
-
                 console.log("🔄 Moving to next image:", currentImages[nextIndex]?.name)
                 return nextIndex
             })
@@ -72,7 +79,12 @@ const Slideshow = () => {
             onClick={handleClick}
         >
             {showPlaceholder ? (
-                <ImageDisplay currentImages={meImages} index={0} />
+                <img
+                    src="/me.jpg"
+                    className="h-full w-full object-contain opacity-0 animate-fade-in transition-opacity duration-1000"
+                    onLoad={(e) => (e.currentTarget.style.opacity = 1)}
+                    alt="me"
+                />
             ) : (
                 <>
                     <ImageDisplay currentImages={currentImages} index={index} isPaused={showQuote} />

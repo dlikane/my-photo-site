@@ -35,3 +35,12 @@ html, body, #root {
     10% { transform: translateY(0%); }   /* pause at start */
     100% { transform: translateY(-100%); }
 }
+
+@keyframes fade-in {
+    from { opacity: 0 }
+    to { opacity: 1 }
+}
+
+.animate-fade-in {
+    animation: fade-in 1s ease-in-out forwards;
+}

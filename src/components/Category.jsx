@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { useAuth } from "./auth/AuthProvider"
 import FullscreenViewer from "./FullscreenViewer"
 import CachedImage from "./CachedImage"
-import {getImagesByTags} from "../lib/catalog.js";
+import { getImagesByTags } from "../lib/catalog.js"
 
 const IMAGE_BATCH_SIZE = 20
 const OBSERVER_THRESHOLD = 0.8
@@ -26,23 +26,23 @@ const Category = () => {
         if (!categoryName) return
 
         const fetchImages = async () => {
-            const tags = [categoryName, "small"];
-            if (!isLoggedIn) tags.push("public");
+            const tags = [categoryName, "small"]
+            if (!isLoggedIn) tags.push("public")
 
             try {
-                const data = await getImagesByTags(tags);
-                console.log(`images for category ${categoryName} with tags (${tags.join(", ")}): ${data.length}`);
-                setImages(data);
+                const data = await getImagesByTags(tags)
+                console.log(`images for category ${categoryName} with tags (${tags.join(", ")}): ${data.length}`)
+                setImages(data)
                 setVisibleImages(
                     data.slice(0, IMAGE_BATCH_SIZE).map((img, i) => ({ img, globalIndex: i }))
-                );
-                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE;
+                )
+                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE
             } catch (error) {
-                console.error("❌ Error fetching images:", error);
+                console.error("❌ Error fetching images:", error)
             } finally {
-                setLoading(false);
+                setLoading(false)
             }
-        };
+        }
 
         setImages([])
         setVisibleImages([])
@@ -97,10 +97,20 @@ const Category = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
-                        className="aspect-square w-full cursor-pointer overflow-hidden rounded-lg shadow-md"
+                        className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-lg shadow-md"
                         onClick={() => setSelectedImage({ url: img.url, index: globalIndex })}
                     >
                         <CachedImage img={img} className="size-full object-cover" />
+                        {img.caption && (
+                            <motion.div
+                                className="absolute left-1/2 top-1 z-10 w-fit -translate-x-1/2 rounded-md bg-black/70 px-3 py-1 text-sm text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.8, ease: "easeInOut", delay: 0.2 }}
+                            >
+                                {img.caption}
+                            </motion.div>
+                        )}
                     </motion.div>
                 ))}
             </div>
