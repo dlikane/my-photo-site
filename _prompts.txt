@@ -1,4 +1,5 @@
 20250401
+
 Add to catalog isLoaded function (if (catalog) return true;)
 When entering Slideshow, show me.jpg from public local resource (with animation) for 5 seconds until catalog isLoaded
 and slide images are ready too.
