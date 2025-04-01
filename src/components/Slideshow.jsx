@@ -46,7 +46,7 @@ const Slideshow = () => {
 
         const transitionDuration = 2000
         const displayDuration = 3000
-        const extraHoldDuration = 2000 // 🆕 extra 2s hold per image
+        const extraHoldDuration = 2000
         const totalDuration = transitionDuration + displayDuration + extraHoldDuration
 
         const interval = setInterval(() => {
@@ -78,19 +78,18 @@ const Slideshow = () => {
             className="relative flex size-full items-center justify-center overflow-hidden bg-white dark:bg-black"
             onClick={handleClick}
         >
-            {showPlaceholder ? (
-                <img
-                    src="/me.jpg"
-                    className="h-full w-full object-contain opacity-0 animate-fade-in transition-opacity duration-1000"
-                    onLoad={(e) => (e.currentTarget.style.opacity = 1)}
-                    alt="me"
-                />
-            ) : (
-                <>
-                    <ImageDisplay currentImages={currentImages} index={index} isPaused={showQuote} />
-                    {showQuote && <Quote quote={quote} />}
-                </>
-            )}
+            {/* me.jpg placeholder image */}
+            <img
+                src="/me.jpg"
+                className={`absolute h-full w-full object-contain transition-opacity duration-1000 ${showPlaceholder ? "opacity-100" : "opacity-0"}`}
+                alt="me"
+            />
+
+            {/* Slideshow image display */}
+            <div className={`absolute h-full w-full transition-opacity duration-1000 ${showPlaceholder ? "opacity-0" : "opacity-100"}`}>
+                <ImageDisplay currentImages={currentImages} index={index} isPaused={showQuote} />
+                {showQuote && <Quote quote={quote} />}
+            </div>
         </div>
     )
 }

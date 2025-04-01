@@ -103,7 +103,7 @@ const Category = () => {
                         <CachedImage img={img} className="size-full object-cover" />
                         {img.caption && (
                             <motion.div
-                                className="absolute left-1/2 top-1 z-10 w-fit -translate-x-1/2 rounded-md bg-black/70 px-3 py-1 text-sm text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100"
+                                className="absolute left-1/2 top-1 z-10 w-fit -translate-x-1/2 rounded bg-black/20 px-2 py-1 sm:text-[90%] text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 text-[18%]"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ duration: 0.8, ease: "easeInOut", delay: 0.2 }}

@@ -22,7 +22,7 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
         const load = async () => {
             try {
                 const items = await Promise.all(
-                    images.map(async (img, i) => {
+                    images.map(async (img) => {
                         const url = await getImageUrlByPath(img.path);
                         return { original: url };
                     })
@@ -39,8 +39,9 @@ const FullscreenViewer = ({ images, currentIndex, onClose }) => {
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white dark:bg-black/90">
             <button
-                className="absolute right-4 top-4 rounded-full p-2 text-3xl text-black transition hover:bg-black/10 dark:text-white dark:hover:bg-white/20"
+                className="absolute right-4 top-4 z-50 rounded-full bg-white/50 p-1.5 text-xl text-black transition hover:bg-black/10 dark:text-white dark:hover:bg-white/20"
                 onClick={onClose}
+                title="Close"
             >
                 ✖
             </button>
