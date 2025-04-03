@@ -1,3 +1,59 @@
+20250403
+
+I want to change my Menu to be smarter with tags.
+Menu tags would look like this.
+
+Let's make adjustments:
+menu:
+  portrait:
+    tags:
+      - portrait
+      - !bw
+  dance:
+    tags:
+      - dance
+      - !bw
+  bw:
+    tags:
+      - bw
+  misc:
+    tags:
+      - !portrait
+      - !bw
+      - !dance
+
+we are getting menulist and add to catalog:
+    const menulist = await getSupplementalFile(dbx, "/menutags.yml", true);
+
+Need to change in /lib/catalog.js:
+export async function getMenuTags() {
+    await ensureCatalog();
+    return catalog.menulist?.menu?.tags || [];
+}
+And in Category.ts
+        const fetchImages = async () => {
+            const tags = [categoryName, "small"]
+            if (!isLoggedIn) tags.push("public")
+
+            try {
+                const data = await getImagesByTags(tags)
+                console.log(`images for category ${categoryName} with tags (${tags.join(", ")}): ${data.length}`)
+                setImages(data)
+                setVisibleImages(
+                    data.slice(0, IMAGE_BATCH_SIZE).map((img, i) => ({ img, globalIndex: i }))
+                )
+                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE
+            } catch (error) {
+                console.error("❌ Error fetching images:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+Lets have another function: getImagesByCategory(categoryName) and create tags logic there.
+I think you guessed that tags give list of tags to include and to exclude (with ! in front of them), we still need small and public as the are now.
+
+
+
 20250401
 
 Add to catalog isLoaded function (if (catalog) return true;)

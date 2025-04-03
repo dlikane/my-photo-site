@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { useAuth } from "./auth/AuthProvider"
 import FullscreenViewer from "./FullscreenViewer"
 import CachedImage from "./CachedImage"
-import { getImagesByTags } from "../lib/catalog.js"
+import {getImagesByCategory} from "../lib/catalog.js"
 
 const IMAGE_BATCH_SIZE = 20
 const OBSERVER_THRESHOLD = 0.8
@@ -26,12 +26,9 @@ const Category = () => {
         if (!categoryName) return
 
         const fetchImages = async () => {
-            const tags = [categoryName, "small"]
-            if (!isLoggedIn) tags.push("public")
-
             try {
-                const data = await getImagesByTags(tags)
-                console.log(`images for category ${categoryName} with tags (${tags.join(", ")}): ${data.length}`)
+                const data = await getImagesByCategory(categoryName, isLoggedIn);
+                console.log(`images for category ${categoryName}: ${data.length}`)
                 setImages(data)
                 setVisibleImages(
                     data.slice(0, IMAGE_BATCH_SIZE).map((img, i) => ({ img, globalIndex: i }))

@@ -69,22 +69,20 @@ export async function allocateUrls(images) {
 }
 
 export async function parseImage(entry) {
-    // console.log(`loader [START] parseImage('${entry.path_lower}')`);
-    // const start = Date.now();
-
     const { path_lower, name: filename } = entry;
     const pathParts = path_lower.split("/");
-    const adminFolder = (pathParts.length > 1) && pathParts[0].startsWith("_");
+
+    // first real folder after leading "/"
+    const adminFolder = (pathParts.length > 1) && pathParts[1].startsWith("_");
     const isAdmin = adminFolder || filename.startsWith("_");
+
     if (!/\.jpe?g$/i.test(filename)) {
-        // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms (ignored: extension)`);
         return null;
     }
 
     const baseName = filename.replace(/\.jpe?g$/i, "");
     const parts = baseName.split("_");
     if (parts.length < 3) {
-        // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms (ignored: parts)`);
         return null;
     }
 
@@ -92,15 +90,16 @@ export async function parseImage(entry) {
     const name = parts[1];
     const caption = `${name} | ${year}`;
     const tags = parts.slice(2).filter(t => !/^\d+$/.test(t));
-    if (!isAdmin)
+
+    if (!isAdmin) {
         tags.push("public");
+    }
 
     if (tags.length === 0) {
-        // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms (ignored: no tags)`);
         return null;
     }
 
-    const parsed = {
+    return {
         path: path_lower,
         filename,
         name,
@@ -108,9 +107,6 @@ export async function parseImage(entry) {
         caption,
         tags,
     };
-
-    // console.log(`loader [END] parseImage('${entry.path_lower}') - ${Date.now() - start}ms`);
-    return parsed;
 }
 
 async function getDropboxInstance() {
