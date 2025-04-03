@@ -35,7 +35,7 @@ export async function getAbout() {
 
 export async function getMenuTags() {
     await ensureCatalog();
-    return catalog.menulist?.menu?.tags || [];
+    return Object.keys(catalog.menulist?.menu || {});
 }
 
 export async function getPlaylists() {
@@ -57,12 +57,42 @@ export async function getQuote() {
     return ret;
 }
 
-export async function getImagesByTags(tags) {
+export async function getImagesByCategory(categoryName, isLoggedIn) {
     await ensureCatalog();
-    const images = catalog.images.filter(img =>
-        tags.every(tag => img.tags && img.tags.includes(tag))
-    );
-    console.log(`getImagesByTags ${tags} got: ${images.length}`);
+
+    const entry = catalog.menulist?.menu?.[categoryName];
+    if (!entry) {
+        console.warn(`❌ Category not found: ${categoryName}`);
+        return [];
+    }
+
+    const tags = ["small"];
+    if (!isLoggedIn) tags.push("public");
+
+    const exclude = [];
+
+    for (const tag of entry.tags || []) {
+        if (tag.startsWith("!")) {
+            exclude.push(tag.slice(1));
+        } else {
+            tags.push(tag);
+        }
+    }
+    console.log(`Getting category ${categoryName} include tags: ${tags.join(",")} exclude tags: ${exclude.join(",")}`);
+    return getImagesByTags(tags, exclude);
+}
+
+export async function getImagesByTags(includeTags, excludeTags = []) {
+    await ensureCatalog();
+
+    const images = catalog.images.filter(img => {
+        const tags = img.tags || [];
+        const includes = includeTags.every(tag => tags.includes(tag));
+        const excludes = excludeTags.every(tag => !tags.includes(tag));
+        return includes && excludes;
+    });
+
+    console.log(`getImagesByTags +${includeTags.join(", ")} -${excludeTags.join(", ")} → ${images.length}`);
     return images;
 }
 
