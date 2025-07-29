@@ -57,7 +57,7 @@ export async function getQuote() {
     return ret;
 }
 
-export async function getImagesByCategory(categoryName, isLoggedIn) {
+export async function getImagesByCategory(categoryName) {
     await ensureCatalog();
 
     const entry = catalog.menulist?.menu?.[categoryName];
@@ -67,7 +67,7 @@ export async function getImagesByCategory(categoryName, isLoggedIn) {
     }
 
     const tags = ["small"];
-    if (!isLoggedIn) tags.push("public");
+    //if (!isLoggedIn) tags.push("public");
 
     const exclude = [];
 

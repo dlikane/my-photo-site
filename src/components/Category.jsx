@@ -25,7 +25,7 @@ const Category = () => {
 
         const fetchImages = async () => {
             try {
-                const data = await getImagesByCategory(categoryName, true);
+                const data = await getImagesByCategory(categoryName);
                 console.log(`images for category ${categoryName}: ${data.length}`)
                 setImages(data)
                 setVisibleImages(
@@ -45,7 +45,7 @@ const Category = () => {
         hasMoreImages.current = true
 
         fetchImages()
-    }, [categoryName, isLoggedIn])
+    }, [categoryName])
 
     useEffect(() => {
         if (!images.length || !containerRef.current || !hasMoreImages.current) return
