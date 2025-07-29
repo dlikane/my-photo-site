@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
-import { useAuth } from "./auth/AuthProvider"
 import FullscreenViewer from "./FullscreenViewer"
 import CachedImage from "./CachedImage"
 import {getImagesByCategory} from "../lib/catalog.js"
@@ -12,7 +11,6 @@ const OBSERVER_THRESHOLD = 0.8
 const Category = () => {
     const location = useLocation()
     const categoryName = location.pathname.replace("/category/", "")
-    const { isLoggedIn } = useAuth()
 
     const [images, setImages] = useState([])
     const [visibleImages, setVisibleImages] = useState([])
@@ -27,7 +25,7 @@ const Category = () => {
 
         const fetchImages = async () => {
             try {
-                const data = await getImagesByCategory(categoryName, isLoggedIn);
+                const data = await getImagesByCategory(categoryName, true);
                 console.log(`images for category ${categoryName}: ${data.length}`)
                 setImages(data)
                 setVisibleImages(

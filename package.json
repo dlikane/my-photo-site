@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e .env -- cross-env PNPM_NODE=$PNPM_NODE vite",
+    "dev": "concurrently -k -n FRONTEND,API -c blue,green \"pnpm vite\" \"pnpm api\"",
     "build": "vite build",
     "start": "vite preview",
     "vercel-build": "vite build",
