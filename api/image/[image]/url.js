@@ -2,7 +2,7 @@ import { getImageUrl } from "../../services/catalogLoader.js";
 
 export default async function handler(req, res) {
     try {
-        const { image } = req.param;
+        const { image } = req.query;
         const url = await getImageUrl(image);
         if (!url) {
             return res.status(404).json({ error: "Image not found or URL missing" });
