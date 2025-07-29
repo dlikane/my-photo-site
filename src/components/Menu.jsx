@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faLockOpen } from "@fortawesome/free-solid-svg-icons"
-import { useAuth } from "./auth/AuthProvider"
 import { getMenuTags, getPlaylists, refreshCatalog } from "../lib/catalog.js"
 
 const Menu = ({ theme, setTheme }) => {
@@ -11,7 +10,6 @@ const Menu = ({ theme, setTheme }) => {
     const [categories, setCategories] = useState([])
     const [playlists, setPlaylists] = useState({})
     const navigate = useNavigate()
-    const { isLoggedIn } = useAuth()
     const menuRef = useRef(null)
 
     useEffect(() => {
@@ -81,24 +79,6 @@ const Menu = ({ theme, setTheme }) => {
                                 contact
                             </li>
                             <li onClick={() => handleNavigate("/about")} className="cursor-pointer hover:text-gray-400">about</li>
-
-                            {isLoggedIn && (
-                                <>
-                                    <li
-                                        onClick={() => handleNavigate("/admin")}
-                                        className="cursor-pointer hover:text-gray-400"
-                                    >
-                                        <FontAwesomeIcon icon={faLockOpen} className="mr-1" />
-                                        dashboard
-                                    </li>
-                                    <li
-                                        onClick={() => refreshCatalog()}
-                                        className="cursor-pointer hover:text-gray-400"
-                                    >
-                                        🔁 refresh catalog
-                                    </li>
-                                </>
-                            )}
                         </ul>
                     </motion.div>
                 )}
