@@ -2,7 +2,7 @@ import { getImageUrl } from "../../services/catalogLoader.js";
 
 export default async function handler(req, res) {
     try {
-        const { image } = req.params;
+        const { image } = req.query;
         const raw = decodeURIComponent(image || "");
         const dropboxPath = raw.startsWith("/") ? raw.slice(1) : raw;
 
