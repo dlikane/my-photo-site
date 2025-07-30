@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getCategories, getPlaylists } from "../lib/catalog.js";
 
-const Header = ({ theme, setTheme }) => {
+const Header = () => {
     const [categories, setCategories] = useState([]);
     const [playlists, setPlaylists] = useState({});
     const location = useLocation();
@@ -28,9 +28,9 @@ const Header = ({ theme, setTheme }) => {
             <Link
                 key={path}
                 to={path}
-                className={`relative px-3 py-2 text-sm uppercase tracking-wide transition-colors ${
+                className={`relative px-3 py-2 uppercase tracking-wide transition-colors whitespace-nowrap ${
                     isActive ? "font-bold text-black dark:text-white" : "text-gray-500 dark:text-gray-400"
-                } group`}
+                } group text-xs sm:text-sm`}
             >
                 {label}
                 <span className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 bg-black transition-all duration-300 group-hover:w-full dark:bg-white"></span>
@@ -42,26 +42,39 @@ const Header = ({ theme, setTheme }) => {
         <header className="sticky top-0 z-50 bg-white py-2 text-black shadow-md dark:bg-black dark:text-white">
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-between px-4 sm:flex-row">
                 <div className="text-center sm:text-left">
-                    <h1 className="font-title text-xl lowercase tracking-widest sm:text-3xl">Dmitry · Likane</h1>
+                    <h1 className="font-title text-2xl lowercase tracking-widest sm:text-3xl">Dmitry · Likane</h1>
+                    <p className="text-sm font-light tracking-wide">with</p>
                 </div>
 
-                <nav className="mt-2 flex flex-wrap justify-center gap-4 sm:mt-0 sm:justify-end sm:gap-6 text-sm font-body">
-                    {renderNavLink("home", "/", true)}
+                <div className="relative w-full sm:w-auto mt-2 sm:mt-0">
+                    <nav
+                        className="flex overflow-x-auto sm:overflow-visible gap-3 sm:gap-6 px-2 font-body scrollbar-hide sm:flex-wrap sm:justify-end"
+                        style={{
+                            maskImage:
+                                "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
+                            WebkitMaskImage:
+                                "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
+                        }}
+                    >
+                        {renderNavLink("home", "/", true)}
 
-                    {categories.length === 0 ? (
-                        <span className="italic text-gray-400">loading…</span>
-                    ) : (
-                        categories.map((category) =>
-                            renderNavLink(category, `/category/${category}`)
-                        )
-                    )}
+                        {categories.length === 0 ? (
+                            <span className="px-3 py-2 text-xs sm:text-sm uppercase tracking-wide text-gray-400 font-body whitespace-nowrap">
+                              loading…
+                            </span>
+                        ) : (
+                            categories.map((category) =>
+                                renderNavLink(category, `/category/${category}`)
+                            )
+                        )}
 
-                    {Object.keys(playlists).map((name) =>
-                        renderNavLink(name, `/videos/${name}`)
-                    )}
+                        {Object.keys(playlists).map((name) =>
+                            renderNavLink(name, `/videos/${name}`)
+                        )}
 
-                    {renderNavLink("about", "/about")}
-                </nav>
+                        {renderNavLink("about", "/about")}
+                    </nav>
+                </div>
             </div>
         </header>
     );

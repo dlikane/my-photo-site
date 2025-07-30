@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCategories, getImagesByCategory, getImageUrlByPath } from "../lib/catalog.js";
+import Quote from "./Quote.jsx";
 
 const Home = () => {
     const [previews, setPreviews] = useState([]);
@@ -55,6 +56,7 @@ const Home = () => {
                     </div>
                 ))}
             </div>
+            <Quote />
         </div>
     );
 };
