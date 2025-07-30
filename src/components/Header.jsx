@@ -62,7 +62,6 @@ const Header = () => {
                         : "text-gray-500 dark:text-gray-400"
                 } group`
             }
-            end={path === "/"}
         >
             {label}
             <span className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 bg-black transition-all duration-300 group-hover:w-full dark:bg-white"></span>
@@ -104,7 +103,9 @@ const Header = () => {
                     >
                         {renderNavLink("home", "/")}
                         {categories.length === 0 ? (
-                            <span className="italic text-gray-400">loading…</span>
+                            <span className="px-3 py-2 text-xs sm:text-sm uppercase tracking-wide text-gray-300 font-body">
+                                loading…
+                            </span>
                         ) : (
                             categories.map((category) =>
                                 renderNavLink(category, `/category/${category}`)
