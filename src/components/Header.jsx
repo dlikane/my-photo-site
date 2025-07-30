@@ -19,7 +19,6 @@ const Header = () => {
                 console.error("Failed to load nav data:", err);
             }
         };
-
         fetchData();
     }, []);
 
@@ -43,6 +42,15 @@ const Header = () => {
             window.removeEventListener("resize", updateScrollIndicators);
         };
     }, []);
+
+    useEffect(() => {
+        if (categories.length > 0 || Object.keys(playlists).length > 0) {
+            // Wait for DOM update
+            setTimeout(() => {
+                updateScrollIndicators();
+            }, 0);
+        }
+    }, [categories, playlists]);
 
     const scrollNav = (direction) => {
         const el = navRef.current;
@@ -71,62 +79,77 @@ const Header = () => {
     return (
         <header className="sticky top-0 z-50 bg-white py-2 text-black shadow-md dark:bg-black dark:text-white">
             <div className="mx-auto max-w-7xl px-4">
-                <div className="text-center sm:text-left">
-                    <h1 className="font-title text-2xl lowercase tracking-widest sm:text-3xl">dmitry · likane</h1>
-                    <p className="text-sm font-light tracking-wide">with</p>
-                </div>
-
-                <div className="relative mt-2 flex items-center">
-                    {canScrollLeft && (
-                        <div className="absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white dark:from-black to-transparent pointer-events-none sm:hidden" />
-                    )}
-                    {canScrollRight && (
-                        <div className="absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white dark:from-black to-transparent pointer-events-none sm:hidden" />
-                    )}
-
-                    {/* Left chevron */}
-                    <div className="relative z-20 flex w-6 justify-center sm:hidden">
-                        {canScrollLeft && (
-                            <button
-                                onClick={() => scrollNav("left")}
-                                className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
-                            >
-                                <ChevronLeftIcon className="h-5 w-5 text-black dark:text-white" />
-                            </button>
-                        )}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:h-24">
+                    {/* Branding */}
+                    <div className="flex flex-col items-center sm:items-start sm:w-auto sm:mr-6">
+                        <div className="flex flex-col items-center sm:items-center">
+                            <h1 className="font-title text-2xl lowercase tracking-widest sm:text-3xl">
+                                dmitry · likane
+                            </h1>
+                            <img
+                                src="/br.png"
+                                alt="with"
+                                className="h-6 sm:h-7 mt-1"
+                            />
+                        </div>
                     </div>
 
-                    {/* Nav links */}
-                    <nav
-                        ref={navRef}
-                        className="flex-1 overflow-x-auto whitespace-nowrap px-1 text-xs sm:text-sm font-body scrollbar-hide sm:flex sm:flex-wrap sm:justify-end gap-3 sm:gap-6"
-                    >
-                        {renderNavLink("home", "/")}
-                        {categories.length === 0 ? (
-                            <span className="px-3 py-2 text-xs sm:text-sm uppercase tracking-wide text-gray-300 font-body">
-                                loading…
-                            </span>
-                        ) : (
-                            categories.map((category) =>
-                                renderNavLink(category, `/category/${category}`)
-                            )
+                    {/* Nav + chevrons */}
+                    <div className="relative mt-2 sm:mt-0 flex items-center flex-1">
+                        {canScrollLeft && (
+                            <div
+                                className="absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white dark:from-black to-transparent pointer-events-none sm:hidden"/>
                         )}
-                        {Object.keys(playlists).map((name) =>
-                            renderNavLink(name, `/videos/${name}`)
-                        )}
-                        {renderNavLink("about", "/about")}
-                    </nav>
-
-                    {/* Right chevron */}
-                    <div className="relative z-20 flex w-6 justify-center sm:hidden">
                         {canScrollRight && (
-                            <button
-                                onClick={() => scrollNav("right")}
-                                className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
-                            >
-                                <ChevronRightIcon className="h-5 w-5 text-black dark:text-white" />
-                            </button>
+                            <div
+                                className="absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white dark:from-black to-transparent pointer-events-none sm:hidden"/>
                         )}
+
+                        {/* Left chevron (mobile only) */}
+                        <div className="relative z-20 flex w-6 justify-center sm:hidden">
+                            {canScrollLeft && (
+                                <button
+                                    onClick={() => scrollNav("left")}
+                                    className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
+                                >
+                                    <ChevronLeftIcon className="h-5 w-5 text-black dark:text-white"/>
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Nav links */}
+                        <nav
+                            ref={navRef}
+                            className="flex-1 overflow-x-auto whitespace-nowrap px-1 text-xs sm:text-sm font-body scrollbar-hide sm:flex sm:flex-wrap sm:justify-end gap-3 sm:gap-6"
+                        >
+                            {renderNavLink("home", "/")}
+                            {categories.length === 0 ? (
+                                <span
+                                    className="px-3 py-2 text-xs sm:text-sm uppercase tracking-wide text-gray-300 font-body">
+                                    loading…
+                                </span>
+                            ) : (
+                                categories.map((category) =>
+                                    renderNavLink(category, `/category/${category}`)
+                                )
+                            )}
+                            {Object.keys(playlists).map((name) =>
+                                renderNavLink(name, `/videos/${name}`)
+                            )}
+                            {renderNavLink("about", "/about")}
+                        </nav>
+
+                        {/* Right chevron (mobile only) */}
+                        <div className="relative z-20 flex w-6 justify-center sm:hidden">
+                            {canScrollRight && (
+                                <button
+                                    onClick={() => scrollNav("right")}
+                                    className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
+                                >
+                                    <ChevronRightIcon className="h-5 w-5 text-black dark:text-white"/>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

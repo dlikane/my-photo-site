@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCategories, getImagesByCategory, getImageUrlByPath } from "../lib/catalog.js";
 import Quote from "./Quote.jsx";
+import LoadingSpinner from "./LoadingSpinner.jsx";
 
 const Home = () => {
     const [previews, setPreviews] = useState([]);
@@ -35,7 +36,7 @@ const Home = () => {
     return (
         <div className="flex w-full flex-col items-center justify-center bg-white px-5 py-10 dark:bg-black">
             {loading && (
-                <div className="py-10 text-center text-gray-500 dark:text-gray-300">Loading categories…</div>
+                <LoadingSpinner />
             )}
 
             <div className="grid w-full max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
