@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { motion } from "framer-motion"
 import FullscreenViewer from "./FullscreenViewer";
 import CachedImage from "./CachedImage";
 import { getImagesByCategory } from "../lib/catalog.js";
