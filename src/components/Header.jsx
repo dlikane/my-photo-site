@@ -83,7 +83,9 @@ const Header = () => {
                     {/* Branding */}
                     <div className="flex flex-col items-center sm:items-start sm:w-auto sm:mr-6">
                         <div className="flex flex-col items-center sm:items-center">
-                            <h1 className="font-title text-2xl lowercase tracking-widest sm:text-3xl">
+                            <h1
+                                className="font-title text-2xl font-extralight lowercase sm:text-3xl transform scale-y-140 sm:tracking-[12px] tracking-[12px]"
+                            >
                                 dmitry · likane
                             </h1>
                             <img

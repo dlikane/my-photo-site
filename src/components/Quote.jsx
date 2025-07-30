@@ -5,12 +5,14 @@ import { getQuote } from "../lib/catalog.js";
 const Quote = () => {
     const [quote, setQuote] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [visible, setVisible] = useState(true);
 
     const fetchQuote = async () => {
         setLoading(true);
         try {
             const q = await getQuote();
             setQuote(q);
+            setVisible(true); // reset visibility
         } catch (err) {
             console.warn("Failed to load quote:", err);
         } finally {
@@ -22,13 +24,23 @@ const Quote = () => {
         fetchQuote();
     }, []);
 
+    useEffect(() => {
+        if (!quote) return;
+
+        const timer = setTimeout(() => {
+            setVisible(false);
+        }, 5000); // hide after 5 seconds
+
+        return () => clearTimeout(timer);
+    }, [quote]);
+
     return (
         <AnimatePresence mode="wait">
-            {quote && (
+            {quote && visible && (
                 <motion.div
                     key={quote.text + quote.author}
                     className="absolute bottom-5 right-5 max-w-[66vw] md:max-w-xl rounded-lg bg-white/80 p-4 pr-6 text-right text-black shadow-md transition-all hover:scale-[1.01] hover:shadow-xl dark:bg-black/60 dark:text-white dark:shadow-lg"
-v                    initial={{ opacity: 0 }}
+                    initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ opacity: { duration: 0.8, ease: "easeInOut" } }}

@@ -1,4 +1,7 @@
 20250730
+
+className="overflow-hidden text-ellipsis font-title text-[28.8px] font-light lowercase tracking-[12px] sm:text-[28.8px] sm:tracking-[12px]"
+
 Redesign: https://www.peter-coulson.com.au/contact
 
 instead of slideshow use Home.jsx
