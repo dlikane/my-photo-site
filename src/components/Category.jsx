@@ -1,87 +1,85 @@
-import { useEffect, useRef, useState } from "react"
-import { useLocation } from "react-router-dom"
-import { motion } from "framer-motion"
-import FullscreenViewer from "./FullscreenViewer"
-import CachedImage from "./CachedImage"
-import {getImagesByCategory} from "../lib/catalog.js"
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import FullscreenViewer from "./FullscreenViewer";
+import CachedImage from "./CachedImage";
+import { getImagesByCategory } from "../lib/catalog.js";
 
-const IMAGE_BATCH_SIZE = 20
-const OBSERVER_THRESHOLD = 0.8
+const IMAGE_BATCH_SIZE = 20;
+const OBSERVER_THRESHOLD = 0.8;
 
 const Category = () => {
-    const location = useLocation()
-    const categoryName = location.pathname.replace("/category/", "")
+    const location = useLocation();
+    const categoryName = location.pathname.replace("/category/", "");
 
-    const [images, setImages] = useState([])
-    const [visibleImages, setVisibleImages] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [selectedImage, setSelectedImage] = useState(null)
-    const containerRef = useRef(null)
-    const observerRef = useRef(null)
-    const hasMoreImages = useRef(true)
+    const [images, setImages] = useState([]);
+    const [visibleImages, setVisibleImages] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const containerRef = useRef(null);
+    const observerRef = useRef(null);
+    const hasMoreImages = useRef(true);
 
     useEffect(() => {
-        if (!categoryName) return
+        if (!categoryName) return;
 
         const fetchImages = async () => {
+            setLoading(true);
+            setImages([]);
+            setVisibleImages([]);
+            hasMoreImages.current = true;
+
             try {
                 const data = await getImagesByCategory(categoryName);
-                console.log(`images for category ${categoryName}: ${data.length}`)
-                setImages(data)
+                setImages(data);
                 setVisibleImages(
                     data.slice(0, IMAGE_BATCH_SIZE).map((img, i) => ({ img, globalIndex: i }))
-                )
-                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE
+                );
+                hasMoreImages.current = data.length > IMAGE_BATCH_SIZE;
             } catch (error) {
-                console.error("❌ Error fetching images:", error)
+                console.error("❌ Error fetching images:", error);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
-        setImages([])
-        setVisibleImages([])
-        setLoading(true)
-        hasMoreImages.current = true
-
-        fetchImages()
-    }, [categoryName])
+        fetchImages();
+    }, [categoryName]);
 
     useEffect(() => {
-        if (!images.length || !containerRef.current || !hasMoreImages.current) return
+        if (!images.length || !containerRef.current || !hasMoreImages.current) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
-                const lastEntry = entries[0]
+                const lastEntry = entries[0];
                 if (lastEntry.isIntersecting) {
                     setTimeout(() => {
                         setVisibleImages((prev) => {
-                            const nextBatch = images.slice(prev.length, prev.length + IMAGE_BATCH_SIZE)
-                            hasMoreImages.current = nextBatch.length > 0
+                            const nextBatch = images.slice(prev.length, prev.length + IMAGE_BATCH_SIZE);
+                            hasMoreImages.current = nextBatch.length > 0;
                             return [
                                 ...prev,
                                 ...nextBatch.map((img, i) => ({
                                     img,
                                     globalIndex: prev.length + i,
                                 })),
-                            ]
-                        })
-                    }, 300)
+                            ];
+                        });
+                    }, 300);
                 }
             },
             { root: containerRef.current, threshold: OBSERVER_THRESHOLD }
-        )
+        );
 
-        if (observerRef.current) observer.observe(observerRef.current)
-        return () => observer.disconnect()
-    }, [images, visibleImages])
+        if (observerRef.current) observer.observe(observerRef.current);
+        return () => observer.disconnect();
+    }, [images, visibleImages]);
 
     return (
         <div ref={containerRef} className="flex w-full flex-col items-center justify-start bg-white p-5 dark:bg-black">
             {loading && (
                 <div className="flex flex-col items-center justify-center gap-4 py-10 text-black dark:text-white">
                     <div className="relative h-16 w-16 animate-spin rounded-full border-4 border-t-black dark:border-t-white border-transparent" />
-                    <p className="text-lg font-light italic">Developing your gallery…</p>
+                    <p className="text-lg font-light italic">Loading gallery…</p>
                 </div>
             )}
 
@@ -96,16 +94,6 @@ const Category = () => {
                         onClick={() => setSelectedImage({ url: img.url, index: globalIndex })}
                     >
                         <CachedImage img={img} className="size-full object-cover" />
-                        {img.caption && (
-                            <motion.div
-                                className="absolute left-1/2 top-1 z-10 w-fit -translate-x-1/2 rounded bg-black/20 px-2 py-1 sm:text-[90%] text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 text-[18%]"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ duration: 0.8, ease: "easeInOut", delay: 0.2 }}
-                            >
-                                {img.caption}
-                            </motion.div>
-                        )}
                     </motion.div>
                 ))}
             </div>
@@ -120,7 +108,7 @@ const Category = () => {
                 />
             )}
         </div>
-    )
-}
+    );
+};
 
-export default Category
+export default Category;

@@ -1,0 +1,7 @@
+list:
+  portrait:
+    dir: portrait
+  dance:
+    dir: dance
+  b&w:
+    dir: bw
