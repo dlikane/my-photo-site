@@ -83,6 +83,7 @@ export async function loadCatalogFromDropbox() {
                 e.path_lower.startsWith(`/${dir}`) &&
                 /\.(jpe?g)$/i.test(e.name)
             )
+            .sort((a, b) => a.name.localeCompare(b.name)) // ✅ sort alphabetically by filename
             .map((e) => ({
                 path: e.path_lower
             }));
