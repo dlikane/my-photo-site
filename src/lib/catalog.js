@@ -62,18 +62,27 @@ export async function getVideosByPlaylist(playlistName) {
     return await res.json();
 }
 
+let firstQuoteReturned = false;
+
 export async function getQuote() {
     await ensureCatalog();
     const quotes = catalog.quotes || [];
-    if (quotes.length === 0) {
-        return {};
-    }
-    const raw = quotes[Math.floor(Math.random() * quotes.length)].text;
-    const [quote, author] = raw.split("|").map(x => x.trim());
-    const ret = { text: quote, author: author };
-    console.log(`Quote: ${JSON.stringify(ret)} of ${quotes.length}`);
+    if (quotes.length === 0) return {};
 
-    return ret;
+    let index;
+
+    if (!firstQuoteReturned) {
+        const today = new Date().toISOString().split("T")[0]; // e.g. "2025-07-30"
+        const hash = Array.from(today).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        index = hash % quotes.length;
+        firstQuoteReturned = true;
+    } else {
+        index = Math.floor(Math.random() * quotes.length);
+    }
+
+    const raw = quotes[index].text;
+    const [quote, author] = raw.split("|").map((x) => x.trim());
+    return { text: quote, author };
 }
 
 const imageUrlCache = new Map();
