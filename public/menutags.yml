@@ -1,0 +1,17 @@
+menu:
+  portrait:
+    tags:
+      - portrait
+      - "!bw"
+  dance:
+    tags:
+      - dance
+      - "!bw"
+  bw:
+    tags:
+      - bw
+  misc:
+    tags:
+      - "!portrait"
+      - "!bw"
+      - "!dance"

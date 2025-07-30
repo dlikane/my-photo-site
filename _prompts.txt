@@ -1,3 +1,35 @@
+20250730
+Redesign: https://www.peter-coulson.com.au/contact
+
+instead of slideshow use Home.jsx
+Don't use tags
+
+Structure:
+root:
+    me.jpg
+    about.md
+    contact.md
+    playlist.yml
+    categories.yml (?)
+    - portrait
+    - dance
+
+Changes:
+- don't use tags for images
+- remove Slideshow, ImageDisplay and Menu
+- keep home and categories on top across and add videos and about at the end
+from categories.yml:
+list:
+  portrait:
+    dir: portrait
+  dance:
+    dir: dance
+  b&w:
+    dir: bw
+- Home page to show the first image from category and if clicked go category menu
+- each category show images as now, but don't rely on tags, just dir
+
+
 20250724
 For Tilda:
 

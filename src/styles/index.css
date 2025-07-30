@@ -44,3 +44,17 @@ html, body, #root {
 .animate-fade-in {
     animation: fade-in 1s ease-in-out forwards;
 }
+
+@layer base {
+    .prose p {
+        @apply my-4 leading-relaxed;
+    }
+
+    .prose h2 {
+        @apply mt-6 text-2xl font-title;
+    }
+
+    .prose hr {
+        @apply my-6 border-t border-gray-300 dark:border-gray-600;
+    }
+}

@@ -22,7 +22,7 @@ grab-api: ## grab full source code
 	img grab "./api/..." package.json | $(CLIP_COMMAND)
 
 .PHONY: grab-src
-grab-src: ## grab full source code
+grab-ui: ## grab full source code
 	img grab "./src/..." package.json index.html postcss.config.js tailwind.config.ts vercel.json vite.config.ts | $(CLIP_COMMAND)
 
 
