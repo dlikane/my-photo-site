@@ -27,8 +27,8 @@ const Quote = () => {
             {quote && (
                 <motion.div
                     key={quote.text + quote.author}
-                    className="absolute bottom-5 md:bottom-16 right-5 max-w-2xl rounded-lg bg-white/80 p-4 pr-6 text-right text-black shadow-md transition-all hover:scale-[1.01] hover:shadow-xl dark:bg-black/60 dark:text-white dark:shadow-lg"
-                    initial={{ opacity: 0 }}
+                    className="absolute bottom-5 right-5 max-w-[66vw] md:max-w-xl rounded-lg bg-white/80 p-4 pr-6 text-right text-black shadow-md transition-all hover:scale-[1.01] hover:shadow-xl dark:bg-black/60 dark:text-white dark:shadow-lg"
+v                    initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ opacity: { duration: 0.8, ease: "easeInOut" } }}
@@ -46,7 +46,7 @@ const Quote = () => {
                     </div>
 
                     <motion.p
-                        className="text-lg italic"
+                        className="text-lg italic leading-relaxed"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.8, ease: "easeInOut", delay: 0.2 }}
