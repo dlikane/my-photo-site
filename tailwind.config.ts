@@ -13,7 +13,7 @@ const config: Config = {
             },
             fontFamily: {
                 body: ["Cormorant Garamond", "serif"],
-                title: ["Big Shoulders", "Futura", "Gill Sans", "Helvetica Neue", "sans-serif"],
+                title: ["Big Shoulders Display", "Futura", "Gill Sans", "Helvetica Neue", "sans-serif"],
             },
             animation: {
                 'spin-slow': 'spin 2.5s linear infinite',
