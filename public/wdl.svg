@@ -11,14 +11,16 @@
             <stop offset="100%" stop-color="#FFA800"/>
         </linearGradient>
     </defs>
-    <rect width="100%" height="100%" fill="#121212"/>
 
-    <!-- W Path (Fixed Orientation) -->
-    <path d="M50,80 L70,180 L90,100 L110,180 L130,80" fill="none" stroke="url(#gradient1)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+    <!-- Transparent background -->
+    <rect width="100%" height="100%" fill="none"/>
 
-    <!-- D Path (Stylized, Interlaced with W) -->
-    <path d="M120,80 Q190,90 140,180 T120,80" fill="none" stroke="url(#gradient2)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+    <!-- W Path -->
+    <path d="M40,180 L60,80 L80,160 L100,80 L120,180" fill="none" stroke="url(#gradient1)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
 
-    <!-- L Path (Stylized, Interlaced with D) -->
-    <path d="M180,80 L180,180 L220,180" fill="none" stroke="url(#gradient1)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+    <!-- D Path (more regular curve for middle stroke match) -->
+    <path d="M130,80 Q200,100 150,180 T130,80" fill="none" stroke="url(#gradient2)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+    <!-- L Path -->
+    <path d="M190,80 L190,180 L230,180" fill="none" stroke="url(#gradient1)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
 </svg>
