@@ -20,15 +20,15 @@ const About = () => {
 
     return (
         <div className="relative mx-auto w-11/12 max-w-3xl overflow-y-auto rounded-lg bg-white p-6 text-lg text-black shadow-md backdrop-blur-md scrollbar-hide dark:bg-black dark:text-white dark:shadow-lg dark:backdrop-blur-md font-body">
-            <div className="flex flex-wrap items-start">
+            <div className="flex flex-col sm:flex-row items-start gap-6">
                 <img
                     src="/me.jpg"
                     alt="Dmitry Likane"
-                    className="w-40 h-40 rounded-full object-cover mr-6 mb-4 float-left"
+                    className="w-40 h-40 rounded-full object-cover self-start mx-auto sm:mx-0"
                 />
                 <div
-                    className="flex-1 min-w-[200px] prose prose-lg dark:prose-invert prose-headings:font-title prose-headings:text-2xl prose-headings:mt-6 prose-p:my-4 prose-p:leading-relaxed"
-                    dangerouslySetInnerHTML={{__html: aboutContent}}
+                    className="flex-1 prose prose-lg dark:prose-invert prose-headings:font-title prose-headings:text-2xl prose-headings:mt-6 prose-p:my-4 prose-p:leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: aboutContent }}
                 />
             </div>
         </div>

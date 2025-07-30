@@ -51,18 +51,18 @@ const Header = () => {
         el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
     };
 
-    const renderNavLink = (label, path, isExact = false) => (
+    const renderNavLink = (label, path) => (
         <NavLink
             key={path}
             to={path}
             className={({ isActive }) =>
                 `relative px-3 py-2 text-xs sm:text-sm uppercase tracking-wide transition-colors ${
-                    isActive && isExact
+                    isActive
                         ? "font-bold text-black dark:text-white"
                         : "text-gray-500 dark:text-gray-400"
                 } group`
             }
-            end={isExact}
+            end={path === "/"}
         >
             {label}
             <span className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 bg-black transition-all duration-300 group-hover:w-full dark:bg-white"></span>
@@ -78,7 +78,6 @@ const Header = () => {
                 </div>
 
                 <div className="relative mt-2 flex items-center">
-                    {/* Fading gradient overlays */}
                     {canScrollLeft && (
                         <div className="absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white dark:from-black to-transparent pointer-events-none sm:hidden" />
                     )}
@@ -86,7 +85,7 @@ const Header = () => {
                         <div className="absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white dark:from-black to-transparent pointer-events-none sm:hidden" />
                     )}
 
-                    {/* Scroll buttons (only when needed) */}
+                    {/* Left chevron */}
                     <div className="relative z-20 flex w-6 justify-center sm:hidden">
                         {canScrollLeft && (
                             <button
@@ -98,11 +97,12 @@ const Header = () => {
                         )}
                     </div>
 
+                    {/* Nav links */}
                     <nav
                         ref={navRef}
                         className="flex-1 overflow-x-auto whitespace-nowrap px-1 text-xs sm:text-sm font-body scrollbar-hide sm:flex sm:flex-wrap sm:justify-end gap-3 sm:gap-6"
                     >
-                        {renderNavLink("home", "/", true)}
+                        {renderNavLink("home", "/")}
                         {categories.length === 0 ? (
                             <span className="italic text-gray-400">loading…</span>
                         ) : (
@@ -116,6 +116,7 @@ const Header = () => {
                         {renderNavLink("about", "/about")}
                     </nav>
 
+                    {/* Right chevron */}
                     <div className="relative z-20 flex w-6 justify-center sm:hidden">
                         {canScrollRight && (
                             <button
