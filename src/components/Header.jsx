@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { getCategories, getPlaylists } from "../lib/catalog.js";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
@@ -6,10 +6,9 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 const Header = () => {
     const [categories, setCategories] = useState([]);
     const [playlists, setPlaylists] = useState({});
-    const navRef = useRef(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
-    const location = useLocation();
+    const navRef = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -20,33 +19,47 @@ const Header = () => {
                 console.error("Failed to load nav data:", err);
             }
         };
+
         fetchData();
     }, []);
 
+    const updateScrollIndicators = () => {
+        const el = navRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 10);
+        setCanScrollRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 10);
+    };
+
     useEffect(() => {
-        const nav = navRef.current;
-        if (!nav) return;
+        const el = navRef.current;
+        if (!el) return;
 
-        const handleScroll = () => {
-            setCanScrollLeft(nav.scrollLeft > 10);
-            setCanScrollRight(nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 10);
+        updateScrollIndicators();
+        el.addEventListener("scroll", updateScrollIndicators);
+        window.addEventListener("resize", updateScrollIndicators);
+
+        return () => {
+            el.removeEventListener("scroll", updateScrollIndicators);
+            window.removeEventListener("resize", updateScrollIndicators);
         };
+    }, []);
 
-        handleScroll();
-        nav.addEventListener("scroll", handleScroll);
-        return () => nav.removeEventListener("scroll", handleScroll);
-    }, [categories, playlists]);
-
-    const scrollBy = (amount) => {
-        navRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+    const scrollNav = (direction) => {
+        const el = navRef.current;
+        if (!el) return;
+        const amount = el.offsetWidth * 0.6;
+        el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
     };
 
     const renderNavLink = (label, path, isExact = false) => (
         <NavLink
+            key={path}
             to={path}
             className={({ isActive }) =>
                 `relative px-3 py-2 text-xs sm:text-sm uppercase tracking-wide transition-colors ${
-                    isActive && isExact ? "font-bold text-black dark:text-white" : "text-gray-500 dark:text-gray-400"
+                    isActive && isExact
+                        ? "font-bold text-black dark:text-white"
+                        : "text-gray-500 dark:text-gray-400"
                 } group`
             }
             end={isExact}
@@ -58,55 +71,61 @@ const Header = () => {
 
     return (
         <header className="sticky top-0 z-50 bg-white py-2 text-black shadow-md dark:bg-black dark:text-white">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between px-4 sm:flex-row">
+            <div className="mx-auto max-w-7xl px-4">
                 <div className="text-center sm:text-left">
-                    <h1 className="font-title text-2xl lowercase tracking-widest sm:text-3xl">Dmitry · Likane</h1>
+                    <h1 className="font-title text-2xl lowercase tracking-widest sm:text-3xl">dmitry · likane</h1>
                     <p className="text-sm font-light tracking-wide">with</p>
                 </div>
 
-                <div className="relative mt-2 w-full overflow-hidden sm:mt-0 sm:w-auto">
-                    {/* Arrows only on mobile */}
+                <div className="relative mt-2 flex items-center">
+                    {/* Fading gradient overlays */}
                     {canScrollLeft && (
-                        <button
-                            onClick={() => scrollBy(-100)}
-                            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 px-2 transition-transform hover:scale-125 sm:hidden"
-                        >
-                            <ChevronLeftIcon className="h-5 w-5 text-black dark:text-white" />
-                        </button>
+                        <div className="absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-white dark:from-black to-transparent pointer-events-none sm:hidden" />
                     )}
                     {canScrollRight && (
-                        <button
-                            onClick={() => scrollBy(100)}
-                            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 px-2 transition-transform hover:scale-125 sm:hidden"
-                        >
-                            <ChevronRightIcon className="h-5 w-5 text-black dark:text-white" />
-                        </button>
+                        <div className="absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-white dark:from-black to-transparent pointer-events-none sm:hidden" />
                     )}
 
-                    {/* Fade masks */}
-                    <div className="pointer-events-none absolute left-0 top-0 h-full w-8 bg-gradient-to-r from-white dark:from-black sm:hidden" />
-                    <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-gradient-to-l from-white dark:from-black sm:hidden" />
+                    {/* Scroll buttons (only when needed) */}
+                    <div className="relative z-20 flex w-6 justify-center sm:hidden">
+                        {canScrollLeft && (
+                            <button
+                                onClick={() => scrollNav("left")}
+                                className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
+                            >
+                                <ChevronLeftIcon className="h-5 w-5 text-black dark:text-white" />
+                            </button>
+                        )}
+                    </div>
 
                     <nav
                         ref={navRef}
-                        className="flex max-w-full flex-nowrap overflow-x-auto sm:flex-wrap sm:justify-end scrollbar-hide text-xs sm:text-sm font-body"
+                        className="flex-1 overflow-x-auto whitespace-nowrap px-1 text-xs sm:text-sm font-body scrollbar-hide sm:flex sm:flex-wrap sm:justify-end gap-3 sm:gap-6"
                     >
                         {renderNavLink("home", "/", true)}
-
                         {categories.length === 0 ? (
-                            <span className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500">loading…</span>
+                            <span className="italic text-gray-400">loading…</span>
                         ) : (
                             categories.map((category) =>
                                 renderNavLink(category, `/category/${category}`)
                             )
                         )}
-
                         {Object.keys(playlists).map((name) =>
                             renderNavLink(name, `/videos/${name}`)
                         )}
-
                         {renderNavLink("about", "/about")}
                     </nav>
+
+                    <div className="relative z-20 flex w-6 justify-center sm:hidden">
+                        {canScrollRight && (
+                            <button
+                                onClick={() => scrollNav("right")}
+                                className="rounded-full p-1 hover:bg-black/10 dark:hover:bg-white/10"
+                            >
+                                <ChevronRightIcon className="h-5 w-5 text-black dark:text-white" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </header>
