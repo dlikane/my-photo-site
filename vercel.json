@@ -8,5 +8,10 @@
     "env": {
       "NODE_ENV": "development"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/about", "destination": "/" },
+    { "source": "/category/:match*", "destination": "/" },
+    { "source": "/videos", "destination": "/" }
+  ]
 }
