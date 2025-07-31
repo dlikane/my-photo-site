@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
+import { getAbout } from "../lib/catalog.js"; // ⬅️ Make sure path is correct
 
 const About = () => {
     const [aboutContent, setAboutContent] = useState("");
 
     useEffect(() => {
-        const fetchAbout = async () => {
+        const loadAbout = async () => {
             try {
-                const res = await fetch("/about.html");
-                const text = await res.text();
-                setAboutContent(text);
+                const html = await getAbout();
+                setAboutContent(html || "<p>No bio available.</p>");
             } catch (err) {
-                console.error("Failed to load about:", err);
+                console.error("❌ Failed to load about from catalog:", err);
                 setAboutContent("<p>Unable to load bio.</p>");
             }
         };
 
-        fetchAbout();
+        loadAbout();
     }, []);
 
     return (
