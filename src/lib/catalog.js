@@ -40,7 +40,11 @@ export async function getCategories() {
 
 export async function getImagesByCategory(categoryName) {
     await ensureCatalog();
-    return catalog.categories?.[categoryName] || [];
+    return catalog.categories?.[categoryName]?.images || [];
+}
+export async function getAccessByCategory(categoryName) {
+    await ensureCatalog();
+    return catalog.categories?.[categoryName]?.access || null;
 }
 
 export async function getPlaylists() {

@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCategories, getImagesByCategory, getImageUrlByPath } from "../lib/catalog.js";
+import {
+    getAccessByCategory,
+    getCategories,
+    getImagesByCategory,
+    getImageUrlByPath,
+} from "../lib/catalog.js";
+import { hasAccess } from "../lib/access.js";
+
 import Quote from "./Quote.jsx";
 import LoadingSpinner from "./LoadingSpinner.jsx";
+import CategoryCard from "./CategoryCard.jsx";
 
 const Home = () => {
     const [previews, setPreviews] = useState([]);
@@ -19,7 +27,9 @@ const Home = () => {
                         const images = await getImagesByCategory(category);
                         if (!images.length) return null;
                         const url = await getImageUrlByPath(images[0].path);
-                        return { category, url };
+                        const requiredAccess = await getAccessByCategory(category);
+                        const locked = requiredAccess && !hasAccess(category);
+                        return { category, url, locked };
                     })
                 );
                 setPreviews(list.filter(Boolean));
@@ -33,30 +43,26 @@ const Home = () => {
         load();
     }, []);
 
+    const handleCardClick = (category) => {
+        navigate(`/category/${category}`);
+    };
+
     return (
         <div className="flex w-full flex-col items-center justify-center bg-white px-5 py-10 dark:bg-black">
-            {loading && (
-                <LoadingSpinner />
-            )}
+            {loading && <LoadingSpinner />}
 
             <div className="grid w-full max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
-                {previews.map(({ category, url }) => (
-                    <div
+                {previews.map(({ category, url, locked }) => (
+                    <CategoryCard
                         key={category}
-                        onClick={() => navigate(`/category/${category}`)}
-                        className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-lg bg-gray-100 shadow-md transition hover:scale-105 dark:bg-gray-800"
-                    >
-                        <img
-                            src={url}
-                            alt={category}
-                            className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-                        />
-                        <div className="absolute bottom-0 w-full bg-black/60 py-2 text-center text-sm uppercase tracking-widest text-white">
-                            {category}
-                        </div>
-                    </div>
+                        name={category}
+                        image={url}
+                        locked={locked}
+                        onClick={() => handleCardClick(category)}
+                    />
                 ))}
             </div>
+
             <Quote />
         </div>
     );

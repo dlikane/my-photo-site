@@ -9,6 +9,16 @@ async function getDropboxInstance() {
     return new Dropbox({ accessToken, fetch });
 }
 
+let accessData = null;
+
+export async function getAccessData() {
+    if (!accessData) {
+        const dbx = await getDropboxInstance();
+        accessData = await getSupplementalFile(dbx, "/access.yml", true) || {};
+    }
+    return accessData;
+}
+
 async function getAllDropboxFiles() {
     const dbx = await getDropboxInstance();
     const response = await dbx.filesListFolder({ path: "", recursive: true });
@@ -74,27 +84,37 @@ export async function loadCatalogFromDropbox() {
     const result = {};
 
     for (const [key, value] of Object.entries(categories)) {
+        if (!value || typeof value !== "object" || typeof value.dir !== "string") {
+            console.warn(`Skipping category '${key}' — invalid or missing dir`);
+            continue;
+        }
+
         const dir = value.dir?.replace(/^\/+/, "").replace(/\/+$/, "");
         if (!dir) continue;
 
         const images = entries
-            .filter((e) =>
-                e[".tag"] === "file" &&
-                e.path_lower.startsWith(`/${dir}`) &&
-                /\.(jpe?g)$/i.test(e.name)
+            .filter(
+                (e) =>
+                    e[".tag"] === "file" &&
+                    e.path_lower.startsWith(`/${dir}`) &&
+                    /\.(jpe?g)$/i.test(e.name)
             )
             .sort((a, b) => a.name.localeCompare(b.name)) // ✅ sort alphabetically by filename
             .map((e) => ({
-                path: e.path_lower
+                path: e.path_lower,
             }));
 
-        result[key] = images;
+        result[key] = {
+            images,
+            access: value.access || null, // ✅ include access key from YAML
+        };
     }
 
     return {
         categories: result,
         playlists: playlistsYml || {},
         about: aboutHtml || "",
-        quotes: decodeQuotes(quotesText)
+        quotes: decodeQuotes(quotesText),
     };
 }
+
