@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
-const AccessPromptModal = ({ category, onSubmit, onClose }) => {
+const Login = ({ category, onSubmit, onClose }) => {
     const [user, setUser] = useState("");
     const [code, setCode] = useState("");
     const [error, setError] = useState("");
+
+    const codeInputRef = useRef(null);
 
     const handleSubmit = async () => {
         const ok = await onSubmit({ user, code });
@@ -20,6 +22,12 @@ const AccessPromptModal = ({ category, onSubmit, onClose }) => {
                         placeholder="User"
                         value={user}
                         onChange={(e) => setUser(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                codeInputRef.current?.focus();
+                            }
+                        }}
                         className="w-full rounded border px-3 py-2 dark:bg-black dark:border-white"
                     />
                     <input
@@ -27,6 +35,13 @@ const AccessPromptModal = ({ category, onSubmit, onClose }) => {
                         placeholder="Code"
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleSubmit();
+                            }
+                        }}
+                        ref={codeInputRef}
                         className="w-full rounded border px-3 py-2 dark:bg-black dark:border-white"
                     />
                     {error && <div className="text-red-500 text-sm">{error}</div>}
@@ -40,4 +55,4 @@ const AccessPromptModal = ({ category, onSubmit, onClose }) => {
     );
 };
 
-export default AccessPromptModal;
+export default Login;

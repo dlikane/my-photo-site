@@ -84,6 +84,11 @@ export async function loadCatalogFromDropbox() {
     const result = {};
 
     for (const [key, value] of Object.entries(categories)) {
+        if (!value || typeof value !== "object" || typeof value.dir !== "string") {
+            console.warn(`Skipping category '${key}' — invalid or missing dir`);
+            continue;
+        }
+
         const dir = value.dir?.replace(/^\/+/, "").replace(/\/+$/, "");
         if (!dir) continue;
 

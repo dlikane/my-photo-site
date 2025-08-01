@@ -6,18 +6,15 @@ import {
     getImagesByCategory,
     getImageUrlByPath,
 } from "../lib/catalog.js";
-import { hasAccess, grantAccess, verifyAccess } from "../lib/access.js";
+import { hasAccess } from "../lib/access.js";
 
 import Quote from "./Quote.jsx";
 import LoadingSpinner from "./LoadingSpinner.jsx";
 import CategoryCard from "./CategoryCard.jsx";
-import AccessPromptModal from "./AccessPromptModal.jsx";
 
 const Home = () => {
     const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [promptCategory, setPromptCategory] = useState(null);
-
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -32,11 +29,9 @@ const Home = () => {
                         const url = await getImageUrlByPath(images[0].path);
                         const requiredAccess = await getAccessByCategory(category);
                         const locked = requiredAccess && !hasAccess(category);
-                        console.log('loading:', 'category', category, 'requiredAccess', requiredAccess, 'locked', locked);
                         return { category, url, locked };
                     })
                 );
-
                 setPreviews(list.filter(Boolean));
             } catch (err) {
                 console.error("❌ Failed to load preview images", err);
@@ -48,33 +43,8 @@ const Home = () => {
         load();
     }, []);
 
-    const handleCardClick = async (category, locked) => {
-        console.log('click:', 'category', category, 'locked', locked);
-
-        if (!locked || hasAccess(category)) {
-            navigate(`/category/${category}`);
-        } else {
-            setPromptCategory(category);
-        }
-    };
-
-    const handlePromptSubmit = async ({ user, code }) => {
-        const requiredAccess = await getAccessByCategory(promptCategory);
-
-        const ok = await verifyAccess({
-            user,
-            code,
-            categoryAccess: requiredAccess, // <-- send access levels instead of category name
-        });
-
-        if (ok) {
-            grantAccess(promptCategory);
-            setPromptCategory(null);
-            navigate(`/category/${promptCategory}`);
-            return true;
-        }
-
-        return false;
+    const handleCardClick = (category) => {
+        navigate(`/category/${category}`);
     };
 
     return (
@@ -88,18 +58,10 @@ const Home = () => {
                         name={category}
                         image={url}
                         locked={locked}
-                        onClick={() => handleCardClick(category, locked)}
+                        onClick={() => handleCardClick(category)}
                     />
                 ))}
             </div>
-
-            {promptCategory && (
-                <AccessPromptModal
-                    category={promptCategory}
-                    onSubmit={handlePromptSubmit}
-                    onClose={() => setPromptCategory(null)}
-                />
-            )}
 
             <Quote />
         </div>
