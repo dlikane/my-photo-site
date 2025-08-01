@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCategories, getImagesByCategory, getImageUrlByPath } from "../lib/catalog.js";
+import {
+    getAccessByCategory,
+    getCategories,
+    getImagesByCategory,
+    getImageUrlByPath,
+} from "../lib/catalog.js";
+import { hasAccess, grantAccess, verifyAccess } from "../lib/access.js";
+
 import Quote from "./Quote.jsx";
 import LoadingSpinner from "./LoadingSpinner.jsx";
+import CategoryCard from "./CategoryCard.jsx";
+import AccessPromptModal from "./AccessPromptModal.jsx";
 
 const Home = () => {
     const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [promptCategory, setPromptCategory] = useState(null);
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -19,9 +30,13 @@ const Home = () => {
                         const images = await getImagesByCategory(category);
                         if (!images.length) return null;
                         const url = await getImageUrlByPath(images[0].path);
-                        return { category, url };
+                        const requiredAccess = await getAccessByCategory(category);
+                        const locked = requiredAccess && !hasAccess(category);
+                        console.log('loading:', 'category', category, 'requiredAccess', requiredAccess, 'locked', locked);
+                        return { category, url, locked };
                     })
                 );
+
                 setPreviews(list.filter(Boolean));
             } catch (err) {
                 console.error("❌ Failed to load preview images", err);
@@ -33,30 +48,59 @@ const Home = () => {
         load();
     }, []);
 
+    const handleCardClick = async (category, locked) => {
+        console.log('click:', 'category', category, 'locked', locked);
+
+        if (!locked || hasAccess(category)) {
+            navigate(`/category/${category}`);
+        } else {
+            setPromptCategory(category);
+        }
+    };
+
+    const handlePromptSubmit = async ({ user, code }) => {
+        const requiredAccess = await getAccessByCategory(promptCategory);
+
+        const ok = await verifyAccess({
+            user,
+            code,
+            categoryAccess: requiredAccess, // <-- send access levels instead of category name
+        });
+
+        if (ok) {
+            grantAccess(promptCategory);
+            setPromptCategory(null);
+            navigate(`/category/${promptCategory}`);
+            return true;
+        }
+
+        return false;
+    };
+
     return (
         <div className="flex w-full flex-col items-center justify-center bg-white px-5 py-10 dark:bg-black">
-            {loading && (
-                <LoadingSpinner />
-            )}
+            {loading && <LoadingSpinner />}
 
             <div className="grid w-full max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
-                {previews.map(({ category, url }) => (
-                    <div
+                {previews.map(({ category, url, locked }) => (
+                    <CategoryCard
                         key={category}
-                        onClick={() => navigate(`/category/${category}`)}
-                        className="group relative aspect-square w-full cursor-pointer overflow-hidden rounded-lg bg-gray-100 shadow-md transition hover:scale-105 dark:bg-gray-800"
-                    >
-                        <img
-                            src={url}
-                            alt={category}
-                            className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
-                        />
-                        <div className="absolute bottom-0 w-full bg-black/60 py-2 text-center text-sm uppercase tracking-widest text-white">
-                            {category}
-                        </div>
-                    </div>
+                        name={category}
+                        image={url}
+                        locked={locked}
+                        onClick={() => handleCardClick(category, locked)}
+                    />
                 ))}
             </div>
+
+            {promptCategory && (
+                <AccessPromptModal
+                    category={promptCategory}
+                    onSubmit={handlePromptSubmit}
+                    onClose={() => setPromptCategory(null)}
+                />
+            )}
+
             <Quote />
         </div>
     );
