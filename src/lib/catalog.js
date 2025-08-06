@@ -77,8 +77,9 @@ export async function getQuote() {
 
     if (!firstQuoteReturned) {
         const today = new Date().toISOString().split("T")[0]; // e.g. "2025-07-30"
-        const hash = Array.from(today).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        index = hash % quotes.length;
+        const seed = Array.from(today).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+        const rand = seededRandom(seed);
+        index = Math.floor(rand * quotes.length);
         firstQuoteReturned = true;
     } else {
         index = Math.floor(Math.random() * quotes.length);
@@ -87,6 +88,11 @@ export async function getQuote() {
     const raw = quotes[index].text;
     const [quote, author] = raw.split("|").map((x) => x.trim());
     return { text: quote, author };
+}
+
+function seededRandom(seed) {
+    let x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
 }
 
 const imageUrlCache = new Map();

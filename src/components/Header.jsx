@@ -82,18 +82,17 @@ const Header = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:h-24">
                     {/* Branding */}
                     <div className="flex flex-col items-center sm:items-start sm:w-auto sm:mr-6">
-                        <div className="flex flex-col items-center sm:items-center">
-                            <h1
-                                className="font-title text-2xl font-extralight lowercase sm:text-3xl transform scale-y-140 sm:tracking-[12px] tracking-[12px]"
+
+                        <div className="relative flex flex-col items-center">
+                            <div
+                                className="font-title text-2xl font-extralight lowercase sm:text-3xl transform scale-y-140 sm:tracking-[12px] tracking-[12px] z-10 bg-no-repeat bg-center bg-[length:60%_auto] pb-6"
+                                style={{ backgroundImage: "url('/br.png')" }}
                             >
                                 dmitry · likane
-                            </h1>
-                            <img
-                                src="/br.png"
-                                alt="with"
-                                className="h-6 sm:h-7 mt-1"
-                            />
+                            </div>
                         </div>
+
+
                     </div>
 
                     {/* Nav + chevrons */}
