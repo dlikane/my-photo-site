@@ -82,17 +82,15 @@ const Header = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:h-24">
                     {/* Branding */}
                     <div className="flex flex-col items-center sm:items-start sm:w-auto sm:mr-6">
-
                         <div className="relative flex flex-col items-center">
-                            <div
-                                className="font-title text-2xl font-extralight lowercase sm:text-3xl transform scale-y-140 sm:tracking-[12px] tracking-[12px] z-10 bg-no-repeat bg-center bg-[length:60%_auto] pb-6"
+                            <NavLink
+                                to="/"
+                                className="font-title text-2xl font-extralight lowercase sm:text-3xl transform scale-y-140 sm:tracking-[12px] tracking-[12px] z-10 bg-no-repeat bg-center bg-[length:60%_auto] pb-6 hover:opacity-80 transition-opacity"
                                 style={{ backgroundImage: "url('/br.png')" }}
                             >
                                 dmitry · likane
-                            </div>
+                            </NavLink>
                         </div>
-
-
                     </div>
 
                     {/* Nav + chevrons */}
@@ -123,7 +121,7 @@ const Header = () => {
                             ref={navRef}
                             className="flex-1 overflow-x-auto whitespace-nowrap px-1 text-xs sm:text-sm font-body scrollbar-hide sm:flex sm:flex-wrap sm:justify-end gap-3 sm:gap-6"
                         >
-                            {renderNavLink("home", "/")}
+                            {/*{renderNavLink("home", "/")}*/}
                             {categories.length === 0 ? (
                                 <span
                                     className="px-3 py-2 text-xs sm:text-sm uppercase tracking-wide text-gray-300 font-body">
