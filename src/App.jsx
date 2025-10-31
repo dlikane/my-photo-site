@@ -18,7 +18,7 @@ const App = () => {
     return (
         <Router>
             <Main theme={theme} setTheme={setTheme} />
-            <Analytics />
+            <Analytics debug />
         </Router>
     );
 };
