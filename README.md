@@ -15,6 +15,11 @@ A modern photo and video showcase built with React, Tailwind, Dropbox, Supabase,
 
 ---
 
+## Running locally
+```
+pnpm dev
+```
+
 ## 📁 Project Structure
 
 ```

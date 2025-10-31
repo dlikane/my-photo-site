@@ -1,6 +1,7 @@
 import { BrowserRouter as Router } from "react-router-dom";
 import Main from "./components/Main";
 import { useState, useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 const App = () => {
     const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
@@ -17,6 +18,7 @@ const App = () => {
     return (
         <Router>
             <Main theme={theme} setTheme={setTheme} />
+            <Analytics />
         </Router>
     );
 };
