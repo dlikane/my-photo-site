@@ -4,6 +4,11 @@
       "memory": 1024
     }
   },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
   "rewrites": [
     { "source": "/about", "destination": "/" },
     { "source": "/category/:match*", "destination": "/" },
