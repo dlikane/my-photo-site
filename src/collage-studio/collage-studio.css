@@ -168,6 +168,12 @@
   color: #ccc;
   background: rgba(59, 130, 246, 0.08);
 }
+.collage-studio-page .library-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
 .collage-studio-page .library-thumb-wrap {
   position: relative;
 }

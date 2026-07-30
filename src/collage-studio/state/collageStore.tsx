@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import type { CollageDoc } from '../model/collageTypes'
+import { loadSession, saveSession } from './idb'
 
 const HISTORY_LIMIT = 50
 
@@ -30,6 +31,7 @@ type Action =
   | { type: 'SELECT_INSERT'; id: string; insertId: string | null }
   | { type: 'MARK_SAVED'; id: string }
   | { type: 'RENAME_DOC'; id: string; name: string }
+  | { type: 'HYDRATE'; order: string[]; activeId: string | null; entries: Record<string, DocEntry> }
 
 const initialState: State = { entries: {}, order: [], activeId: null }
 
@@ -132,6 +134,11 @@ function reducer(state: State, action: Action): State {
       // most tools' convention of not undoing renames.
       return { ...state, entries: { ...state.entries, [action.id]: { ...entry, doc: { ...entry.doc, name: action.name }, dirty: true } } }
     }
+    case 'HYDRATE':
+      // Only fires once, right after mount, and only if there was nothing
+      // created in the brief window before the IndexedDB load resolved.
+      if (state.order.length > 0) return state
+      return { entries: action.entries, order: action.order, activeId: action.activeId }
     default:
       return state
   }
@@ -172,7 +179,44 @@ const CollageStoreContext = createContext<StoreApi | null>(null)
 
 export function CollageStoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const [hydrated, setHydrated] = useState(false)
   const activeEntry = state.activeId ? state.entries[state.activeId] : null
+
+  // Restore whatever collages/tabs were open last time, once, on mount.
+  useEffect(() => {
+    let cancelled = false
+    loadSession()
+      .then((session) => {
+        if (cancelled || !session || session.order.length === 0) return
+        const entries: Record<string, DocEntry> = {}
+        for (const id of session.order) {
+          const stored = session.docs[id]
+          if (stored) entries[id] = newEntry(stored.doc as CollageDoc, stored.dirty)
+        }
+        dispatch({ type: 'HYDRATE', order: session.order, activeId: session.activeId, entries })
+      })
+      .catch((e) => console.error('Failed to load persisted session:', e))
+      .finally(() => {
+        if (!cancelled) setHydrated(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Persist on every change, once hydration has had its chance to run first
+  // (otherwise the initial empty state would race the load and win).
+  useEffect(() => {
+    if (!hydrated) return
+    const timer = window.setTimeout(() => {
+      const docs: Record<string, { doc: CollageDoc; dirty: boolean }> = {}
+      for (const id of state.order) {
+        docs[id] = { doc: state.entries[id].doc, dirty: state.entries[id].dirty }
+      }
+      saveSession({ order: state.order, activeId: state.activeId, docs }).catch((e) => console.error('Failed to persist session:', e))
+    }, 400)
+    return () => window.clearTimeout(timer)
+  }, [state, hydrated])
 
   const newDoc = useCallback((doc: CollageDoc) => dispatch({ type: 'NEW_DOC', doc }), [])
   const openDoc = useCallback((doc: CollageDoc) => dispatch({ type: 'OPEN_DOC', doc }), [])

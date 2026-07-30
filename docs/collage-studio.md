@@ -39,20 +39,29 @@ three scopes (external frame, grid between frames, per-insert).
   though the backend is stateless, wildcard CORS would let any site the
   user's browser visits make requests to it.
 
-## Session-only image handling
+## Image handling: local-only, persisted per device
 
-- **Image pool** (`src/collage-studio/state/imagePoolStore.tsx`): a
-  session-scoped `Map` of uploaded/dropped files, shared across every open
-  collage so images can be moved between them. Each image is keyed by an
-  `imageKey` fingerprint — `name|size|lastModified` — not a random ID.
-  Nothing is persisted; refreshing the tab loses the pool (object URLs are
-  revoked on unmount).
-- **Why a fingerprint, not a random ID:** collage layout files only store
-  `imageKey`, not the image bytes (see "Export/Open" below). If you reopen a
-  layout file and re-drop the *same* original files, they produce the same
-  fingerprint and automatically reattach to the right frames — no manual
-  per-frame re-linking needed. Different files (even with the same name) get
-  a different key and are treated as new uploads.
+- **Image pool** (`src/collage-studio/state/imagePoolStore.tsx`): a `Map` of
+  uploaded/dropped files, shared across every open collage so images can be
+  moved between them. Each image is keyed by a SHA-256 content hash, not a
+  random ID or filesystem path.
+- **Persisted to IndexedDB** (`src/collage-studio/state/idb.ts`), not
+  `localStorage` — `localStorage` is capped around 5-10MB and can't hold
+  binary Blobs; IndexedDB stores File/Blob objects natively and gets a much
+  larger quota. This is **device-local only** — nothing syncs between
+  devices, and nothing ever leaves the browser (no backend involved in any
+  of this). The gallery and whatever collages/tabs were open both survive a
+  full browser restart; a "Clear gallery" button in `LibraryPanel.tsx` wipes
+  the persisted images (with a confirm dialog — collages still referencing
+  a cleared image just show "missing image" afterward, same as before it
+  was cleared).
+- **Why a content hash, not metadata or a path:** collage layout files only
+  store `imageKey`, not the image bytes (see "Export/Open" below). If you
+  reopen a layout file and re-select the *same* original files, they hash to
+  the same key and automatically reattach to the right frames — no manual
+  per-frame re-linking needed. This also means that as long as an image is
+  still sitting in your persisted local gallery, reopening an old layout
+  "just works" without re-selecting anything at all.
 - Drop targets: the library panel's dropzone (general upload) and directly
   onto a canvas frame (uploads and assigns in one step). Both accept
   multiple files at once.
@@ -69,18 +78,30 @@ three scopes (external frame, grid between frames, per-insert).
   work with "the current doc" and don't know tabs exist. `Toolbar.tsx` owns
   the tabs bar (`tabs`, `activeId`, `newDoc`/`openDoc`/`closeDoc`/`setActive`).
 - **New** creates a blank tab immediately (no naming prompt) and marks it
-  dirty right away, since it's never been saved. **Export**/**Open** are
-  plain browser file download/upload, not backend calls (see below) — so
-  there's no "placeholder backend record" concept and no Save-vs-Save-As
-  distinction; Export always just downloads the current state.
-- Tabs show a trailing `*` while dirty (unsaved edits, or never-yet-saved).
-  Closing a dirty tab confirms first (via the in-app dialog, not
+  dirty right away, since it's never been downloaded as a file. **Export**/
+  **Open** are plain browser file download/upload, not backend calls (see
+  below) — so there's no "placeholder backend record" concept and no
+  Save-vs-Save-As distinction; Export always just downloads the current
+  state.
+- Tabs show a trailing `*` while dirty (unsaved edits, or never-yet-exported
+  as a file). Closing a dirty tab confirms first (via the in-app dialog, not
   `window.confirm` — see below).
+- Tabs and their `dirty` flag are persisted to IndexedDB (see above) and
+  restored on the next page load — `dirty` doesn't mean "not backed up
+  anywhere," it specifically tracks "not yet exported as a `.collage.json`
+  file." Undo/redo history is intentionally **not** persisted (starts empty
+  again after a restore) to keep things simple; only the current doc state
+  survives a restart, per tab.
+- Double-click a tab's name to rename it in place (`collageStore`'s
+  `renameDoc`, separate from `editDoc` so it doesn't push an undo-history
+  entry — renames aren't undoable).
 
 ## Export / Open / Render — three different operations
 
-(Named to match the UI, which deliberately doesn't call anything "Save" --
-there's no persistence to speak of, just file downloads and one backend call.)
+(Named to match the UI, which deliberately avoids "Save": the gallery and
+open tabs *are* persisted locally now, but only on this device, and Export/
+Open are still just a plain file download/upload on top of that, not a
+save-to-a-project concept.)
 
 - **Export** (download): serializes the current `CollageDoc` to JSON and
   triggers a browser file download (`<name>.collage.json`). This is
@@ -172,11 +193,12 @@ my-photo-site/
       imageCache.ts           # module-level HTMLImageElement cache, loads from pool object URLs
     api/client.ts        # health check + exportCollage() (multipart upload, returns a Blob)
     state/
-      collageStore.tsx     # multi-doc tab store: per-tab doc/dirty/undo-redo, active tab
-      imagePoolStore.tsx     # session-only image pool, fingerprint-keyed
+      collageStore.tsx     # multi-doc tab store: per-tab doc/dirty/undo-redo, active tab; hydrates from + persists to idb.ts
+      imagePoolStore.tsx     # content-hash-keyed image pool; hydrates from + persists to idb.ts
+      idb.ts                  # IndexedDB wrapper: images + session (tabs/active/dirty), device-local only
       dialogStore.tsx         # in-app prompt/confirm dialog (replaces window.prompt/confirm)
     components/
-      Toolbar.tsx          # tabs bar + new/open/save/export/undo/redo/preview-toggle
+      Toolbar.tsx          # tabs bar + new/open/export/render/undo/redo/preview-toggle
       LibraryPanel.tsx       # drop zone + file picker + thumbnail grid (drag source), remove-from-pool
       CanvasEditor.tsx        # the core editor -- canvas render + all pointer interaction
       InspectorPanel.tsx       # numeric fields: canvas/borders/selected frame/selected insert
@@ -214,3 +236,11 @@ Then `pnpm dev` as usual and visit `http://localhost:5173/collage-studio`
 - Flip is per-frame-image only; inserts don't have their own flip (they
   didn't ask for it and Insert doesn't wrap a full ImageRef, just an
   imageKey + its own focal/zoom/etc., so adding it is a small but separate change).
+- IndexedDB persistence (gallery + tabs) is type-checked and built, but not
+  verified in an actual browser (no way to drive one from here) — the real
+  test is closing and reopening the browser and confirming the gallery/tabs
+  come back.
+- No storage-quota handling: if IndexedDB ever hits the browser's quota
+  (unlikely for a personal tool, but possible with a very large gallery),
+  `saveImage`/`saveSession` just reject and log to the console rather than
+  surfacing anything to the user.

@@ -1,13 +1,23 @@
 import { useRef, useState } from 'react'
 import { setFrameImage } from '../model/treeOps'
 import { useCollageStore } from '../state/collageStore'
+import { useDialog } from '../state/dialogStore'
 import { useImagePool } from '../state/imagePoolStore'
 
 export function LibraryPanel() {
   const { doc, editDoc, selectedFrameId, selectedInsertId } = useCollageStore()
   const pool = useImagePool()
+  const dialog = useDialog()
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleClearGallery = async () => {
+    if (pool.images.length === 0) return
+    const ok = await dialog.confirm(
+      `Remove all ${pool.images.length} image(s) from your local gallery? This can't be undone -- any collage still referencing them will show "missing image" until you re-add them.`,
+    )
+    if (ok) await pool.clearAll()
+  }
 
   // Assigns to whichever is currently selected -- a frame or an insert (its
   // own, independent image; see docs/collage-studio.md). No-op if neither.
@@ -53,6 +63,13 @@ export function LibraryPanel() {
         <span>Drop images here, or click to choose (from Explorer/Finder, or Gallery on mobile)</span>
       </div>
 
+      {pool.images.length > 0 && (
+        <div className="library-gallery-header">
+          <span className="hint">{pool.images.length} image(s)</span>
+          <button onClick={handleClearGallery}>Clear gallery</button>
+        </div>
+      )}
+
       <div className="library-thumbs">
         {pool.images.map((img) => (
           <div key={img.key} className="library-thumb-wrap">
@@ -72,7 +89,7 @@ export function LibraryPanel() {
               onClick={() => assignToSelected(img.key)}
               onDoubleClick={() => assignToSelected(img.key)}
             />
-            <button className="library-thumb-remove" title="Remove from this session" onClick={() => pool.remove(img.key)}>
+            <button className="library-thumb-remove" title="Remove from gallery" onClick={() => pool.remove(img.key)}>
               ✕
             </button>
           </div>
