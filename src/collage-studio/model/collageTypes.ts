@@ -118,6 +118,25 @@ export const DEFAULT_INSERT_SHADOW: InsertShadow = {
   color: '#000000',
 }
 
+export const DEFAULT_INSERT_BORDER: InsertBorder = {
+  enabled: true,
+  width: 6,
+  color: '#ffffff',
+}
+
+/** Backfills fields added after this doc might have been created/persisted
+ * (IndexedDB-hydrated docs, or an older exported .collage.json) so the rest
+ * of the app can assume every CollageDoc is complete. Without this, a doc
+ * missing e.g. insertShadowDefault crashes on the first `.enabled` read --
+ * and with no error boundary, that's a blank white screen, not a nice error. */
+export function normalizeDoc(doc: CollageDoc): CollageDoc {
+  return {
+    ...doc,
+    insertBorderDefault: doc.insertBorderDefault ?? { ...DEFAULT_INSERT_BORDER },
+    insertShadowDefault: doc.insertShadowDefault ?? { ...DEFAULT_INSERT_SHADOW },
+  }
+}
+
 let idCounter = 0
 export function newId(): string {
   idCounter += 1
