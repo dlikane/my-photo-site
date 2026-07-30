@@ -2,6 +2,12 @@ import { collectFrames } from '../model/geometry'
 import { MAX_ZOOM, type Insert } from '../model/collageTypes'
 import { updateFrame } from '../model/treeOps'
 import { useCollageStore } from '../state/collageStore'
+import { useImagePool } from '../state/imagePoolStore'
+
+const ASPECT_PRESETS: { label: string; ratio: number }[] = [
+  { label: '1:1', ratio: 1 },
+  { label: '4:5', ratio: 5 / 4 },
+]
 
 function NumberField({
   label,
@@ -45,6 +51,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 
 export function InspectorPanel() {
   const { doc, editDoc, selectedFrameId, selectedInsertId, selectInsert } = useCollageStore()
+  const pool = useImagePool()
 
   if (!doc) return <div className="inspector-panel">No collage open.</div>
 
@@ -81,6 +88,17 @@ export function InspectorPanel() {
               onChange={(e) => editDoc((d) => ({ ...d, canvas: { ...d.canvas, height: Number(e.target.value) } }))}
             />
           </label>
+        </div>
+        <div className="field-row">
+          <span className="hint">Aspect:</span>
+          {ASPECT_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => editDoc((d) => ({ ...d, canvas: { ...d.canvas, height: Math.round(d.canvas.width * preset.ratio) } }))}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
         <NumberField
           label="JPEG quality"
@@ -219,6 +237,12 @@ export function InspectorPanel() {
       {selectedInsert && (
         <section>
           <h3>Selected insert</h3>
+          <p className="hint">
+            {selectedInsert.imageKey && pool.get(selectedInsert.imageKey)
+              ? `Image: ${pool.get(selectedInsert.imageKey)!.name}`
+              : 'No image assigned -- click or drag a library thumbnail onto it.'}
+            {' '}Drag the insert itself to move it, or its bottom-right handle to resize.
+          </p>
           <NumberField label="Size %" min={0.1} max={0.5} step={0.01} value={selectedInsert.sizePct} onChange={(v) => updateInsert(selectedInsert.id, { sizePct: v })} />
           <NumberField label="Zoom" min={1} max={MAX_ZOOM} step={0.05} value={selectedInsert.zoom} onChange={(v) => updateInsert(selectedInsert.id, { zoom: v })} />
           <NumberField

@@ -4,20 +4,27 @@ import { useCollageStore } from '../state/collageStore'
 import { useImagePool } from '../state/imagePoolStore'
 
 export function LibraryPanel() {
-  const { doc, editDoc, selectedFrameId } = useCollageStore()
+  const { doc, editDoc, selectedFrameId, selectedInsertId } = useCollageStore()
   const pool = useImagePool()
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const assignToSelectedFrame = (imageKey: string) => {
-    if (!doc || !selectedFrameId) return
-    editDoc((d) => ({ ...d, tree: setFrameImage(d.tree, selectedFrameId, { imageKey, focal: { x: 0.5, y: 0.5 }, zoom: 1.0 }) }))
+  // Assigns to whichever is currently selected -- a frame or an insert (its
+  // own, independent image; see docs/collage-studio.md). No-op if neither.
+  const assignToSelected = (imageKey: string) => {
+    if (!doc) return
+    if (selectedInsertId) {
+      editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === selectedInsertId ? { ...i, imageKey } : i)) }))
+    } else if (selectedFrameId) {
+      editDoc((d) => ({ ...d, tree: setFrameImage(d.tree, selectedFrameId, { imageKey, focal: { x: 0.5, y: 0.5 }, zoom: 1.0, flipH: false, flipV: false }) }))
+    }
   }
 
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDragOver(false)
-    if (e.dataTransfer.files.length > 0) pool.add(e.dataTransfer.files)
+    const files = e.dataTransfer.files
+    if (files.length > 0) void pool.add(files)
   }
 
   return (
@@ -39,7 +46,7 @@ export function LibraryPanel() {
           multiple
           hidden
           onChange={(e) => {
-            if (e.target.files) pool.add(e.target.files)
+            if (e.target.files) void pool.add(e.target.files)
             e.target.value = ''
           }}
         />
@@ -52,11 +59,18 @@ export function LibraryPanel() {
             <img
               src={img.objectUrl}
               alt={img.name}
-              title={selectedFrameId ? `${img.name} (click to assign to selected frame)` : img.name}
+              title={
+                selectedInsertId
+                  ? `${img.name} (click to assign to selected insert)`
+                  : selectedFrameId
+                    ? `${img.name} (click to assign to selected frame)`
+                    : img.name
+              }
               draggable
               className="library-thumb"
               onDragStart={(e) => e.dataTransfer.setData('application/x-collage-image', img.key)}
-              onClick={() => assignToSelectedFrame(img.key)}
+              onClick={() => assignToSelected(img.key)}
+              onDoubleClick={() => assignToSelected(img.key)}
             />
             <button className="library-thumb-remove" title="Remove from this session" onClick={() => pool.remove(img.key)}>
               ✕

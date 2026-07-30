@@ -64,6 +64,24 @@ export function updateFrame(tree: Node, frameId: string, update: (frame: FrameNo
   })
 }
 
+/** Swaps the images (including flip/focal/zoom) between two frames. */
+export function swapFrameImages(tree: Node, frameIdA: string, frameIdB: string): Node {
+  let imageA: ImageRef | null = null
+  let imageB: ImageRef | null = null
+  function find(node: Node) {
+    if (node.type === 'frame') {
+      if (node.id === frameIdA) imageA = node.image
+      if (node.id === frameIdB) imageB = node.image
+      return
+    }
+    find(node.first)
+    find(node.second)
+  }
+  find(tree)
+  const withA = updateFrame(tree, frameIdA, (f) => ({ ...f, image: imageB }))
+  return updateFrame(withA, frameIdB, (f) => ({ ...f, image: imageA }))
+}
+
 function mapNode(node: Node, fn: (node: Node) => Node): Node {
   const mapped = fn(node)
   if (mapped !== node) return mapped

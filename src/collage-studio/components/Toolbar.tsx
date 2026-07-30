@@ -9,6 +9,8 @@ import { useImagePool } from '../state/imagePoolStore'
 interface ToolbarProps {
   previewMode: boolean
   onTogglePreview: () => void
+  onToggleLibrary: () => void
+  onToggleInspector: () => void
 }
 
 function sanitizeFilename(name: string): string {
@@ -30,10 +32,15 @@ function collectImageKeys(doc: CollageDoc): string[] {
   for (const frame of Object.values(frames)) {
     if (frame.image) keys.add(frame.image.imageKey)
   }
+  // Inserts have their own, independent image assignment (see collageTypes.ts) --
+  // not necessarily used by any frame, so must be collected separately.
+  for (const insert of doc.inserts) {
+    if (insert.imageKey) keys.add(insert.imageKey)
+  }
   return Array.from(keys)
 }
 
-export function Toolbar({ previewMode, onTogglePreview }: ToolbarProps) {
+export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggleInspector }: ToolbarProps) {
   const { doc, dirty, tabs, activeId, newDoc, openDoc, closeDoc, setActive, undo, redo, canUndo, canRedo, markSaved } = useCollageStore()
   const dialog = useDialog()
   const pool = useImagePool()
@@ -108,6 +115,9 @@ export function Toolbar({ previewMode, onTogglePreview }: ToolbarProps) {
   return (
     <div className="toolbar-wrap">
       <div className="toolbar">
+        <button className="mobile-panel-toggle" onClick={onToggleLibrary} title="Show image library">
+          ☰ Library
+        </button>
         <button onClick={handleNew}>New</button>
         <button onClick={handleOpenClick}>Open…</button>
         <input
@@ -137,6 +147,9 @@ export function Toolbar({ previewMode, onTogglePreview }: ToolbarProps) {
         </button>
         <button className={previewMode ? 'active' : undefined} onClick={onTogglePreview}>
           {previewMode ? 'Exit Preview' : 'Preview'}
+        </button>
+        <button className="mobile-panel-toggle" onClick={onToggleInspector} title="Show adjustments panel">
+          Inspector ☰
         </button>
         {status && <span className="toolbar-status">{status}</span>}
       </div>

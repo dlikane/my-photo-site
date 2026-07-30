@@ -6,6 +6,24 @@ function split(orientation: 'horizontal' | 'vertical', first: Node, second: Node
   return { type: 'split', id: newId(), orientation, ratio, first, second }
 }
 
+/** N equal frames along one axis, via progressively-smaller ratios (1/n, 1/(n-1), ...). */
+function evenSplit(orientation: 'horizontal' | 'vertical', count: number): Node {
+  function build(remaining: number): Node {
+    if (remaining === 1) return makeFrame()
+    return split(orientation, makeFrame(), build(remaining - 1), 1 / remaining)
+  }
+  return build(count)
+}
+
+/** `cols` columns, each independently split into `rows` even rows. */
+function evenGrid(cols: number, rows: number): Node {
+  function buildCols(remaining: number): Node {
+    if (remaining === 1) return evenSplit('vertical', rows)
+    return split('horizontal', evenSplit('vertical', rows), buildCols(remaining - 1), 1 / remaining)
+  }
+  return buildCols(cols)
+}
+
 const TEMPLATES: { label: string; build: () => Node }[] = [
   { label: '2 columns', build: () => split('horizontal', makeFrame(), makeFrame()) },
   { label: '2 rows', build: () => split('vertical', makeFrame(), makeFrame()) },
@@ -18,6 +36,8 @@ const TEMPLATES: { label: string; build: () => Node }[] = [
     build: () =>
       split('vertical', split('horizontal', makeFrame(), makeFrame()), split('horizontal', makeFrame(), makeFrame())),
   },
+  { label: '3x3 grid', build: () => evenGrid(3, 3) },
+  { label: '4x4 grid', build: () => evenGrid(4, 4) },
 ]
 
 /** Starting-point layouts, built from the same split primitive as manual editing --

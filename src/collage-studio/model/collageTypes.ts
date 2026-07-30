@@ -7,11 +7,14 @@ export interface FocalPoint {
 
 export interface ImageRef {
   // Opaque session-scoped key into the image pool (see state/imagePoolStore.tsx),
-  // not a filesystem path -- fingerprinted from name|size|lastModified so the
-  // same file re-dropped in a later session resolves to the same key.
+  // not a filesystem path -- content-hashed (SHA-256) so the same file
+  // re-dropped in a later session resolves to the same key regardless of name/mtime.
   imageKey: string
   focal: FocalPoint
   zoom: number
+  // Optional (older/reopened docs may lack these) -- treat missing as false.
+  flipH?: boolean
+  flipV?: boolean
 }
 
 export interface FrameNode {
@@ -59,7 +62,10 @@ export interface PositionPct {
 
 export interface Insert {
   id: string
-  sourceFrameId: string
+  // Independent from the source frame it was created next to -- reassignable
+  // afterward via the library, same as a frame's image. null if never assigned
+  // (e.g. created on a seam where neither adjacent frame had an image yet).
+  imageKey: string | null
   seam: SeamRef | null
   position: PositionPct | null
   sizePct: number

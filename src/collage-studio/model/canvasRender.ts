@@ -6,16 +6,36 @@
 import type { FocalPoint } from './collageTypes'
 import { computeCropBox, type Rect } from './geometry'
 
+/** Mirrors drawing around the rect's own center, so a flip doesn't shift the rect. */
+function withFlip(ctx: CanvasRenderingContext2D, rect: Rect, flipH: boolean, flipV: boolean, draw: () => void) {
+  if (!flipH && !flipV) {
+    draw()
+    return
+  }
+  ctx.save()
+  const cx = rect.x + rect.w / 2
+  const cy = rect.y + rect.h / 2
+  ctx.translate(cx, cy)
+  ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1)
+  ctx.translate(-cx, -cy)
+  draw()
+  ctx.restore()
+}
+
 export function drawCoverCropImage(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   destRect: Rect,
   focal: FocalPoint,
   zoom: number,
+  flipH = false,
+  flipV = false,
 ) {
   if (destRect.w <= 0 || destRect.h <= 0) return
   const box = computeCropBox(img.naturalWidth, img.naturalHeight, destRect.w, destRect.h, focal, zoom)
-  ctx.drawImage(img, box.x, box.y, box.w, box.h, destRect.x, destRect.y, destRect.w, destRect.h)
+  withFlip(ctx, destRect, flipH, flipV, () => {
+    ctx.drawImage(img, box.x, box.y, box.w, box.h, destRect.x, destRect.y, destRect.w, destRect.h)
+  })
 }
 
 export function drawFeatheredImage(

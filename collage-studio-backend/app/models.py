@@ -31,6 +31,8 @@ class ImageRef(BaseModel):
     imageKey: str
     focal: FocalPoint = Field(default_factory=FocalPoint)
     zoom: float = 1.0
+    flipH: bool = False
+    flipV: bool = False
 
 
 class FrameNode(BaseModel):
@@ -80,7 +82,9 @@ class PositionPct(BaseModel):
 
 class Insert(BaseModel):
     id: str = Field(default_factory=_id)
-    sourceFrameId: str
+    # Independent from any frame -- reassignable via the library like a frame's
+    # image. None if never assigned an image.
+    imageKey: Optional[str] = None
     seam: Optional[SeamRef] = None
     position: Optional[PositionPct] = None
     sizePct: float = 0.26

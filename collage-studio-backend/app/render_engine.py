@@ -73,10 +73,15 @@ def compute_crop_box(src_w, src_h, target_w, target_h, focal_xy=(0.5, 0.5), zoom
     return (left, top, left + crop_w, top + crop_h)
 
 
-def cover_crop(img, target_w, target_h, focal_xy=(0.5, 0.5), zoom=1.0):
+def cover_crop(img, target_w, target_h, focal_xy=(0.5, 0.5), zoom=1.0, flip_h=False, flip_v=False):
     box = compute_crop_box(img.width, img.height, target_w, target_h, focal_xy, zoom)
     cropped = img.crop(box)
-    return cropped.resize((max(1, round(target_w)), max(1, round(target_h))), Image.LANCZOS)
+    tile = cropped.resize((max(1, round(target_w)), max(1, round(target_h))), Image.LANCZOS)
+    if flip_h:
+        tile = tile.transpose(Image.FLIP_LEFT_RIGHT)
+    if flip_v:
+        tile = tile.transpose(Image.FLIP_TOP_BOTTOM)
+    return tile
 
 
 # --------------------------------------------------------------------------- split-tree layout
@@ -165,7 +170,7 @@ def _insert_border_spec(insert: Insert, default_border):
     return insert.border if insert.border is not None else default_border
 
 
-def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, frames, images, scale):
+def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, images, scale):
     if insert.position is not None:
         cx = insert.position.cxPct * canvas.width
         cy = insert.position.cyPct * canvas.height
@@ -179,15 +184,14 @@ def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, frames, i
         gutter = max(1, round(doc.border.grid.width * scale))
         cx, cy = _rects_adjacent_seam(rect_a, rect_b, gutter)
 
-    source_frame = frames.get(insert.sourceFrameId)
-    if source_frame is None or source_frame.image is None:
+    if insert.imageKey is None:
         return None
 
     size_pct = insert.sizePct
     inset_size = max(1, int(min(canvas.width, canvas.height) * size_pct))
     feather = max(0, int(insert.featherPx * scale))
 
-    img = images.get(source_frame.image.imageKey)
+    img = images.get(insert.imageKey)
     focal_xy = (insert.focal.x, insert.focal.y)
     panel, mask = make_feathered_panel(img, (inset_size, inset_size), focal_xy, insert.zoom,
                                         insert.cornerRadiusPct, feather)
@@ -235,10 +239,10 @@ def render_collage(doc: CollageDoc, images: ImageStore, scale: float = 1.0) -> I
                 continue
             img = images.get(frame.image.imageKey)
             focal_xy = (frame.image.focal.x, frame.image.focal.y)
-            tile = cover_crop(img, w, h, focal_xy, frame.image.zoom)
+            tile = cover_crop(img, w, h, focal_xy, frame.image.zoom, frame.image.flipH, frame.image.flipV)
             canvas.paste(tile, (round(x), round(y)))
 
         for insert in doc.inserts:
-            paste_insert(canvas, doc, insert, frame_rects, frames, images, scale)
+            paste_insert(canvas, doc, insert, frame_rects, images, scale)
 
     return canvas
