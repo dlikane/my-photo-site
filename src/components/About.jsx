@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { getAbout } from "../lib/catalog.js"; // ⬅️ Make sure path is correct
 
 const About = () => {
@@ -31,6 +32,9 @@ const About = () => {
                     dangerouslySetInnerHTML={{ __html: aboutContent }}
                 />
             </div>
+            <Link to="/collage-studio" className="mt-6 block text-right text-xs text-gray-400 hover:underline dark:text-gray-600">
+                collage studio
+            </Link>
         </div>
     );
 };
