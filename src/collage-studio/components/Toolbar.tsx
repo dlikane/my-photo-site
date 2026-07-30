@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { api } from '../api/client'
 import { createBlankCollageDoc, type CollageDoc } from '../model/collageTypes'
-import { collectFrames } from '../model/geometry'
+import { collectImageKeys } from '../model/geometry'
 import { useCollageStore } from '../state/collageStore'
 import { useDialog } from '../state/dialogStore'
 import { useImagePool } from '../state/imagePoolStore'
@@ -34,22 +34,8 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-function collectImageKeys(doc: CollageDoc): string[] {
-  const frames = collectFrames(doc.tree)
-  const keys = new Set<string>()
-  for (const frame of Object.values(frames)) {
-    if (frame.image) keys.add(frame.image.imageKey)
-  }
-  // Inserts have their own, independent image assignment (see collageTypes.ts) --
-  // not necessarily used by any frame, so must be collected separately.
-  for (const insert of doc.inserts) {
-    if (insert.imageKey) keys.add(insert.imageKey)
-  }
-  return Array.from(keys)
-}
-
 export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggleInspector }: ToolbarProps) {
-  const { doc, dirty, tabs, activeId, newDoc, openDoc, closeDoc, setActive, renameDoc, undo, redo, canUndo, canRedo, markSaved } = useCollageStore()
+  const { doc, tabs, activeId, newDoc, openDoc, closeDoc, setActive, renameDoc, undo, redo, canUndo, canRedo, markSaved } = useCollageStore()
   const dialog = useDialog()
   const pool = useImagePool()
   const [status, setStatus] = useState<string | null>(null)
@@ -174,7 +160,7 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
           }}
         />
         <button disabled={!doc} onClick={handleExportLayout}>
-          Export{dirty ? ' *' : ''}
+          Export
         </button>
         <span className="toolbar-sep" />
         <button disabled={!canUndo} onClick={undo}>
@@ -202,6 +188,7 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
             <div key={tab.id} className={`tab${tab.id === activeId ? ' active' : ''}`} onClick={() => setActive(tab.id)}>
               {renamingTabId === tab.id ? (
                 <input
+                  type="text"
                   className="tab-rename-input"
                   value={renameValue}
                   autoFocus

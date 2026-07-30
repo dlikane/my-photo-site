@@ -1,22 +1,29 @@
 import { useRef, useState } from 'react'
+import { collectImageKeys } from '../model/geometry'
 import { setFrameImage } from '../model/treeOps'
 import { useCollageStore } from '../state/collageStore'
 import { useDialog } from '../state/dialogStore'
 import { useImagePool } from '../state/imagePoolStore'
 
 export function LibraryPanel() {
-  const { doc, editDoc, selectedFrameId, selectedInsertId } = useCollageStore()
+  const { doc, editDoc, selectedFrameId, selectedInsertId, allDocs } = useCollageStore()
   const pool = useImagePool()
   const dialog = useDialog()
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Only removes images no *open* collage references -- anything still in
+  // use (even in a background tab) is kept, so this can't silently break a
+  // collage you haven't looked at recently.
   const handleClearGallery = async () => {
-    if (pool.images.length === 0) return
+    const usedKeys = new Set(allDocs.flatMap(collectImageKeys))
+    const unused = pool.images.filter((img) => !usedKeys.has(img.key))
+    if (unused.length === 0) return
+    const keptCount = pool.images.length - unused.length
     const ok = await dialog.confirm(
-      `Remove all ${pool.images.length} image(s) from your local gallery? This can't be undone -- any collage still referencing them will show "missing image" until you re-add them.`,
+      `Remove ${unused.length} unused image(s) from your local gallery? ${keptCount} still in use by open collages will be kept. This can't be undone.`,
     )
-    if (ok) await pool.clearAll()
+    if (ok) await pool.removeMany(unused.map((img) => img.key))
   }
 
   // Assigns to whichever is currently selected -- a frame or an insert (its
@@ -66,7 +73,9 @@ export function LibraryPanel() {
       {pool.images.length > 0 && (
         <div className="library-gallery-header">
           <span className="hint">{pool.images.length} image(s)</span>
-          <button onClick={handleClearGallery}>Clear gallery</button>
+          <button onClick={handleClearGallery} title="Removes images not used by any open collage; images still in use are kept">
+            Clear gallery
+          </button>
         </div>
       )}
 

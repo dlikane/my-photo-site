@@ -187,8 +187,9 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           ensureImageLoaded(insert.imageKey, pooled.objectUrl, forceRedraw)
           continue
         }
-        if (insert.shadow?.enabled) {
-          drawInsertShadow(ctx, rect, insert.cornerRadiusPct, insert.shadow, layout.scale)
+        const shadow = insert.shadow ?? doc.insertShadowDefault
+        if (shadow.enabled) {
+          drawInsertShadow(ctx, rect, insert.cornerRadiusPct, shadow, layout.scale)
         }
         drawFeatheredImage(ctx, img, rect, insert.focal, insert.zoom, insert.cornerRadiusPct, insert.featherPx * layout.scale)
         const border = insert.border ?? doc.insertBorderDefault

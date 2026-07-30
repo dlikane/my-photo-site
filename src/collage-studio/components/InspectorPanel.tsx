@@ -1,5 +1,5 @@
 import { collectFrames } from '../model/geometry'
-import { DEFAULT_INSERT_SHADOW, MAX_ZOOM, type Insert } from '../model/collageTypes'
+import { MAX_ZOOM, type Insert } from '../model/collageTypes'
 import { updateFrame } from '../model/treeOps'
 import { useCollageStore } from '../state/collageStore'
 import { useImagePool } from '../state/imagePoolStore'
@@ -144,15 +144,7 @@ export function InspectorPanel() {
             onChange={(v) => editDoc((d) => ({ ...d, border: { ...d.border, grid: { ...d.border.grid, color: v } } }))}
           />
         </div>
-        <h4>Inserts (default)</h4>
-        <label className="field checkbox">
-          <input
-            type="checkbox"
-            checked={doc.insertBorderDefault.enabled}
-            onChange={(e) => editDoc((d) => ({ ...d, insertBorderDefault: { ...d.insertBorderDefault, enabled: e.target.checked } }))}
-          />
-          <span>Enabled</span>
-        </label>
+        <h4>Inserts (default border)</h4>
         <div className="field-row">
           <NumberField
             label="Width"
@@ -174,6 +166,52 @@ export function InspectorPanel() {
           }
         >
           Apply default border to all inserts
+        </button>
+
+        <h4>Inserts (default shadow)</h4>
+        <div className="field-row">
+          <NumberField
+            label="Size (offset px)"
+            min={0}
+            max={60}
+            step={1}
+            value={doc.insertShadowDefault.offsetPx}
+            onChange={(v) => editDoc((d) => ({ ...d, insertShadowDefault: { ...d.insertShadowDefault, offsetPx: v } }))}
+          />
+          <NumberField
+            label="Direction (deg)"
+            min={0}
+            max={360}
+            step={1}
+            value={doc.insertShadowDefault.angleDeg}
+            onChange={(v) => editDoc((d) => ({ ...d, insertShadowDefault: { ...d.insertShadowDefault, angleDeg: v } }))}
+          />
+        </div>
+        <div className="field-row">
+          <NumberField
+            label="Blur (px)"
+            min={0}
+            max={60}
+            step={1}
+            value={doc.insertShadowDefault.blurPx}
+            onChange={(v) => editDoc((d) => ({ ...d, insertShadowDefault: { ...d.insertShadowDefault, blurPx: v } }))}
+          />
+          <NumberField
+            label="Opacity"
+            min={0}
+            max={1}
+            step={0.05}
+            value={doc.insertShadowDefault.opacity}
+            onChange={(v) => editDoc((d) => ({ ...d, insertShadowDefault: { ...d.insertShadowDefault, opacity: v } }))}
+          />
+        </div>
+        <ColorField
+          label="Color"
+          value={doc.insertShadowDefault.color}
+          onChange={(v) => editDoc((d) => ({ ...d, insertShadowDefault: { ...d.insertShadowDefault, color: v } }))}
+        />
+        <button onClick={() => editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => ({ ...i, shadow: null })) }))}>
+          Apply default shadow to all inserts
         </button>
       </section>
 
@@ -282,60 +320,56 @@ export function InspectorPanel() {
           <label className="field checkbox">
             <input
               type="checkbox"
-              checked={selectedInsert.shadow?.enabled ?? false}
+              checked={selectedInsert.shadow?.enabled ?? doc.insertShadowDefault.enabled}
               onChange={(e) =>
                 updateInsert(selectedInsert.id, {
-                  shadow: e.target.checked ? { ...(selectedInsert.shadow ?? DEFAULT_INSERT_SHADOW), enabled: true } : { ...(selectedInsert.shadow ?? DEFAULT_INSERT_SHADOW), enabled: false },
+                  shadow: { ...(selectedInsert.shadow ?? doc.insertShadowDefault), enabled: e.target.checked },
                 })
               }
             />
-            <span>Enabled</span>
+            <span>Override shadow (unchecked = use default)</span>
           </label>
-          {selectedInsert.shadow?.enabled && (
-            <>
-              <div className="field-row">
-                <NumberField
-                  label="Size (offset px)"
-                  min={0}
-                  max={60}
-                  step={1}
-                  value={selectedInsert.shadow.offsetPx}
-                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, offsetPx: v } })}
-                />
-                <NumberField
-                  label="Direction (deg)"
-                  min={0}
-                  max={360}
-                  step={1}
-                  value={selectedInsert.shadow.angleDeg}
-                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, angleDeg: v } })}
-                />
-              </div>
-              <div className="field-row">
-                <NumberField
-                  label="Blur (px)"
-                  min={0}
-                  max={60}
-                  step={1}
-                  value={selectedInsert.shadow.blurPx}
-                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, blurPx: v } })}
-                />
-                <NumberField
-                  label="Opacity"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={selectedInsert.shadow.opacity}
-                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, opacity: v } })}
-                />
-              </div>
-              <ColorField
-                label="Color"
-                value={selectedInsert.shadow.color}
-                onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, color: v } })}
-              />
-            </>
-          )}
+          <div className="field-row">
+            <NumberField
+              label="Size (offset px)"
+              min={0}
+              max={60}
+              step={1}
+              value={selectedInsert.shadow?.offsetPx ?? doc.insertShadowDefault.offsetPx}
+              onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...(selectedInsert.shadow ?? doc.insertShadowDefault), offsetPx: v } })}
+            />
+            <NumberField
+              label="Direction (deg)"
+              min={0}
+              max={360}
+              step={1}
+              value={selectedInsert.shadow?.angleDeg ?? doc.insertShadowDefault.angleDeg}
+              onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...(selectedInsert.shadow ?? doc.insertShadowDefault), angleDeg: v } })}
+            />
+          </div>
+          <div className="field-row">
+            <NumberField
+              label="Blur (px)"
+              min={0}
+              max={60}
+              step={1}
+              value={selectedInsert.shadow?.blurPx ?? doc.insertShadowDefault.blurPx}
+              onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...(selectedInsert.shadow ?? doc.insertShadowDefault), blurPx: v } })}
+            />
+            <NumberField
+              label="Opacity"
+              min={0}
+              max={1}
+              step={0.05}
+              value={selectedInsert.shadow?.opacity ?? doc.insertShadowDefault.opacity}
+              onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...(selectedInsert.shadow ?? doc.insertShadowDefault), opacity: v } })}
+            />
+          </div>
+          <ColorField
+            label="Color"
+            value={selectedInsert.shadow?.color ?? doc.insertShadowDefault.color}
+            onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...(selectedInsert.shadow ?? doc.insertShadowDefault), color: v } })}
+          />
 
           <button
             onClick={() => {

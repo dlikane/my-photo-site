@@ -51,10 +51,13 @@ three scopes (external frame, grid between frames, per-insert).
   larger quota. This is **device-local only** — nothing syncs between
   devices, and nothing ever leaves the browser (no backend involved in any
   of this). The gallery and whatever collages/tabs were open both survive a
-  full browser restart; a "Clear gallery" button in `LibraryPanel.tsx` wipes
-  the persisted images (with a confirm dialog — collages still referencing
-  a cleared image just show "missing image" afterward, same as before it
-  was cleared).
+  full browser restart; a "Clear gallery" button in `LibraryPanel.tsx`
+  removes only images **not referenced by any currently-open collage**
+  (computed via `collectImageKeys` across `useCollageStore().allDocs`, all
+  tabs, not just the active one) — with a confirm dialog naming the count.
+  Deliberately not a full wipe: an unrelated image sitting unused in the
+  gallery is exactly what you'd want cleared, but something a background
+  tab still needs shouldn't disappear just because you hit one button.
 - **Why a content hash, not metadata or a path:** collage layout files only
   store `imageKey`, not the image bytes (see "Export/Open" below). If you
   reopen a layout file and re-select the *same* original files, they hash to
@@ -145,7 +148,8 @@ CollageDoc
   canvas: { width, height }
   border: { external: {width,color}, grid: {width,color} }
   jpegQuality
-  insertBorderDefault: { enabled, width, color }
+  insertBorderDefault: { enabled, width, color }        # enabled is always true -- no UI toggle, width 0 = invisible
+  insertShadowDefault: { enabled, offsetPx, angleDeg, blurPx, opacity, color }  # same -- always true, opacity 0 = invisible
   tree: Node                 # root always covers the full canvas
   inserts: Insert[]
 
@@ -157,8 +161,20 @@ Insert
   seam: {frameIdA, frameIdB} | null    # starting position only; overridden once dragged (position wins)
   position: {cxPct, cyPct} | null      # set on drag; freely movable/resizable on the canvas, not just seam midpoints
   sizePct, focal, zoom, featherPx, cornerRadiusPct
-  border: {enabled, width, color} | null   # null = inherit insertBorderDefault
+  border: {enabled, width, color} | null                                      # null = inherit insertBorderDefault
+  shadow: {enabled, offsetPx, angleDeg, blurPx, opacity, color} | null        # null = inherit insertShadowDefault
 ```
+
+- **Insert defaults (border, shadow) are always "enabled"** — deliberately no
+  on/off toggle for `insertBorderDefault`/`insertShadowDefault` in
+  `InspectorPanel.tsx`; width/opacity of 0 is the practical "off." Per-insert
+  *overrides* (`insert.border`/`insert.shadow`, when non-null) still expose
+  their own enabled checkbox, since turning off just one insert's border or
+  shadow is a legitimate thing to want. New inserts start with
+  `shadow: null` (and `border: null`), so they pick up whatever the doc
+  defaults are automatically — "shadow for all inserts" is the out-of-the-box
+  behavior, with "Apply default shadow/border to all inserts" available to
+  reset any inserts that were given their own override back to inheriting.
 
 Note: an insert's `imageKey` defaults to the adjacent frame's image when created via the seam `+` button, but from then on it's independent -- reassigning the frame's image (or flipping it) does not affect the insert, and vice versa. Reassign an insert's image the same way as a frame: click or drag a library thumbnail onto it while it's selected.
 

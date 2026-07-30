@@ -3,7 +3,7 @@
 // constants -- so the live canvas preview never diverges from the Pillow
 // export.
 
-import { MAX_ZOOM, type FocalPoint, type FrameNode, type Node } from './collageTypes'
+import { MAX_ZOOM, type CollageDoc, type FocalPoint, type FrameNode, type Node } from './collageTypes'
 
 export type Rect = { x: number; y: number; w: number; h: number }
 
@@ -75,6 +75,20 @@ export function collectFrames(node: Node, out: Record<string, FrameNode> = {}): 
     collectFrames(node.second, out)
   }
   return out
+}
+
+/** Every imageKey a doc references, across both frames and inserts (inserts
+ * have their own independent image assignment -- see collageTypes.ts). */
+export function collectImageKeys(doc: CollageDoc): string[] {
+  const frames = collectFrames(doc.tree)
+  const keys = new Set<string>()
+  for (const frame of Object.values(frames)) {
+    if (frame.image) keys.add(frame.image.imageKey)
+  }
+  for (const insert of doc.inserts) {
+    if (insert.imageKey) keys.add(insert.imageKey)
+  }
+  return Array.from(keys)
 }
 
 /** Returns null if the two rects aren't geometrically adjacent (within gutter tolerance). */

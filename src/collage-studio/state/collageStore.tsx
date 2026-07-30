@@ -173,6 +173,9 @@ interface StoreApi {
   closeDoc: (id: string) => void
   setActive: (id: string) => void
   renameDoc: (id: string, name: string) => void
+  /** Every open collage's doc, across all tabs (not just the active one) --
+   * e.g. for "which images does any open collage still reference." */
+  allDocs: CollageDoc[]
 }
 
 const CollageStoreContext = createContext<StoreApi | null>(null)
@@ -257,6 +260,8 @@ export function CollageStoreProvider({ children }: { children: ReactNode }) {
     [state.order, state.entries],
   )
 
+  const allDocs = useMemo<CollageDoc[]>(() => state.order.map((id) => state.entries[id].doc), [state.order, state.entries])
+
   const value = useMemo<StoreApi>(
     () => ({
       doc: activeEntry?.doc ?? null,
@@ -278,8 +283,9 @@ export function CollageStoreProvider({ children }: { children: ReactNode }) {
       closeDoc,
       setActive,
       renameDoc,
+      allDocs,
     }),
-    [activeEntry, editDoc, undo, redo, selectFrame, selectInsert, markSaved, tabs, state.activeId, newDoc, openDoc, closeDoc, setActive, renameDoc],
+    [activeEntry, editDoc, undo, redo, selectFrame, selectInsert, markSaved, tabs, state.activeId, newDoc, openDoc, closeDoc, setActive, renameDoc, allDocs],
   )
 
   return <CollageStoreContext.Provider value={value}>{children}</CollageStoreContext.Provider>

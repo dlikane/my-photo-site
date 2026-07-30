@@ -63,16 +63,6 @@ export async function deleteImage(key: string): Promise<void> {
   })
 }
 
-export async function clearImages(): Promise<void> {
-  const db = await openDb()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IMAGES_STORE, 'readwrite')
-    tx.objectStore(IMAGES_STORE).clear()
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
-  })
-}
-
 export interface StoredSession {
   id: 'main'
   order: string[]

@@ -121,6 +121,13 @@
   width: 140px;
   font-size: 12px;
   padding: 1px 4px;
+  /* Explicit, not just relying on the general input[type='text'] rule --
+     that rule didn't apply here since the input previously had no `type`
+     attribute at all, leaving it on the browser's default white-on-white. */
+  background: #1c1c1f;
+  color: #eee;
+  border: 1px solid #45454c;
+  border-radius: 4px;
 }
 .collage-studio-page .tab-close {
   padding: 0 4px;

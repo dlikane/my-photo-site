@@ -171,6 +171,10 @@ def _insert_border_spec(insert: Insert, default_border):
     return insert.border if insert.border is not None else default_border
 
 
+def _insert_shadow_spec(insert: Insert, default_shadow):
+    return insert.shadow if insert.shadow is not None else default_shadow
+
+
 def make_insert_shadow(size, corner_radius_frac, color, opacity, blur_px):
     """A blurred, colored silhouette of the insert's rounded shape, padded so
     the blur has room to spread outward without being clipped. Returned as
@@ -217,8 +221,8 @@ def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, images, s
     px = int(cx - inset_size / 2)
     py = int(cy - inset_size / 2)
 
-    if insert.shadow is not None and insert.shadow.enabled:
-        shadow = insert.shadow
+    shadow = _insert_shadow_spec(insert, doc.insertShadowDefault)
+    if shadow and shadow.enabled:
         angle_rad = math.radians(shadow.angleDeg)
         offset = shadow.offsetPx * scale
         dx = math.cos(angle_rad) * offset
