@@ -14,16 +14,19 @@ export function LibraryPanel() {
 
   // Only removes images no *open* collage references -- anything still in
   // use (even in a background tab) is kept, so this can't silently break a
-  // collage you haven't looked at recently.
+  // collage you haven't looked at recently. Computed at render time (not
+  // just inside the click handler) so the button can show/disable based on
+  // whether there's actually anything to remove.
+  const usedKeys = new Set(allDocs.flatMap(collectImageKeys))
+  const unusedImages = pool.images.filter((img) => !usedKeys.has(img.key))
+
   const handleClearGallery = async () => {
-    const usedKeys = new Set(allDocs.flatMap(collectImageKeys))
-    const unused = pool.images.filter((img) => !usedKeys.has(img.key))
-    if (unused.length === 0) return
-    const keptCount = pool.images.length - unused.length
+    if (unusedImages.length === 0) return
+    const keptCount = pool.images.length - unusedImages.length
     const ok = await dialog.confirm(
-      `Remove ${unused.length} unused image(s) from your local gallery? ${keptCount} still in use by open collages will be kept. This can't be undone.`,
+      `Remove ${unusedImages.length} unused image(s) from your local gallery? ${keptCount} still in use by open collages will be kept. This can't be undone.`,
     )
-    if (ok) await pool.removeMany(unused.map((img) => img.key))
+    if (ok) await pool.removeMany(unusedImages.map((img) => img.key))
   }
 
   // Assigns to whichever is currently selected -- a frame or an insert (its
@@ -73,8 +76,16 @@ export function LibraryPanel() {
       {pool.images.length > 0 && (
         <div className="library-gallery-header">
           <span className="hint">{pool.images.length} image(s)</span>
-          <button onClick={handleClearGallery} title="Removes images not used by any open collage; images still in use are kept">
-            Clear gallery
+          <button
+            onClick={handleClearGallery}
+            disabled={unusedImages.length === 0}
+            title={
+              unusedImages.length === 0
+                ? 'Every image here is used by an open collage -- nothing to remove'
+                : `Removes ${unusedImages.length} image(s) not used by any open collage; images still in use are kept`
+            }
+          >
+            Clear gallery{unusedImages.length > 0 ? ` (${unusedImages.length})` : ''}
           </button>
         </div>
       )}
