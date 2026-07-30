@@ -122,16 +122,18 @@ CollageDoc
   tree: Node                 # root always covers the full canvas
   inserts: Insert[]
 
-Node = Frame { id, image: {imageKey, focal:{x,y}, zoom} | null }
+Node = Frame { id, image: {imageKey, focal:{x,y}, zoom, flipH, flipV} | null }
      | Split { id, orientation: horizontal|vertical, ratio, first: Node, second: Node }
 
 Insert
-  id, sourceFrameId
-  seam: {frameIdA, frameIdB} | null    # auto-placed on the seam between two adjacent frames
-  position: {cxPct, cyPct} | null      # manual override, bypasses seam detection
+  id, imageKey             # independent from any frame -- not auto-linked to the frame it was created near
+  seam: {frameIdA, frameIdB} | null    # starting position only; overridden once dragged (position wins)
+  position: {cxPct, cyPct} | null      # set on drag; freely movable/resizable on the canvas, not just seam midpoints
   sizePct, focal, zoom, featherPx, cornerRadiusPct
   border: {enabled, width, color} | null   # null = inherit insertBorderDefault
 ```
+
+Note: an insert's `imageKey` defaults to the adjacent frame's image when created via the seam `+` button, but from then on it's independent -- reassigning the frame's image (or flipping it) does not affect the insert, and vice versa. Reassign an insert's image the same way as a frame: click or drag a library thumbnail onto it while it's selected.
 
 - **Render split: client-side canvas preview, Pillow for final export.** The
   cover-crop / split-rect / seam-adjacency math is implemented **twice** and
@@ -192,10 +194,17 @@ Then `pnpm dev` as usual and visit `http://localhost:5173/collage-studio`
 
 ## Known gaps
 
-- No page/canvas-size presets — width/height are free-form numeric fields.
-- Insert placement is either seam-based or a manual `{cxPct,cyPct}`; no UI
-  to drag an insert freely on the canvas once placed.
+- Canvas aspect-ratio presets are limited to 1:1 and 4:5 (`InspectorPanel.tsx`'s
+  `ASPECT_PRESETS`); trivial to add more.
 - No cap on how many collages can be open as tabs at once.
 - `VITE_COLLAGE_API_BASE` env var exists for overriding the backend URL
   (e.g. a non-default port) but isn't set anywhere yet — defaults to
   `http://127.0.0.1:8756`.
+- Mobile: Library/Inspector slide-in drawers and double-tap-to-assign are
+  implemented and CSS/type-checked, but not verified on a real touch device.
+  A long-press-on-canvas menu (as an alternative to the fixed top toolbar)
+  was considered but not implemented — the fixed toolbar is standard,
+  lower-risk mobile UX and didn't seem worth a gesture no one could test.
+- Flip is per-frame-image only; inserts don't have their own flip (they
+  didn't ask for it and Insert doesn't wrap a full ImageRef, just an
+  imageKey + its own focal/zoom/etc., so adding it is a small but separate change).
