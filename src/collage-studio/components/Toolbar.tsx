@@ -123,28 +123,30 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
     closeDoc(id)
   }
 
-  const handleSave = () => {
+  // "Export" = download the layout-only .collage.json (was "Save").
+  const handleExportLayout = () => {
     if (!doc) return
     const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' })
     downloadBlob(blob, `${sanitizeFilename(doc.name)}.collage.json`)
     markSaved()
-    setStatus('Saved')
+    setStatus('Exported')
   }
 
-  const handleExport = async () => {
+  // "Render" = the backend Pillow render to a final JPEG (was "Export").
+  const handleRender = async () => {
     if (!doc) return
     const imageKeys = collectImageKeys(doc)
     const missing = imageKeys.filter((key) => !pool.get(key))
     if (missing.length > 0) {
-      setStatus(`Can't export -- ${missing.length} image(s) are missing. Drop them into the library first.`)
+      setStatus(`Can't render -- ${missing.length} image(s) are missing. Drop them into the library first.`)
       return
     }
-    setStatus('Exporting…')
+    setStatus('Rendering…')
     try {
       const imageFiles = new Map(imageKeys.map((key) => [key, pool.get(key)!.file]))
       const blob = await api.exportCollage(doc, imageFiles)
       downloadBlob(blob, `${sanitizeFilename(doc.name)}.jpg`)
-      setStatus('Exported')
+      setStatus('Rendered')
     } catch (e) {
       setStatus(String(e))
     }
@@ -171,8 +173,8 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
             e.target.value = ''
           }}
         />
-        <button disabled={!doc} onClick={handleSave}>
-          Save{dirty ? ' *' : ''}
+        <button disabled={!doc} onClick={handleExportLayout}>
+          Export{dirty ? ' *' : ''}
         </button>
         <span className="toolbar-sep" />
         <button disabled={!canUndo} onClick={undo}>
@@ -182,8 +184,8 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
           Redo
         </button>
         <span className="toolbar-sep" />
-        <button disabled={!doc} onClick={handleExport}>
-          Export
+        <button disabled={!doc} onClick={handleRender}>
+          Render
         </button>
         <button className={previewMode ? 'active' : undefined} onClick={onTogglePreview}>
           {previewMode ? 'Exit Preview' : 'Preview'}

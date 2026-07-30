@@ -48,7 +48,7 @@ three scopes (external frame, grid between frames, per-insert).
   Nothing is persisted; refreshing the tab loses the pool (object URLs are
   revoked on unmount).
 - **Why a fingerprint, not a random ID:** collage layout files only store
-  `imageKey`, not the image bytes (see "Save/Open" below). If you reopen a
+  `imageKey`, not the image bytes (see "Export/Open" below). If you reopen a
   layout file and re-drop the *same* original files, they produce the same
   fingerprint and automatically reattach to the right frames — no manual
   per-frame re-linking needed. Different files (even with the same name) get
@@ -69,32 +69,38 @@ three scopes (external frame, grid between frames, per-insert).
   work with "the current doc" and don't know tabs exist. `Toolbar.tsx` owns
   the tabs bar (`tabs`, `activeId`, `newDoc`/`openDoc`/`closeDoc`/`setActive`).
 - **New** creates a blank tab immediately (no naming prompt) and marks it
-  dirty right away, since it's never been saved. **Save**/**Open** are
+  dirty right away, since it's never been saved. **Export**/**Open** are
   plain browser file download/upload, not backend calls (see below) — so
   there's no "placeholder backend record" concept and no Save-vs-Save-As
-  distinction; Save always just downloads the current state.
+  distinction; Export always just downloads the current state.
 - Tabs show a trailing `*` while dirty (unsaved edits, or never-yet-saved).
   Closing a dirty tab confirms first (via the in-app dialog, not
   `window.confirm` — see below).
 
-## Save / Open / Export — three different operations
+## Export / Open / Render — three different operations
 
-- **Save** (download): serializes the current `CollageDoc` to JSON and
+(Named to match the UI, which deliberately doesn't call anything "Save" --
+there's no persistence to speak of, just file downloads and one backend call.)
+
+- **Export** (download): serializes the current `CollageDoc` to JSON and
   triggers a browser file download (`<name>.collage.json`). This is
   **layout-only** — it stores `imageKey`s, not image bytes. Reopening it
   elsewhere (or after clearing the image pool) shows "missing image"
-  placeholders until the original files are re-dropped.
-- **Open** (upload): a file picker for a previously-downloaded `.json`
-  layout file. Parses it into a new tab; any referenced `imageKey` not
-  currently in the pool is reported as missing in the status line.
-- **Export** (render): the only operation that talks to the backend.
-  `Toolbar.handleExport` collects every `imageKey` the doc references,
+  placeholders until the original files are re-selected.
+- **Open** (upload): a file picker for a previously-exported `.json` layout
+  file -- accepts multiple files at once, so selecting the `.json` together
+  with its original images (typically the same folder) loads both the
+  layout and its images in one action. Any referenced `imageKey` still not
+  in the pool afterward is reported as missing in the status line.
+- **Render**: the only operation that talks to the backend.
+  `Toolbar.handleRender` collects every `imageKey` the doc references,
   refuses to proceed if any are missing from the pool, then POSTs a
   multipart request — `doc` (JSON) plus the actual file bytes for each
-  `imageKey` — to `POST /api/export`. The backend (`render_engine.py`,
-  unchanged compositing logic, just re-keyed) renders the final JPEG in
-  memory and streams it back; the frontend triggers a download. Nothing is
-  written to disk on either side.
+  `imageKey` — to `POST /api/export` (the backend route name wasn't renamed,
+  just the button). The backend (`render_engine.py`, unchanged compositing
+  logic, just re-keyed) renders the final JPEG in memory and streams it
+  back; the frontend triggers a download. Nothing is written to disk on
+  either side.
 
 ## In-app dialogs, not native ones
 
