@@ -15,8 +15,8 @@ export interface PooledImage {
 interface ImagePoolApi {
   images: PooledImage[]
   get: (key: string) => PooledImage | undefined
-  /** Adds files to the pool, deduping by fingerprint; returns the resulting keys (added or already-present). */
-  add: (files: FileList | File[]) => string[]
+  /** Adds files to the pool, deduping by content fingerprint; returns the resulting keys (added or already-present). */
+  add: (files: FileList | File[]) => Promise<string[]>
   remove: (key: string) => void
 }
 
@@ -28,11 +28,23 @@ export function useImagePool(): ImagePoolApi {
   return ctx
 }
 
-/** name|size|lastModified -- stable across sessions for the *same* file, so
- * reopening a layout-only collage and re-dropping the original files
- * automatically re-resolves the same imageKeys without manual re-linking. */
-function fingerprint(file: File): string {
-  return `${file.name}|${file.size}|${file.lastModified}`
+/** Content hash (SHA-256 of the actual bytes) rather than name|size|lastModified.
+ *
+ * The original scheme fingerprinted metadata, which looked buggy in practice:
+ * the *same photo* dragged in from two locations (a synced copy, a re-export,
+ * a file that went through any copy operation that doesn't preserve mtime)
+ * gets a different lastModified even though the bytes are identical -- so it
+ * showed up twice in the library for what the user reasonably expected to be
+ * one image. Hashing content instead means truly-the-same file always dedupes,
+ * regardless of name/mtime, and still satisfies the original goal (re-drop the
+ * same original file after reopening a layout and it resolves to the same key). */
+async function fingerprint(file: File): Promise<string> {
+  const buf = await file.arrayBuffer()
+  const digest = await crypto.subtle.digest('SHA-256', buf)
+  const hex = Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+  return hex
 }
 
 export function ImagePoolProvider({ children }: { children: ReactNode }) {
@@ -49,17 +61,19 @@ export function ImagePoolProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const add = useCallback((files: FileList | File[]) => {
+  const add = useCallback(async (files: FileList | File[]) => {
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    const fingerprints = await Promise.all(imageFiles.map(fingerprint))
+
     const keys: string[] = []
     setPool((prev) => {
       const next = new Map(prev)
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith('image/')) continue
-        const key = fingerprint(file)
+      imageFiles.forEach((file, i) => {
+        const key = fingerprints[i]
         keys.push(key)
-        if (next.has(key)) continue
+        if (next.has(key)) return
         next.set(key, { key, file, objectUrl: URL.createObjectURL(file), name: file.name })
-      }
+      })
       return next
     })
     return keys
