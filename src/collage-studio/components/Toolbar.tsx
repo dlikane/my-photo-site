@@ -81,20 +81,37 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
 
   const handleOpenClick = () => openInputRef.current?.click()
 
-  const handleOpenFile = async (file: File) => {
+  // Select (or drop) the .collage.json alongside its original image files --
+  // typically the same folder they were dropped from originally -- and both
+  // the layout AND its images load in one action, no separate re-drop needed.
+  const handleOpenFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files)
+    const jsonFile = fileArray.find((f) => /\.json$/i.test(f.name))
+    const imageFiles = fileArray.filter((f) => f.type.startsWith('image/'))
+
+    // pool.add() is async; its own React state update won't be visible via
+    // pool.get() within this same call, so track what we just added directly.
+    const addedKeys = imageFiles.length > 0 ? await pool.add(imageFiles) : []
+    const addedKeySet = new Set(addedKeys)
+
+    if (!jsonFile) {
+      if (imageFiles.length > 0) setStatus(`Added ${imageFiles.length} image(s) to the library.`)
+      return
+    }
+
     try {
-      const text = await file.text()
+      const text = await jsonFile.text()
       const parsed = JSON.parse(text) as CollageDoc
       if (!parsed || typeof parsed !== 'object' || !parsed.tree) {
         throw new Error('Not a collage layout file')
       }
-      parsed.name = nameFromFilename(file.name)
+      parsed.name = nameFromFilename(jsonFile.name)
       openDoc(parsed)
-      const missing = collectImageKeys(parsed).filter((key) => !pool.get(key))
+      const missing = collectImageKeys(parsed).filter((key) => !pool.get(key) && !addedKeySet.has(key))
       setStatus(
         missing.length > 0
-          ? `Opened "${parsed.name}" -- ${missing.length} image(s) missing. Drop the original files into the library to restore them.`
-          : `Opened "${parsed.name}"`,
+          ? `Opened "${parsed.name}" -- ${missing.length} image(s) still missing. Select them alongside the .json next time, or drop them into the library now.`
+          : `Opened "${parsed.name}"${imageFiles.length > 0 ? ` (${imageFiles.length} image(s) loaded)` : ''}`,
       )
     } catch (e) {
       setStatus(`Couldn't open file: ${String(e)}`)
@@ -140,15 +157,17 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
           ☰ Library
         </button>
         <button onClick={handleNew}>New</button>
-        <button onClick={handleOpenClick}>Open…</button>
+        <button onClick={handleOpenClick} title="Select the .collage.json and its images together to load both at once">
+          Open…
+        </button>
         <input
           ref={openInputRef}
           type="file"
-          accept="application/json,.json"
+          accept="application/json,.json,image/*"
+          multiple
           hidden
           onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleOpenFile(file)
+            if (e.target.files && e.target.files.length > 0) void handleOpenFiles(e.target.files)
             e.target.value = ''
           }}
         />
