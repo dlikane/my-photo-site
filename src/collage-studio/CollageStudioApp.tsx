@@ -19,8 +19,16 @@ function CollageStudioApp() {
   return (
     <ImagePoolProvider>
       <CollageStoreProvider>
-        <DialogProvider>
-          <div className="collage-studio-page app-shell">
+        {/* DialogProvider must be *inside* .collage-studio-page, not wrapping
+            it -- it renders its popup as a sibling of {children}, and every
+            rule in collage-studio.css (including .dialog-overlay's
+            position:fixed styling) is scoped under .collage-studio-page. If
+            the popup isn't a descendant of that class, it gets no styling at
+            all and renders as a plain block element wherever it lands in
+            normal document flow -- which is exactly what "the confirm text
+            shows at the bottom of the page, unstyled" was. */}
+        <div className="collage-studio-page app-shell">
+          <DialogProvider>
             <Toolbar
               previewMode={previewMode}
               onTogglePreview={() => setPreviewMode((p) => !p)}
@@ -39,8 +47,8 @@ function CollageStudioApp() {
                 <InspectorPanel />
               </div>
             </div>
-          </div>
-        </DialogProvider>
+          </DialogProvider>
+        </div>
       </CollageStoreProvider>
     </ImagePoolProvider>
   )
