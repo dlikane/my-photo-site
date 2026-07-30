@@ -70,6 +70,16 @@ class InsertBorder(BaseModel):
     color: str = "#ffffff"
 
 
+class InsertShadow(BaseModel):
+    enabled: bool = False
+    offsetPx: float = 8
+    # Direction in degrees: 0 = right, 90 = down, 180 = left, 270 = up.
+    angleDeg: float = 135
+    blurPx: float = 12
+    opacity: float = 0.5
+    color: str = "#000000"
+
+
 class SeamRef(BaseModel):
     frameIdA: str
     frameIdB: str
@@ -93,6 +103,7 @@ class Insert(BaseModel):
     featherPx: int = 18
     cornerRadiusPct: float = 0.08
     border: Optional[InsertBorder] = None
+    shadow: Optional[InsertShadow] = None
 
 
 class CanvasSize(BaseModel):

@@ -10,7 +10,7 @@ import {
   resolveRects,
   type Rect,
 } from '../model/geometry'
-import { drawCoverCropImage, drawFeatheredImage, strokeRoundedRect } from '../model/canvasRender'
+import { drawCoverCropImage, drawFeatheredImage, drawInsertShadow, strokeRoundedRect } from '../model/canvasRender'
 import { ensureImageLoaded, getCachedImage } from '../model/imageCache'
 import { useCollageStore } from '../state/collageStore'
 import { useImagePool } from '../state/imagePoolStore'
@@ -186,6 +186,9 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         if (!img) {
           ensureImageLoaded(insert.imageKey, pooled.objectUrl, forceRedraw)
           continue
+        }
+        if (insert.shadow?.enabled) {
+          drawInsertShadow(ctx, rect, insert.cornerRadiusPct, insert.shadow, layout.scale)
         }
         drawFeatheredImage(ctx, img, rect, insert.focal, insert.zoom, insert.cornerRadiusPct, insert.featherPx * layout.scale)
         const border = insert.border ?? doc.insertBorderDefault
@@ -538,6 +541,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
                   featherPx: 18,
                   cornerRadiusPct: 0.08,
                   border: null,
+                  shadow: null,
                 }
                 editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
                 selectInsert(insert.id)

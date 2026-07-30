@@ -60,6 +60,17 @@ export interface PositionPct {
   cyPct: number
 }
 
+export interface InsertShadow {
+  enabled: boolean
+  offsetPx: number
+  // Direction in degrees: 0 = right, 90 = down, 180 = left, 270 = up
+  // (standard math angle, but with y growing downward to match screen space).
+  angleDeg: number
+  blurPx: number
+  opacity: number
+  color: string
+}
+
 export interface Insert {
   id: string
   // Independent from the source frame it was created next to -- reassignable
@@ -74,6 +85,7 @@ export interface Insert {
   featherPx: number
   cornerRadiusPct: number
   border: InsertBorder | null
+  shadow: InsertShadow | null
 }
 
 export interface CanvasSize {
@@ -95,6 +107,15 @@ export interface CollageDoc {
 }
 
 export const MAX_ZOOM = 1 / 0.3
+
+export const DEFAULT_INSERT_SHADOW: InsertShadow = {
+  enabled: true,
+  offsetPx: 8,
+  angleDeg: 135,
+  blurPx: 12,
+  opacity: 0.5,
+  color: '#000000',
+}
 
 let idCounter = 0
 export function newId(): string {

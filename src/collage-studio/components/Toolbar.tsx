@@ -17,6 +17,14 @@ function sanitizeFilename(name: string): string {
   return name.replace(/[^A-Za-z0-9 _-]/g, '_').trim() || 'collage'
 }
 
+/** Inverse of the `${sanitizeFilename(doc.name)}.collage.json` save naming --
+ * the filename is the source of truth for the name when reopening a file
+ * (e.g. if you renamed it in Explorer/Finder after saving). */
+function nameFromFilename(filename: string): string {
+  const stripped = filename.replace(/\.collage\.json$/i, '').replace(/\.json$/i, '')
+  return stripped.trim() || 'Untitled collage'
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -41,11 +49,23 @@ function collectImageKeys(doc: CollageDoc): string[] {
 }
 
 export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggleInspector }: ToolbarProps) {
-  const { doc, dirty, tabs, activeId, newDoc, openDoc, closeDoc, setActive, undo, redo, canUndo, canRedo, markSaved } = useCollageStore()
+  const { doc, dirty, tabs, activeId, newDoc, openDoc, closeDoc, setActive, renameDoc, undo, redo, canUndo, canRedo, markSaved } = useCollageStore()
   const dialog = useDialog()
   const pool = useImagePool()
   const [status, setStatus] = useState<string | null>(null)
   const openInputRef = useRef<HTMLInputElement>(null)
+  const [renamingTabId, setRenamingTabId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+
+  const startRename = (tabId: string, currentName: string) => {
+    setRenamingTabId(tabId)
+    setRenameValue(currentName)
+  }
+
+  const commitRename = () => {
+    if (renamingTabId) renameDoc(renamingTabId, renameValue.trim() || tabs.find((t) => t.id === renamingTabId)?.name || 'Untitled collage')
+    setRenamingTabId(null)
+  }
 
   const confirmCloseIfDirty = async (id: string) => {
     const tab = tabs.find((t) => t.id === id)
@@ -68,6 +88,7 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
       if (!parsed || typeof parsed !== 'object' || !parsed.tree) {
         throw new Error('Not a collage layout file')
       }
+      parsed.name = nameFromFilename(file.name)
       openDoc(parsed)
       const missing = collectImageKeys(parsed).filter((key) => !pool.get(key))
       setStatus(
@@ -158,10 +179,32 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
         <div className="tabs-bar">
           {tabs.map((tab) => (
             <div key={tab.id} className={`tab${tab.id === activeId ? ' active' : ''}`} onClick={() => setActive(tab.id)}>
-              <span className="tab-name">
-                {tab.name}
-                {tab.dirty ? ' *' : ''}
-              </span>
+              {renamingTabId === tab.id ? (
+                <input
+                  className="tab-rename-input"
+                  value={renameValue}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitRename()
+                    if (e.key === 'Escape') setRenamingTabId(null)
+                  }}
+                />
+              ) : (
+                <span
+                  className="tab-name"
+                  title="Double-click to rename"
+                  onDoubleClick={(e) => {
+                    e.stopPropagation()
+                    startRename(tab.id, tab.name)
+                  }}
+                >
+                  {tab.name}
+                  {tab.dirty ? ' *' : ''}
+                </span>
+              )}
               <button
                 className="tab-close"
                 title="Close"

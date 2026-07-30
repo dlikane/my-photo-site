@@ -9,6 +9,7 @@ otherwise unchanged, and are mirrored in the frontend's src/model/geometry.ts
 so the live preview never diverges from this render path.
 """
 
+import math
 from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
@@ -170,6 +171,23 @@ def _insert_border_spec(insert: Insert, default_border):
     return insert.border if insert.border is not None else default_border
 
 
+def make_insert_shadow(size, corner_radius_frac, color, opacity, blur_px):
+    """A blurred, colored silhouette of the insert's rounded shape, padded so
+    the blur has room to spread outward without being clipped. Returned as
+    (solid color layer, alpha mask, pad) -- paste with the mask, offset by -pad."""
+    w, h = size
+    pad = int(blur_px * 3) + 4
+    mask = Image.new("L", (w + pad * 2, h + pad * 2), 0)
+    draw = ImageDraw.Draw(mask)
+    radius = int(min(w, h) * corner_radius_frac)
+    alpha = max(0, min(255, round(255 * opacity)))
+    draw.rounded_rectangle([pad, pad, pad + w - 1, pad + h - 1], radius=radius, fill=alpha)
+    if blur_px > 0:
+        mask = mask.filter(ImageFilter.GaussianBlur(blur_px))
+    color_layer = Image.new("RGB", mask.size, color)
+    return color_layer, mask, pad
+
+
 def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, images, scale):
     if insert.position is not None:
         cx = insert.position.cxPct * canvas.width
@@ -198,6 +216,18 @@ def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, images, s
 
     px = int(cx - inset_size / 2)
     py = int(cy - inset_size / 2)
+
+    if insert.shadow is not None and insert.shadow.enabled:
+        shadow = insert.shadow
+        angle_rad = math.radians(shadow.angleDeg)
+        offset = shadow.offsetPx * scale
+        dx = math.cos(angle_rad) * offset
+        dy = math.sin(angle_rad) * offset
+        shadow_color, shadow_mask, shadow_pad = make_insert_shadow(
+            (inset_size, inset_size), insert.cornerRadiusPct, shadow.color, shadow.opacity, shadow.blurPx * scale,
+        )
+        canvas.paste(shadow_color, (int(px + dx - shadow_pad), int(py + dy - shadow_pad)), shadow_mask)
+
     canvas.paste(panel, (px, py), mask)
 
     border = _insert_border_spec(insert, doc.insertBorderDefault)

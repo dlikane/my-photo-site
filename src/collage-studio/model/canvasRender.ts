@@ -75,6 +75,38 @@ export function drawFeatheredImage(
   ctx.drawImage(off, destRect.x, destRect.y)
 }
 
+export interface InsertShadowSpec {
+  offsetPx: number
+  angleDeg: number
+  blurPx: number
+  opacity: number
+  color: string
+}
+
+/** Blurred, colored silhouette of the insert's rounded shape, offset by
+ * angle/distance -- drawn *before* the insert image itself so it sits behind it.
+ * Mirrors render_engine.py's make_insert_shadow (same angle convention: 0=right, 90=down). */
+export function drawInsertShadow(ctx: CanvasRenderingContext2D, destRect: Rect, cornerRadiusPct: number, shadow: InsertShadowSpec, scale: number) {
+  if (shadow.opacity <= 0) return
+  const w = Math.round(destRect.w)
+  const h = Math.round(destRect.h)
+  if (w <= 0 || h <= 0) return
+  const angleRad = (shadow.angleDeg * Math.PI) / 180
+  const offset = shadow.offsetPx * scale
+  const dx = Math.cos(angleRad) * offset
+  const dy = Math.sin(angleRad) * offset
+  const radius = Math.min(w, h) * cornerRadiusPct
+
+  ctx.save()
+  ctx.filter = shadow.blurPx > 0 ? `blur(${shadow.blurPx * scale}px)` : 'none'
+  ctx.globalAlpha = shadow.opacity
+  ctx.fillStyle = shadow.color
+  ctx.beginPath()
+  ctx.roundRect(destRect.x + dx, destRect.y + dy, w, h, radius)
+  ctx.fill()
+  ctx.restore()
+}
+
 export function strokeRoundedRect(
   ctx: CanvasRenderingContext2D,
   rect: Rect,

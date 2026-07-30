@@ -29,6 +29,7 @@ type Action =
   | { type: 'SELECT_FRAME'; id: string; frameId: string | null }
   | { type: 'SELECT_INSERT'; id: string; insertId: string | null }
   | { type: 'MARK_SAVED'; id: string }
+  | { type: 'RENAME_DOC'; id: string; name: string }
 
 const initialState: State = { entries: {}, order: [], activeId: null }
 
@@ -124,6 +125,13 @@ function reducer(state: State, action: Action): State {
       if (!entry) return state
       return { ...state, entries: { ...state.entries, [action.id]: { ...entry, dirty: false } } }
     }
+    case 'RENAME_DOC': {
+      const entry = state.entries[action.id]
+      if (!entry || entry.doc.name === action.name) return state
+      // Not pushed onto undo history -- a rename isn't a canvas edit, matching
+      // most tools' convention of not undoing renames.
+      return { ...state, entries: { ...state.entries, [action.id]: { ...entry, doc: { ...entry.doc, name: action.name }, dirty: true } } }
+    }
     default:
       return state
   }
@@ -157,6 +165,7 @@ interface StoreApi {
   openDoc: (doc: CollageDoc) => void
   closeDoc: (id: string) => void
   setActive: (id: string) => void
+  renameDoc: (id: string, name: string) => void
 }
 
 const CollageStoreContext = createContext<StoreApi | null>(null)
@@ -169,6 +178,7 @@ export function CollageStoreProvider({ children }: { children: ReactNode }) {
   const openDoc = useCallback((doc: CollageDoc) => dispatch({ type: 'OPEN_DOC', doc }), [])
   const closeDoc = useCallback((id: string) => dispatch({ type: 'CLOSE_DOC', id }), [])
   const setActive = useCallback((id: string) => dispatch({ type: 'SET_ACTIVE', id }), [])
+  const renameDoc = useCallback((id: string, name: string) => dispatch({ type: 'RENAME_DOC', id, name }), [])
 
   const editDoc = useCallback(
     (updater: (doc: CollageDoc) => CollageDoc) => {
@@ -223,8 +233,9 @@ export function CollageStoreProvider({ children }: { children: ReactNode }) {
       openDoc,
       closeDoc,
       setActive,
+      renameDoc,
     }),
-    [activeEntry, editDoc, undo, redo, selectFrame, selectInsert, markSaved, tabs, state.activeId, newDoc, openDoc, closeDoc, setActive],
+    [activeEntry, editDoc, undo, redo, selectFrame, selectInsert, markSaved, tabs, state.activeId, newDoc, openDoc, closeDoc, setActive, renameDoc],
   )
 
   return <CollageStoreContext.Provider value={value}>{children}</CollageStoreContext.Provider>

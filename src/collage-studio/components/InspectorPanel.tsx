@@ -1,5 +1,5 @@
 import { collectFrames } from '../model/geometry'
-import { MAX_ZOOM, type Insert } from '../model/collageTypes'
+import { DEFAULT_INSERT_SHADOW, MAX_ZOOM, type Insert } from '../model/collageTypes'
 import { updateFrame } from '../model/treeOps'
 import { useCollageStore } from '../state/collageStore'
 import { useImagePool } from '../state/imagePoolStore'
@@ -277,6 +277,66 @@ export function InspectorPanel() {
             />
             <span>Override border (unchecked = use default)</span>
           </label>
+
+          <h4>Shadow</h4>
+          <label className="field checkbox">
+            <input
+              type="checkbox"
+              checked={selectedInsert.shadow?.enabled ?? false}
+              onChange={(e) =>
+                updateInsert(selectedInsert.id, {
+                  shadow: e.target.checked ? { ...(selectedInsert.shadow ?? DEFAULT_INSERT_SHADOW), enabled: true } : { ...(selectedInsert.shadow ?? DEFAULT_INSERT_SHADOW), enabled: false },
+                })
+              }
+            />
+            <span>Enabled</span>
+          </label>
+          {selectedInsert.shadow?.enabled && (
+            <>
+              <div className="field-row">
+                <NumberField
+                  label="Size (offset px)"
+                  min={0}
+                  max={60}
+                  step={1}
+                  value={selectedInsert.shadow.offsetPx}
+                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, offsetPx: v } })}
+                />
+                <NumberField
+                  label="Direction (deg)"
+                  min={0}
+                  max={360}
+                  step={1}
+                  value={selectedInsert.shadow.angleDeg}
+                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, angleDeg: v } })}
+                />
+              </div>
+              <div className="field-row">
+                <NumberField
+                  label="Blur (px)"
+                  min={0}
+                  max={60}
+                  step={1}
+                  value={selectedInsert.shadow.blurPx}
+                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, blurPx: v } })}
+                />
+                <NumberField
+                  label="Opacity"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={selectedInsert.shadow.opacity}
+                  onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, opacity: v } })}
+                />
+              </div>
+              <ColorField
+                label="Color"
+                value={selectedInsert.shadow.color}
+                onChange={(v) => updateInsert(selectedInsert.id, { shadow: { ...selectedInsert.shadow!, color: v } })}
+              />
+            </>
+          )}
+
           <button
             onClick={() => {
               editDoc((d) => ({ ...d, inserts: d.inserts.filter((i) => i.id !== selectedInsert.id) }))
