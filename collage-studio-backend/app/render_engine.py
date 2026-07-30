@@ -9,7 +9,7 @@ otherwise unchanged, and are mirrored in the frontend's src/model/geometry.ts
 so the live preview never diverges from this render path.
 """
 
-import os
+from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
@@ -17,25 +17,29 @@ from .models import CollageDoc, FrameNode, Insert, SplitNode
 
 MAX_ZOOM = 1 / 0.3  # crop window never shrinks below ~30% of the base cover-crop box
 
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}
-
 
 # --------------------------------------------------------------------------- image loading
 
 class ImageStore:
     """Loads + caches source images (EXIF-orientation corrected, RGB) for the
-    lifetime of a single render call, keyed by absolute path."""
+    lifetime of a single render call, keyed by the frontend's session-scoped
+    imageKey. Backed by in-memory bytes uploaded with the request -- this
+    process never reads from local disk."""
 
-    def __init__(self):
+    def __init__(self, image_bytes: dict[str, bytes]):
+        self._bytes = image_bytes
         self._cache: dict[str, Image.Image] = {}
 
-    def get(self, path: str) -> Image.Image:
-        if path not in self._cache:
-            img = Image.open(path)
+    def get(self, key: str) -> Image.Image:
+        if key not in self._cache:
+            data = self._bytes.get(key)
+            if data is None:
+                raise KeyError(f"No uploaded image data for key: {key}")
+            img = Image.open(BytesIO(data))
             img = ImageOps.exif_transpose(img)
             img = img.convert("RGB")
-            self._cache[path] = img
-        return self._cache[path]
+            self._cache[key] = img
+        return self._cache[key]
 
 
 # --------------------------------------------------------------------------- crop geometry
@@ -183,7 +187,7 @@ def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, frames, i
     inset_size = max(1, int(min(canvas.width, canvas.height) * size_pct))
     feather = max(0, int(insert.featherPx * scale))
 
-    img = images.get(source_frame.image.path)
+    img = images.get(source_frame.image.imageKey)
     focal_xy = (insert.focal.x, insert.focal.y)
     panel, mask = make_feathered_panel(img, (inset_size, inset_size), focal_xy, insert.zoom,
                                         insert.cornerRadiusPct, feather)
@@ -207,11 +211,9 @@ def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, frames, i
 
 # --------------------------------------------------------------------------- top-level render
 
-def render_collage(doc: CollageDoc, scale: float = 1.0, images: ImageStore | None = None) -> Image.Image:
+def render_collage(doc: CollageDoc, images: ImageStore, scale: float = 1.0) -> Image.Image:
     """Single render path used for both live preview export checks and the
     final high-res export -- parameterized only by scale."""
-    images = images or ImageStore()
-
     canvas_w = max(1, round(doc.canvas.width * scale))
     canvas_h = max(1, round(doc.canvas.height * scale))
     ext_w = max(0, round(doc.border.external.width * scale))
@@ -231,7 +233,7 @@ def render_collage(doc: CollageDoc, scale: float = 1.0, images: ImageStore | Non
             frame = frames[frame_id]
             if frame.image is None or w <= 0 or h <= 0:
                 continue
-            img = images.get(frame.image.path)
+            img = images.get(frame.image.imageKey)
             focal_xy = (frame.image.focal.x, frame.image.focal.y)
             tile = cover_crop(img, w, h, focal_xy, frame.image.zoom)
             canvas.paste(tile, (round(x), round(y)))
@@ -240,11 +242,3 @@ def render_collage(doc: CollageDoc, scale: float = 1.0, images: ImageStore | Non
             paste_insert(canvas, doc, insert, frame_rects, frames, images, scale)
 
     return canvas
-
-
-def export_collage(doc: CollageDoc, output_dir: str) -> str:
-    final = render_collage(doc, scale=1.0)
-    safe_name = "".join(c if c.isalnum() or c in "-_ " else "_" for c in doc.name).strip() or doc.id
-    path = os.path.join(output_dir, f"{safe_name}.jpg")
-    final.save(path, quality=doc.jpegQuality, subsampling=0)
-    return path

@@ -6,7 +6,10 @@ export interface FocalPoint {
 }
 
 export interface ImageRef {
-  path: string
+  // Opaque session-scoped key into the image pool (see state/imagePoolStore.tsx),
+  // not a filesystem path -- fingerprinted from name|size|lastModified so the
+  // same file re-dropped in a later session resolves to the same key.
+  imageKey: string
   focal: FocalPoint
   zoom: number
 }
@@ -85,29 +88,6 @@ export interface CollageDoc {
   inserts: Insert[]
 }
 
-export interface CollageSummary {
-  id: string
-  name: string
-  updatedAt: number
-}
-
-export interface AppConfig {
-  collagesDir: string
-  outputDir: string
-}
-
-export interface BrowseEntry {
-  name: string
-  path: string
-  isDir: boolean
-}
-
-export interface BrowseListResult {
-  path: string
-  parent: string | null
-  entries: BrowseEntry[]
-}
-
 export const MAX_ZOOM = 1 / 0.3
 
 let idCounter = 0
@@ -118,4 +98,24 @@ export function newId(): string {
 
 export function makeFrame(image: ImageRef | null = null): FrameNode {
   return { type: 'frame', id: newId(), image }
+}
+
+/** Mirrors the Pydantic default_factory values in backend/app/models.py's CollageDoc. */
+export function createBlankCollageDoc(name = 'Untitled collage'): CollageDoc {
+  const now = Date.now()
+  return {
+    id: newId(),
+    name,
+    createdAt: now,
+    updatedAt: now,
+    canvas: { width: 2000, height: 2500 },
+    border: {
+      external: { width: 14, color: '#000000' },
+      grid: { width: 8, color: '#000000' },
+    },
+    jpegQuality: 92,
+    insertBorderDefault: { enabled: false, width: 6, color: '#ffffff' },
+    tree: makeFrame(),
+    inserts: [],
+  }
 }

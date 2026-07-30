@@ -13,6 +13,7 @@ import {
 import { drawCoverCropImage, drawFeatheredImage, strokeRoundedRect } from '../model/canvasRender'
 import { ensureImageLoaded, getCachedImage } from '../model/imageCache'
 import { useCollageStore } from '../state/collageStore'
+import { useImagePool } from '../state/imagePoolStore'
 import { removeFrame, resizeSplit, setFrameImage, splitFrame, updateFrame } from '../model/treeOps'
 import { MAX_ZOOM } from '../model/collageTypes'
 
@@ -47,6 +48,7 @@ function drawPlaceholder(ctx: CanvasRenderingContext2D, rect: Rect, label: strin
 
 export function CanvasEditor() {
   const { doc, editDoc, selectedFrameId, selectedInsertId, selectFrame, selectInsert } = useCollageStore()
+  const pool = useImagePool()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -138,12 +140,15 @@ export function CanvasEditor() {
         const frame = layout.frames[frameId]
         if (!frame || rect.w <= 0 || rect.h <= 0) continue
         if (frame.image) {
-          const img = getCachedImage(frame.image.path)
+          const pooled = pool.get(frame.image.imageKey)
+          const img = pooled ? getCachedImage(frame.image.imageKey) : undefined
           const focal = liveFocal && liveFocal.frameId === frameId ? liveFocal.focal : frame.image.focal
           if (img) drawCoverCropImage(ctx, img, rect, focal, frame.image.zoom)
-          else {
-            ensureImageLoaded(frame.image.path, forceRedraw)
+          else if (pooled) {
+            ensureImageLoaded(frame.image.imageKey, pooled.objectUrl, forceRedraw)
             drawPlaceholder(ctx, rect, 'Loading…')
+          } else {
+            drawPlaceholder(ctx, rect, 'Missing image — drop it in the library')
           }
         } else {
           drawPlaceholder(ctx, rect, 'Drop image here')
@@ -162,9 +167,11 @@ export function CanvasEditor() {
         if (!rect) continue
         const sourceFrame = layout.frames[insert.sourceFrameId]
         if (!sourceFrame?.image) continue
-        const img = getCachedImage(sourceFrame.image.path)
+        const pooled = pool.get(sourceFrame.image.imageKey)
+        if (!pooled) continue
+        const img = getCachedImage(sourceFrame.image.imageKey)
         if (!img) {
-          ensureImageLoaded(sourceFrame.image.path, forceRedraw)
+          ensureImageLoaded(sourceFrame.image.imageKey, pooled.objectUrl, forceRedraw)
           continue
         }
         drawFeatheredImage(ctx, img, rect, insert.focal, insert.zoom, insert.cornerRadiusPct, insert.featherPx * layout.scale)
@@ -180,7 +187,7 @@ export function CanvasEditor() {
         }
       }
     }
-  }, [doc, layout, selectedFrameId, selectedInsertId, tick, liveFocal, insertRects, forceRedraw])
+  }, [doc, layout, selectedFrameId, selectedInsertId, tick, liveFocal, insertRects, forceRedraw, pool])
 
   // ---- pointer interaction on the canvas itself (select / pan) ----
   const onCanvasPointerDown = useCallback(
@@ -200,7 +207,7 @@ export function CanvasEditor() {
       selectFrame(frameId)
       const frame = layout.frames[frameId]
       if (!frame?.image) return
-      const img = getCachedImage(frame.image.path)
+      const img = getCachedImage(frame.image.imageKey)
       if (!img) return
       const rect = layout.frameRects[frameId]
       const cropBox = computeCropBox(img.naturalWidth, img.naturalHeight, rect.w, rect.h, frame.image.focal, frame.image.zoom)
@@ -278,17 +285,28 @@ export function CanvasEditor() {
     (e: React.DragEvent<HTMLCanvasElement>) => {
       e.preventDefault()
       if (!layout) return
-      const path = e.dataTransfer.getData('application/x-collage-image')
-      if (!path) return
       const box = e.currentTarget.getBoundingClientRect()
       const point = { x: e.clientX - box.left, y: e.clientY - box.top }
       const frameId = hitTest(point, layout.frameRects)
       if (!frameId) return
-      const image: ImageRef = { path, focal: { x: 0.5, y: 0.5 }, zoom: 1.0 }
+
+      // Files dropped straight from Explorer/Finder/Gallery, not dragged from the library.
+      if (e.dataTransfer.files.length > 0) {
+        const [imageKey] = pool.add(e.dataTransfer.files)
+        if (!imageKey) return
+        const image: ImageRef = { imageKey, focal: { x: 0.5, y: 0.5 }, zoom: 1.0 }
+        editDoc((d) => ({ ...d, tree: setFrameImage(d.tree, frameId, image) }))
+        selectFrame(frameId)
+        return
+      }
+
+      const imageKey = e.dataTransfer.getData('application/x-collage-image')
+      if (!imageKey) return
+      const image: ImageRef = { imageKey, focal: { x: 0.5, y: 0.5 }, zoom: 1.0 }
       editDoc((d) => ({ ...d, tree: setFrameImage(d.tree, frameId, image) }))
       selectFrame(frameId)
     },
-    [layout, editDoc, selectFrame],
+    [layout, editDoc, selectFrame, pool],
   )
 
   // ---- divider drag (DOM overlay) ----
@@ -367,7 +385,7 @@ export function CanvasEditor() {
             key={`${seam.frameIdA}-${seam.frameIdB}`}
             className="seam-marker"
             title="Add insert on this seam"
-            style={{ left: seam.cx - 10, top: seam.cy - 10 }}
+            style={{ left: seam.cx - 13, top: seam.cy - 13 }}
             onClick={() => {
               const frameA = layout.frames[seam.frameIdA]
               const frameB = layout.frames[seam.frameIdB]

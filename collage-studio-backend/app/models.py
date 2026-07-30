@@ -24,7 +24,11 @@ class FocalPoint(BaseModel):
 
 
 class ImageRef(BaseModel):
-    path: str
+    # Opaque session-scoped key (name|size|lastModified fingerprint, generated
+    # client-side) into the frontend's in-memory image pool -- not a filesystem
+    # path. The backend never resolves this itself; the frontend attaches the
+    # matching bytes as a multipart upload when calling /api/export.
+    imageKey: str
     focal: FocalPoint = Field(default_factory=FocalPoint)
     zoom: float = 1.0
 
@@ -103,14 +107,3 @@ class CollageDoc(BaseModel):
     insertBorderDefault: InsertBorder = Field(default_factory=InsertBorder)
     tree: Node = Field(default_factory=FrameNode)
     inserts: list[Insert] = Field(default_factory=list)
-
-
-class CollageSummary(BaseModel):
-    id: str
-    name: str
-    updatedAt: float
-
-
-class AppConfig(BaseModel):
-    collagesDir: str
-    outputDir: str

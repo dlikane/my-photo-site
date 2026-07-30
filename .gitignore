@@ -26,12 +26,8 @@ dist-ssr
 
 .env
 
-# collage-studio local backend
+# collage-studio local backend (stateless -- no appdata/ to ignore anymore)
 collage-studio-backend/.venv/
-collage-studio-backend/appdata/config.json
-collage-studio-backend/appdata/collages/
-collage-studio-backend/appdata/output/
-collage-studio-backend/appdata/thumbcache/
 collage-studio-backend/.run/
 __pycache__/
 *.pyc

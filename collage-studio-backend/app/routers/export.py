@@ -1,27 +1,53 @@
 import json
-import os
+import re
+from io import BytesIO
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
-from ..config import load_config
 from ..models import CollageDoc
-from ..render_engine import export_collage
+from ..render_engine import ImageStore, render_collage
 
-router = APIRouter(prefix="/api/collages", tags=["export"])
+router = APIRouter(prefix="/api", tags=["export"])
 
 
-@router.post("/{doc_id}/export")
-def export(doc_id: str):
-    cfg = load_config()
-    path = os.path.join(cfg["collagesDir"], f"{doc_id}.json")
-    if not os.path.exists(path):
-        raise HTTPException(404, f"No collage with id {doc_id}")
-    with open(path, "r", encoding="utf-8") as f:
-        doc = CollageDoc.model_validate(json.load(f))
+def _safe_filename(name: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9 _-]", "_", name).strip()
+    return safe or "collage"
+
+
+@router.post("/export")
+async def export(
+    doc: str = Form(...),
+    imageKeys: list[str] = Form(default=[]),
+    images: list[UploadFile] = File(default=[]),
+):
+    """Stateless render: the frontend sends the collage JSON plus the raw
+    bytes for every image it references (matched by imageKeys[i] <-> images[i]).
+    Nothing is read from or written to local disk -- the rendered JPEG is
+    streamed straight back in the response."""
+    try:
+        doc_obj = CollageDoc.model_validate(json.loads(doc))
+    except (json.JSONDecodeError, ValueError) as e:
+        raise HTTPException(400, f"Invalid collage doc: {e}")
+
+    if len(imageKeys) != len(images):
+        raise HTTPException(400, "imageKeys and images must be the same length")
+
+    image_bytes = {key: await upload.read() for key, upload in zip(imageKeys, images)}
 
     try:
-        output_path = export_collage(doc, cfg["outputDir"])
-    except (FileNotFoundError, ValueError) as e:
+        final = render_collage(doc_obj, ImageStore(image_bytes), scale=1.0)
+    except (KeyError, ValueError) as e:
         raise HTTPException(400, str(e))
 
-    return {"path": output_path}
+    buf = BytesIO()
+    final.save(buf, format="JPEG", quality=doc_obj.jpegQuality, subsampling=0)
+    buf.seek(0)
+
+    filename = f"{_safe_filename(doc_obj.name)}.jpg"
+    return StreamingResponse(
+        buf,
+        media_type="image/jpeg",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
