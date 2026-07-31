@@ -29,6 +29,35 @@ export function LibraryPanel() {
   const [columns, setColumns] = useState<number | null>(null)
   const thumbsRef = useRef<HTMLDivElement>(null)
 
+  // A fixed column count is deliberately decoupled from the panel's own
+  // width (so pinch/Ctrl+Scroll steps predictably), but that means it
+  // doesn't shrink/grow along with the panel either once set -- dragging
+  // the library-panel resize handle would otherwise stop visibly resizing
+  // thumbnails at all until the next manual pinch/scroll. Revert to "auto"
+  // whenever the panel itself is resized (not by a column-count change --
+  // that never alters the grid's own width, only how a fixed width is
+  // divided -- so this only fires on real panel resizes).
+  useEffect(() => {
+    const el = thumbsRef.current
+    if (!el) return
+    let seeded = false
+    let lastWidth = 0
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0].contentRect.width
+      if (!seeded) {
+        seeded = true
+        lastWidth = w
+        return
+      }
+      if (Math.abs(w - lastWidth) > 0.5) {
+        lastWidth = w
+        setColumns(null)
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   useEffect(() => {
     const el = thumbsRef.current
     if (!el) return
