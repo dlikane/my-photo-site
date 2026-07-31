@@ -17,7 +17,7 @@ type DragState =
   | { type: 'divider'; pointerId: number; splitId: string; orientation: 'horizontal' | 'vertical'; parentRect: Rect }
   | { type: 'insert-pan'; insertId: string; pointerId: number; startX: number; startY: number; startFocal: FocalPoint; rect: Rect; img: HTMLImageElement; cropW: number; cropH: number }
   | { type: 'insert-move'; insertId: string; pointerId: number; startX: number; startY: number; startCxPct: number; startCyPct: number }
-  | { type: 'insert-resize'; insertId: string; pointerId: number; startX: number; startY: number; startSizePct: number }
+  | { type: 'insert-resize'; insertId: string; pointerId: number; startX: number; startY: number; startW: number; startH: number }
 
 function hitTest(point: { x: number; y: number }, rects: Record<string, Rect>): string | null {
   for (const [id, r] of Object.entries(rects)) {
@@ -67,7 +67,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const [liveRatio, setLiveRatio] = useState<{ splitId: string; ratio: number } | null>(null)
   const [liveInsertFocal, setLiveInsertFocal] = useState<{ insertId: string; focal: FocalPoint } | null>(null)
   const [liveInsertPos, setLiveInsertPos] = useState<{ insertId: string; cxPct: number; cyPct: number } | null>(null)
-  const [liveInsertSize, setLiveInsertSize] = useState<{ insertId: string; sizePct: number } | null>(null)
+  const [liveInsertSize, setLiveInsertSize] = useState<{ insertId: string; w: number; h: number } | null>(null)
   const forceRedraw = useCallback(() => setTick((t) => t + 1), [])
 
   useEffect(() => {
@@ -107,8 +107,24 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     if (!doc || !layout) return {}
     const out: Record<string, Rect> = {}
     for (const insert of doc.inserts) {
-      const sizePct = liveInsertSize && liveInsertSize.insertId === insert.id ? liveInsertSize.sizePct : insert.sizePct
-      const size = sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
+      let w: number
+      let h: number
+      if (liveInsertSize && liveInsertSize.insertId === insert.id) {
+        // Live-resizing: track the drag's raw pixel dimensions directly
+        // rather than round-tripping through sizePct/aspectRatio, so the
+        // bottom-right handle tracks the pointer exactly.
+        w = liveInsertSize.w
+        h = liveInsertSize.h
+      } else {
+        const base = insert.sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
+        // aspectRatio is width/height -- split the overall "size" scale
+        // between width and height via sqrt so the two stay inverse of each
+        // other (area roughly constant as aspect changes) and aspectRatio 1
+        // reduces to exactly the old square behavior (w = h = base).
+        const aspect = Math.max(0.05, Math.min(20, insert.aspectRatio))
+        w = base * Math.sqrt(aspect)
+        h = base / Math.sqrt(aspect)
+      }
       let cx: number
       let cy: number
       // Seam-anchored by default (created via the seam "+"), but the move
@@ -128,7 +144,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       } else {
         continue
       }
-      out[insert.id] = { x: cx - size / 2, y: cy - size / 2, w: size, h: size }
+      out[insert.id] = { x: cx - w / 2, y: cy - h / 2, w, h }
     }
     return out
   }, [doc, layout, liveInsertPos, liveInsertSize])
@@ -213,6 +229,10 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   // ---- pointer interaction on the canvas itself (select / pan / move insert) ----
   const onCanvasPointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      // A second (or third...) touch starting a pinch shouldn't hijack the
+      // single-pointer pan/move drag the first touch may have already
+      // started -- isPrimary is only true for the first active touch point.
+      if (!e.isPrimary) return
       if (!doc || !layout) return
       const box = e.currentTarget.getBoundingClientRect()
       const point = { x: e.clientX - box.left, y: e.clientY - box.top }
@@ -398,6 +418,71 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     return () => canvas.removeEventListener('wheel', handler)
   }, [doc, layout, insertRects, editDoc])
 
+  // Two-finger pinch zooms whichever frame/insert is under the pinch's
+  // midpoint -- the touch equivalent of the wheel handler above. Kept in a
+  // ref (not a plain closure variable) so the active gesture survives this
+  // effect re-running mid-pinch, which it does on every editDoc call since
+  // `doc` is a dependency (same as the wheel handler already relies on).
+  const pinchRef = useRef<{ kind: 'insert' | 'frame'; id: string; lastDist: number } | null>(null)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !doc || !layout) return
+    const touchDist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return
+      const box = canvas.getBoundingClientRect()
+      const point = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - box.left,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - box.top,
+      }
+      const insertId = hitTest(point, insertRects)
+      if (insertId && doc.inserts.find((i) => i.id === insertId)?.imageKey) {
+        pinchRef.current = { kind: 'insert', id: insertId, lastDist: touchDist(e.touches) }
+        return
+      }
+      const frameId = hitTest(point, layout.frameRects)
+      if (frameId && layout.frames[frameId]?.image) {
+        pinchRef.current = { kind: 'frame', id: frameId, lastDist: touchDist(e.touches) }
+      }
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+      const pinch = pinchRef.current
+      if (e.touches.length !== 2 || !pinch) return
+      e.preventDefault()
+      const newDist = touchDist(e.touches)
+      const ratio = newDist / pinch.lastDist
+      pinch.lastDist = newDist
+      if (pinch.kind === 'insert') {
+        const insert = doc.inserts.find((i) => i.id === pinch.id)
+        if (!insert) return
+        const nextZoom = Math.max(1, Math.min(MAX_ZOOM, insert.zoom * ratio))
+        editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === pinch.id ? { ...i, zoom: nextZoom } : i)) }))
+      } else {
+        const frame = layout.frames[pinch.id]
+        if (!frame?.image) return
+        const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom * ratio))
+        editDoc((d) => ({ ...d, tree: updateFrame(d.tree, pinch.id, (f) => (f.image ? { ...f, image: { ...f.image, zoom: nextZoom } } : f)) }))
+      }
+    }
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchRef.current = null
+    }
+
+    canvas.addEventListener('touchstart', onTouchStart, { passive: true })
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
+    canvas.addEventListener('touchend', onTouchEnd)
+    canvas.addEventListener('touchcancel', onTouchEnd)
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart)
+      canvas.removeEventListener('touchmove', onTouchMove)
+      canvas.removeEventListener('touchend', onTouchEnd)
+      canvas.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [doc, layout, insertRects, editDoc])
+
   const assignImageToDropTarget = useCallback(
     (imageKey: string, insertId: string | null, frameId: string | null) => {
       // Inserts render on top of frames, so a drop that lands on an insert
@@ -542,7 +627,10 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   )
 
   // ---- insert resize handle (DOM overlay, bottom-right anchor) ----
-  const beginInsertResize = useCallback((e: React.PointerEvent<HTMLDivElement>, insertId: string, startSizePct: number) => {
+  // Dragging tracks width and height independently -- unlike the old
+  // uniform-scale resize, this lets the aspect ratio change freely just by
+  // dragging, not only via the Inspector's slider.
+  const beginInsertResize = useCallback((e: React.PointerEvent<HTMLDivElement>, insertId: string, startRect: Rect) => {
     e.stopPropagation()
     const canvasBox = canvasRef.current?.getBoundingClientRect()
     if (!canvasBox) return
@@ -552,7 +640,8 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       pointerId: e.pointerId,
       startX: e.clientX - canvasBox.left,
       startY: e.clientY - canvasBox.top,
-      startSizePct,
+      startW: startRect.w,
+      startH: startRect.h,
     }
     e.currentTarget.setPointerCapture(e.pointerId)
   }, [])
@@ -560,29 +649,38 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const onInsertResizePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current
-      if (!drag || drag.type !== 'insert-resize' || !layout || !canvasRef.current) return
+      if (!drag || drag.type !== 'insert-resize' || !canvasRef.current) return
       const canvasBox = canvasRef.current.getBoundingClientRect()
       const x = e.clientX - canvasBox.left
       const y = e.clientY - canvasBox.top
-      const delta = ((x - drag.startX) + (y - drag.startY)) / 2
-      const newSizePct = Math.max(0.05, Math.min(0.6, drag.startSizePct + delta / Math.min(layout.canvasCssW, layout.canvasCssH)))
-      setLiveInsertSize({ insertId: drag.insertId, sizePct: newSizePct })
+      const MIN_PX = 20
+      const w = Math.max(MIN_PX, drag.startW + (x - drag.startX))
+      const h = Math.max(MIN_PX, drag.startH + (y - drag.startY))
+      setLiveInsertSize({ insertId: drag.insertId, w, h })
     },
-    [layout],
+    [],
   )
 
   const onInsertResizePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current
-      if (!drag || drag.type !== 'insert-resize') return
+      if (!drag || drag.type !== 'insert-resize' || !layout) return
       dragRef.current = null
       e.currentTarget.releasePointerCapture(e.pointerId)
       setLiveInsertSize((live) => {
-        if (live) editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, sizePct: live.sizePct } : i)) }))
+        if (live) {
+          const minDim = Math.min(layout.canvasCssW, layout.canvasCssH)
+          // No practical upper limit on insert size (it can be bigger than
+          // the canvas itself) -- only a small floor to avoid a degenerate
+          // near-zero box.
+          const sizePct = Math.max(0.02, Math.sqrt(live.w * live.h) / minDim)
+          const aspectRatio = Math.max(0.05, Math.min(20, live.w / live.h))
+          editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, sizePct, aspectRatio } : i)) }))
+        }
         return null
       })
     },
-    [editDoc],
+    [editDoc, layout],
   )
 
   if (!doc || !layout) {
@@ -645,6 +743,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
                 seam: null,
                 position: { cxPct: 0.5, cyPct: 0.5 },
                 sizePct: 0.26,
+                aspectRatio: 1,
                 focal: { x: 0.5, y: 0.5 },
                 zoom: 1.6,
                 featherPx: 18,
@@ -678,9 +777,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
                 left: insertRects[selectedInsertId].x + insertRects[selectedInsertId].w - 6,
                 top: insertRects[selectedInsertId].y + insertRects[selectedInsertId].h - 6,
               }}
-              onPointerDown={(e) =>
-                beginInsertResize(e, selectedInsertId, doc.inserts.find((i) => i.id === selectedInsertId)?.sizePct ?? 0.26)
-              }
+              onPointerDown={(e) => beginInsertResize(e, selectedInsertId, insertRects[selectedInsertId])}
               onPointerMove={onInsertResizePointerMove}
               onPointerUp={onInsertResizePointerUp}
               title="Drag to resize"

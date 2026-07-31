@@ -300,6 +300,9 @@
   cursor: col-resize;
   background: transparent;
   flex-shrink: 0;
+  /* Without this, a touch-drag here gets claimed by the browser as a page
+     scroll/pan gesture instead of reaching our pointer handlers. */
+  touch-action: none;
 }
 .collage-studio-page .resize-handle:hover {
   background: #3b82f6;
@@ -437,6 +440,7 @@
   position: absolute;
   z-index: 5;
   background: transparent;
+  touch-action: none;
 }
 .collage-studio-page .divider-horizontal {
   cursor: col-resize;
@@ -513,6 +517,7 @@
   cursor: grab;
   z-index: 6;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  touch-action: none;
 }
 .collage-studio-page .insert-resize-handle {
   position: absolute;
@@ -524,6 +529,7 @@
   cursor: nwse-resize;
   z-index: 6;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  touch-action: none;
 }
 
 /* ---- inspector ---- */
@@ -563,7 +569,9 @@
 }
 .collage-studio-page .field-row {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .collage-studio-page .field.checkbox {
   flex-direction: row;
@@ -632,7 +640,23 @@
     display: inline-flex;
   }
   .collage-studio-page .resize-handle {
-    display: none;
+    /* Kept visible (was display:none) -- widened for a finger instead of a
+       mouse pointer. Visually still reads as a thin line since the color
+       only shows via :hover/:active, but the actual hit target is bigger. */
+    width: 18px;
+    margin: 0 -6px;
+  }
+  /* Expand the touch target well beyond the visual dot/square (14px) via a
+     pseudo-element instead of resizing the handle itself -- the handle's
+     on-screen position is computed in CanvasEditor.tsx assuming a 14px box,
+     so growing the real element would throw that off-center. A pseudo-
+     element isn't part of the DOM, so pointer events on it still land on
+     (and are handled by) the real parent element. */
+  .collage-studio-page .insert-move-handle::after,
+  .collage-studio-page .insert-resize-handle::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
   }
   .collage-studio-page .library-panel-wrap,
   .collage-studio-page .inspector-panel-wrap {

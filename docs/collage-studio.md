@@ -152,7 +152,12 @@ Insert
   id, imageKey             # independent from any frame -- not auto-linked to the frame it was created near
   seam: {frameIdA, frameIdB} | null    # starting position only; overridden once dragged (position wins)
   position: {cxPct, cyPct} | null      # set on drag; freely movable/resizable on the canvas, not just seam midpoints
-  sizePct, focal, zoom, featherPx, cornerRadiusPct
+  sizePct, aspectRatio, focal, zoom, featherPx, cornerRadiusPct
+    # aspectRatio is width/height (1 = square, the only shape this used to
+    # support); sizePct still controls overall scale, split between width/
+    # height via sqrt(aspectRatio) so area stays roughly constant as the
+    # shape changes -- see CanvasEditor.tsx's insertRects and
+    # canvasExport.ts's renderCollageToBlob (kept in sync, same formula)
   border: {enabled, width, color} | null                                      # null = inherit insertBorderDefault
   shadow: {enabled, offsetPx, angleDeg, blurPx, opacity, color} | null        # null = inherit insertShadowDefault
 ```

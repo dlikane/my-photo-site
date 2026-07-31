@@ -85,7 +85,7 @@ export interface InsertShadowSpec {
 
 /** Blurred, colored silhouette of the insert's rounded shape, offset by
  * angle/distance -- drawn *before* the insert image itself so it sits behind it.
- * Mirrors render_engine.py's make_insert_shadow (same angle convention: 0=right, 90=down). */
+ * (Angle convention: 0=right, 90=down.) */
 export function drawInsertShadow(ctx: CanvasRenderingContext2D, destRect: Rect, cornerRadiusPct: number, shadow: InsertShadowSpec, scale: number) {
   if (shadow.opacity <= 0) return
   const w = Math.round(destRect.w)

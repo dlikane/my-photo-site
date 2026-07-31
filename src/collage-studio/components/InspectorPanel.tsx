@@ -284,9 +284,17 @@ export function InspectorPanel() {
               here -- they follow the doc-level defaults (see the "Inserts
               (default border/shadow)" sections above). */}
           <p className="hint">
-            Drag the insert to pan its image, scroll to zoom, or use the move/resize handles. Double-click to reset
-            zoom/pan.
+            Drag the insert to pan its image, scroll to zoom, or use the move/resize handles (bottom-right also
+            changes aspect ratio freely). Double-click to reset zoom/pan.
           </p>
+          <NumberField
+            label="Aspect ratio (width : height)"
+            min={0.2}
+            max={5}
+            step={0.05}
+            value={selectedInsert.aspectRatio}
+            onChange={(v) => updateInsert(selectedInsert.id, { aspectRatio: v })}
+          />
           <label className="field">
             <span>Corner radius (0 = square, 50 = circle)</span>
             <input
