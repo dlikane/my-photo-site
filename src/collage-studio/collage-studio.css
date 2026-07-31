@@ -379,8 +379,7 @@
   scrollbar-gutter: stable;
   flex: 1;
   min-height: 60px;
-  padding-top: 6px;
-  padding-right: 4px;
+  padding: 6px 6px 0;
   align-content: start;
 }
 .collage-studio-page .library-thumb {

@@ -32,14 +32,8 @@ export function LibraryPanel() {
   useEffect(() => {
     const el = thumbsRef.current
     if (!el) return
-    // Native (non-passive) listener -- React's onWheel can't reliably
-    // preventDefault(). Gated on Ctrl/Cmd so plain scrolling still scrolls
-    // the list -- an earlier version resized on *every* wheel tick, which
-    // meant there was no way left to scroll a long gallery with the wheel.
-    const handler = (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return
-      e.preventDefault()
-      const step = e.deltaY > 0 ? 1 : -1
+
+    const stepColumns = (step: number) => {
       setColumns((c) => {
         // clientWidth is the content box (padding already excluded, and
         // scrollbar-gutter keeps the scrollbar out of it too) -- subtract
@@ -50,8 +44,61 @@ export function LibraryPanel() {
         return Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, current + step))
       })
     }
-    el.addEventListener('wheel', handler, { passive: false })
-    return () => el.removeEventListener('wheel', handler)
+
+    // Native (non-passive) listener -- React's onWheel can't reliably
+    // preventDefault(). Gated on Ctrl/Cmd so plain scrolling still scrolls
+    // the list -- an earlier version resized on *every* wheel tick, which
+    // meant there was no way left to scroll a long gallery with the wheel.
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      stepColumns(e.deltaY > 0 ? 1 : -1)
+    }
+
+    // Pinch-to-resize on touch -- same column-stepping as Ctrl+Scroll, just
+    // driven by two-finger pinch distance instead. Distance change is
+    // accumulated and only converted into a step every PINCH_STEP_PX of
+    // travel, so it steps discretely rather than firing on every touchmove.
+    const PINCH_STEP_PX = 40
+    let pinchDist: number | null = null
+    let pinchAccum = 0
+    const touchDist = (touches: TouchList) => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchDist = touchDist(e.touches)
+        pinchAccum = 0
+      }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || pinchDist === null) return
+      e.preventDefault()
+      const dist = touchDist(e.touches)
+      pinchAccum += dist - pinchDist
+      pinchDist = dist
+      while (Math.abs(pinchAccum) >= PINCH_STEP_PX) {
+        // Pinching outward (fingers spreading, distance growing) means
+        // "bigger thumbnails" -- fewer columns.
+        stepColumns(pinchAccum > 0 ? -1 : 1)
+        pinchAccum += pinchAccum > 0 ? -PINCH_STEP_PX : PINCH_STEP_PX
+      }
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchDist = null
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: false })
+    el.addEventListener('touchend', onTouchEnd)
+    el.addEventListener('touchcancel', onTouchEnd)
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
+    }
   }, [])
 
   const toggleSort = (key: SortKey) => {
@@ -164,7 +211,7 @@ export function LibraryPanel() {
       <div
         className="library-thumbs"
         ref={thumbsRef}
-        title="Ctrl+Scroll (Cmd+Scroll on Mac) to resize thumbnails"
+        title="Ctrl+Scroll (Cmd+Scroll on Mac), or pinch on touch, to resize thumbnails"
         style={columns ? { gridTemplateColumns: `repeat(${columns}, 1fr)` } : undefined}
       >
         {sortedImages.map((img) => (
