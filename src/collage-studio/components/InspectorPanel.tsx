@@ -273,14 +273,16 @@ export function InspectorPanel() {
       {selectedInsert && (
         <section>
           <h3>Selected insert</h3>
-          {/* Simplified to just corner radius, matching the new design --
-              size/zoom/feather/focal/border-override/shadow-override are
-              still in the data model (see model/collageTypes.ts) and still
-              apply (via doc-level defaults for border/shadow), just no
-              longer independently editable per-insert from this panel.
-              Move/resize now happens by removing and re-adding the insert
-              (the seam "+"/remove-X on the canvas) rather than drag/resize
-              handles -- see CanvasEditor.tsx. */}
+          {/* Simplified down from a full panel (still matching the new
+              design's intent), but not to *just* corner radius anymore --
+              size/zoom/focal are now direct-manipulation on the canvas
+              itself (resize/move handles, wheel-to-zoom, drag-to-pan; see
+              CanvasEditor.tsx), so they don't need fields here. Feather has
+              no canvas gesture equivalent, so it's kept as a field. Border/
+              shadow override are still in the data model but not exposed
+              here -- they follow the doc-level defaults (see the "Inserts
+              (default border/shadow)" sections above). */}
+          <p className="hint">Drag the insert to pan its image, scroll to zoom, or use the move/resize handles.</p>
           <label className="field">
             <span>Corner radius (0 = square, 50 = circle)</span>
             <input
@@ -298,6 +300,14 @@ export function InspectorPanel() {
               onChange={(e) => updateInsert(selectedInsert.id, { cornerRadiusPct: Number(e.target.value) / 100 })}
             />
           </label>
+          <NumberField
+            label="Feather (px)"
+            min={0}
+            max={60}
+            step={1}
+            value={selectedInsert.featherPx}
+            onChange={(v) => updateInsert(selectedInsert.id, { featherPx: v })}
+          />
         </section>
       )}
     </div>

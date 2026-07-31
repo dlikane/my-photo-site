@@ -511,6 +511,28 @@
   background: #2563eb;
   transform: scale(1.15);
 }
+.collage-studio-page .insert-move-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: grab;
+  z-index: 6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+.collage-studio-page .insert-resize-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #3b82f6;
+  border: 2px solid white;
+  border-radius: 3px;
+  cursor: nwse-resize;
+  z-index: 6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
 
 /* ---- inspector ---- */
 .collage-studio-page .inspector-panel {

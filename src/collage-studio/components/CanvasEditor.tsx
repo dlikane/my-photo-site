@@ -23,6 +23,9 @@ const LIBRARY_DRAG_MIME = 'application/x-collage-image'
 type DragState =
   | { type: 'pan'; frameId: string; pointerId: number; startX: number; startY: number; startFocal: FocalPoint; rect: Rect; img: HTMLImageElement; cropW: number; cropH: number }
   | { type: 'divider'; pointerId: number; splitId: string; orientation: 'horizontal' | 'vertical'; parentRect: Rect }
+  | { type: 'insert-pan'; insertId: string; pointerId: number; startX: number; startY: number; startFocal: FocalPoint; rect: Rect; img: HTMLImageElement; cropW: number; cropH: number }
+  | { type: 'insert-move'; insertId: string; pointerId: number; startX: number; startY: number; startCxPct: number; startCyPct: number }
+  | { type: 'insert-resize'; insertId: string; pointerId: number; startX: number; startY: number; startSizePct: number }
 
 function hitTest(point: { x: number; y: number }, rects: Record<string, Rect>): string | null {
   for (const [id, r] of Object.entries(rects)) {
@@ -70,6 +73,9 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const [tick, setTick] = useState(0)
   const [liveFocal, setLiveFocal] = useState<{ frameId: string; focal: FocalPoint } | null>(null)
   const [liveRatio, setLiveRatio] = useState<{ splitId: string; ratio: number } | null>(null)
+  const [liveInsertFocal, setLiveInsertFocal] = useState<{ insertId: string; focal: FocalPoint } | null>(null)
+  const [liveInsertPos, setLiveInsertPos] = useState<{ insertId: string; cxPct: number; cyPct: number } | null>(null)
+  const [liveInsertSize, setLiveInsertSize] = useState<{ insertId: string; sizePct: number } | null>(null)
   const forceRedraw = useCallback(() => setTick((t) => t + 1), [])
 
   useEffect(() => {
@@ -110,13 +116,17 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     if (!doc || !layout) return {}
     const out: Record<string, Rect> = {}
     for (const insert of doc.inserts) {
-      const size = insert.sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
+      const sizePct = liveInsertSize && liveInsertSize.insertId === insert.id ? liveInsertSize.sizePct : insert.sizePct
+      const size = sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
       let cx: number
       let cy: number
-      // `position` (free placement) is no longer settable from the UI --
-      // inserts are seam-anchored only -- but still honored here so any
-      // older doc that has one keeps rendering where it was left.
-      if (insert.position) {
+      // Seam-anchored by default (created via the seam "+"), but the move
+      // handle can drag it anywhere -- once it has a `position` that takes
+      // over from the seam anchor.
+      if (liveInsertPos && liveInsertPos.insertId === insert.id) {
+        cx = liveInsertPos.cxPct * layout.canvasCssW
+        cy = liveInsertPos.cyPct * layout.canvasCssH
+      } else if (insert.position) {
         cx = insert.position.cxPct * layout.canvasCssW
         cy = insert.position.cyPct * layout.canvasCssH
       } else if (insert.seam) {
@@ -130,7 +140,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       out[insert.id] = { x: cx - size / 2, y: cy - size / 2, w: size, h: size }
     }
     return out
-  }, [doc, layout])
+  }, [doc, layout, liveInsertPos, liveInsertSize])
 
   // ---- draw ----
   useEffect(() => {
@@ -189,11 +199,12 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           ensureImageLoaded(insert.imageKey, pooled.objectUrl, forceRedraw)
           continue
         }
+        const insertFocal = liveInsertFocal && liveInsertFocal.insertId === insert.id ? liveInsertFocal.focal : insert.focal
         const shadow = insert.shadow ?? doc.insertShadowDefault
         if (shadow.enabled) {
           drawInsertShadow(ctx, rect, insert.cornerRadiusPct, shadow, layout.scale)
         }
-        drawFeatheredImage(ctx, img, rect, insert.focal, insert.zoom, insert.cornerRadiusPct, insert.featherPx * layout.scale)
+        drawFeatheredImage(ctx, img, rect, insertFocal, insert.zoom, insert.cornerRadiusPct, insert.featherPx * layout.scale)
         const border = insert.border ?? doc.insertBorderDefault
         if (border?.enabled) strokeRoundedRect(ctx, rect, insert.cornerRadiusPct, border.color, border.width * layout.scale)
         if (!previewMode && insert.id === selectedInsertId) {
@@ -206,7 +217,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         }
       }
     }
-  }, [doc, layout, selectedFrameId, selectedInsertId, tick, liveFocal, insertRects, forceRedraw, pool, previewMode])
+  }, [doc, layout, selectedFrameId, selectedInsertId, tick, liveFocal, liveInsertFocal, insertRects, forceRedraw, pool, previewMode])
 
   // ---- pointer interaction on the canvas itself (select / pan / move insert) ----
   const onCanvasPointerDown = useCallback(
@@ -218,6 +229,25 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       const insertId = hitTest(point, insertRects)
       if (insertId) {
         selectInsert(insertId)
+        const insert = doc.inserts.find((i) => i.id === insertId)
+        if (!insert?.imageKey) return
+        const img = getCachedImage(insert.imageKey)
+        if (!img) return
+        const rect = insertRects[insertId]
+        const cropBox = computeCropBox(img.naturalWidth, img.naturalHeight, rect.w, rect.h, insert.focal, insert.zoom)
+        dragRef.current = {
+          type: 'insert-pan',
+          insertId,
+          pointerId: e.pointerId,
+          startX: point.x,
+          startY: point.y,
+          startFocal: insert.focal,
+          rect,
+          img,
+          cropW: cropBox.w,
+          cropH: cropBox.h,
+        }
+        e.currentTarget.setPointerCapture(e.pointerId)
         return
       }
 
@@ -264,6 +294,20 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         const newX = Math.max(0, Math.min(1, drag.startFocal.x - (dxCss * scaleX) / drag.img.naturalWidth))
         const newY = Math.max(0, Math.min(1, drag.startFocal.y - (dyCss * scaleY) / drag.img.naturalHeight))
         setLiveFocal({ frameId: drag.frameId, focal: { x: newX, y: newY } })
+        return
+      }
+
+      if (drag.type === 'insert-pan') {
+        const box = e.currentTarget.getBoundingClientRect()
+        const x = e.clientX - box.left
+        const y = e.clientY - box.top
+        const dxCss = x - drag.startX
+        const dyCss = y - drag.startY
+        const scaleX = drag.cropW / drag.rect.w
+        const scaleY = drag.cropH / drag.rect.h
+        const newX = Math.max(0, Math.min(1, drag.startFocal.x - (dxCss * scaleX) / drag.img.naturalWidth))
+        const newY = Math.max(0, Math.min(1, drag.startFocal.y - (dyCss * scaleY) / drag.img.naturalHeight))
+        setLiveInsertFocal({ insertId: drag.insertId, focal: { x: newX, y: newY } })
       }
     },
     [layout],
@@ -283,6 +327,18 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           }
           return null
         })
+        return
+      }
+
+      if (drag.type === 'insert-pan') {
+        dragRef.current = null
+        e.currentTarget.releasePointerCapture(e.pointerId)
+        setLiveInsertFocal((live) => {
+          if (live && live.insertId === drag.insertId) {
+            editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, focal: live.focal } : i)) }))
+          }
+          return null
+        })
       }
     },
     [editDoc],
@@ -296,22 +352,33 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     const handler = (e: WheelEvent) => {
       const box = canvas.getBoundingClientRect()
       const point = { x: e.clientX - box.left, y: e.clientY - box.top }
-      const frameId = hitTest(point, layout.frameRects)
-      if (!frameId) return
-      const frame = layout.frames[frameId]
-      if (!frame?.image) return
-      e.preventDefault()
       // Multiplicative (not additive) step -- with MAX_ZOOM this high, a fixed
       // +/-0.1 per tick would take hundreds of scroll ticks to reach the top
       // of the range. A proportional step stays fine-grained near 1x and
       // still reaches high zoom quickly.
       const factor = e.deltaY > 0 ? 1 / 1.1 : 1.1
+
+      const insertId = hitTest(point, insertRects)
+      if (insertId) {
+        const insert = doc.inserts.find((i) => i.id === insertId)
+        if (!insert?.imageKey) return
+        e.preventDefault()
+        const nextZoom = Math.max(1, Math.min(MAX_ZOOM, insert.zoom * factor))
+        editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === insertId ? { ...i, zoom: nextZoom } : i)) }))
+        return
+      }
+
+      const frameId = hitTest(point, layout.frameRects)
+      if (!frameId) return
+      const frame = layout.frames[frameId]
+      if (!frame?.image) return
+      e.preventDefault()
       const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom * factor))
       editDoc((d) => ({ ...d, tree: updateFrame(d.tree, frameId, (f) => ({ ...f, image: f.image ? { ...f.image, zoom: nextZoom } : f.image })) }))
     }
     canvas.addEventListener('wheel', handler, { passive: false })
     return () => canvas.removeEventListener('wheel', handler)
-  }, [doc, layout, editDoc])
+  }, [doc, layout, insertRects, editDoc])
 
   const assignImageToDropTarget = useCallback(
     (imageKey: string, insertId: string | null, frameId: string | null) => {
@@ -403,6 +470,103 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     [editDoc],
   )
 
+  // ---- insert move handle (DOM overlay, top-left anchor) ----
+  const beginInsertMove = useCallback((e: React.PointerEvent<HTMLDivElement>, insertId: string, rect: Rect) => {
+    e.stopPropagation()
+    const canvasBox = canvasRef.current?.getBoundingClientRect()
+    if (!canvasBox || !layout) return
+    dragRef.current = {
+      type: 'insert-move',
+      insertId,
+      pointerId: e.pointerId,
+      startX: e.clientX - canvasBox.left,
+      startY: e.clientY - canvasBox.top,
+      startCxPct: (rect.x + rect.w / 2) / layout.canvasCssW,
+      startCyPct: (rect.y + rect.h / 2) / layout.canvasCssH,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [layout])
+
+  const onInsertMovePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current
+      if (!drag || drag.type !== 'insert-move' || !layout || !canvasRef.current) return
+      const canvasBox = canvasRef.current.getBoundingClientRect()
+      const x = e.clientX - canvasBox.left
+      const y = e.clientY - canvasBox.top
+      const newCxPct = Math.max(0, Math.min(1, drag.startCxPct + (x - drag.startX) / layout.canvasCssW))
+      const newCyPct = Math.max(0, Math.min(1, drag.startCyPct + (y - drag.startY) / layout.canvasCssH))
+      setLiveInsertPos({ insertId: drag.insertId, cxPct: newCxPct, cyPct: newCyPct })
+    },
+    [layout],
+  )
+
+  const onInsertMovePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current
+      if (!drag || drag.type !== 'insert-move') return
+      dragRef.current = null
+      e.currentTarget.releasePointerCapture(e.pointerId)
+      setLiveInsertPos((live) => {
+        if (live) {
+          // Detach from its birth seam once freely positioned -- otherwise
+          // that seam would look permanently "occupied" (no "+" marker) even
+          // though the insert has moved away from it.
+          editDoc((d) => ({
+            ...d,
+            inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, seam: null, position: { cxPct: live.cxPct, cyPct: live.cyPct } } : i)),
+          }))
+        }
+        return null
+      })
+    },
+    [editDoc],
+  )
+
+  // ---- insert resize handle (DOM overlay, bottom-right anchor) ----
+  const beginInsertResize = useCallback((e: React.PointerEvent<HTMLDivElement>, insertId: string, startSizePct: number) => {
+    e.stopPropagation()
+    const canvasBox = canvasRef.current?.getBoundingClientRect()
+    if (!canvasBox) return
+    dragRef.current = {
+      type: 'insert-resize',
+      insertId,
+      pointerId: e.pointerId,
+      startX: e.clientX - canvasBox.left,
+      startY: e.clientY - canvasBox.top,
+      startSizePct,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [])
+
+  const onInsertResizePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current
+      if (!drag || drag.type !== 'insert-resize' || !layout || !canvasRef.current) return
+      const canvasBox = canvasRef.current.getBoundingClientRect()
+      const x = e.clientX - canvasBox.left
+      const y = e.clientY - canvasBox.top
+      const delta = ((x - drag.startX) + (y - drag.startY)) / 2
+      const newSizePct = Math.max(0.05, Math.min(0.6, drag.startSizePct + delta / Math.min(layout.canvasCssW, layout.canvasCssH)))
+      setLiveInsertSize({ insertId: drag.insertId, sizePct: newSizePct })
+    },
+    [layout],
+  )
+
+  const onInsertResizePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current
+      if (!drag || drag.type !== 'insert-resize') return
+      dragRef.current = null
+      e.currentTarget.releasePointerCapture(e.pointerId)
+      setLiveInsertSize((live) => {
+        if (live) editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, sizePct: live.sizePct } : i)) }))
+        return null
+      })
+    },
+    [editDoc],
+  )
+
   if (!doc || !layout) {
     return (
       <div className="canvas-editor-empty" ref={wrapperRef}>
@@ -441,37 +605,20 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
 
         {!previewMode &&
           layout.seams.map((seam) => {
-            // At most one insert per seam -- clicking "+" creates it, and its
-            // own small remove button (rendered at the seam position once
-            // it exists) takes the "+" marker's place until it's removed.
-            const existing = doc.inserts.find(
+            // A seam only offers "+" while nothing is anchored to it. Once an
+            // insert is created there it can be freely moved away (via its
+            // move handle below), which detaches it from the seam and frees
+            // the "+" up again -- see onInsertMovePointerUp.
+            const occupied = doc.inserts.some(
               (i) =>
                 i.seam &&
                 ((i.seam.frameIdA === seam.frameIdA && i.seam.frameIdB === seam.frameIdB) ||
                   (i.seam.frameIdA === seam.frameIdB && i.seam.frameIdB === seam.frameIdA)),
             )
-            const key = `${seam.frameIdA}-${seam.frameIdB}`
-            if (existing) {
-              const rect = insertRects[existing.id]
-              if (!rect) return null
-              return (
-                <button
-                  key={key}
-                  className="seam-remove"
-                  title="Remove insert"
-                  style={{ left: rect.x + rect.w - 11, top: rect.y - 11 }}
-                  onClick={() => {
-                    editDoc((d) => ({ ...d, inserts: d.inserts.filter((i) => i.id !== existing.id) }))
-                    if (selectedInsertId === existing.id) selectInsert(null)
-                  }}
-                >
-                  ✕
-                </button>
-              )
-            }
+            if (occupied) return null
             return (
               <button
-                key={key}
+                key={`${seam.frameIdA}-${seam.frameIdB}`}
                 className="seam-marker"
                 title="Add insert on this seam"
                 style={{ left: seam.cx - 13, top: seam.cy - 13 }}
@@ -500,6 +647,56 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
               </button>
             )
           })}
+
+        {/* Every existing insert gets its own remove-X at its current
+            rendered position, whether it's still seam-anchored or has been
+            freely moved -- unlike the seam "+", this doesn't depend on
+            selection state. */}
+        {!previewMode &&
+          doc.inserts.map((insert) => {
+            const rect = insertRects[insert.id]
+            if (!rect) return null
+            return (
+              <button
+                key={insert.id}
+                className="seam-remove"
+                title="Remove insert"
+                style={{ left: rect.x + rect.w - 11, top: rect.y - 11 }}
+                onClick={() => {
+                  editDoc((d) => ({ ...d, inserts: d.inserts.filter((i) => i.id !== insert.id) }))
+                  if (selectedInsertId === insert.id) selectInsert(null)
+                }}
+              >
+                ✕
+              </button>
+            )
+          })}
+
+        {!previewMode && selectedInsertId && insertRects[selectedInsertId] && (
+          <>
+            <div
+              className="insert-move-handle"
+              style={{ left: insertRects[selectedInsertId].x - 6, top: insertRects[selectedInsertId].y - 6 }}
+              onPointerDown={(e) => beginInsertMove(e, selectedInsertId, insertRects[selectedInsertId])}
+              onPointerMove={onInsertMovePointerMove}
+              onPointerUp={onInsertMovePointerUp}
+              title="Drag to move"
+            />
+            <div
+              className="insert-resize-handle"
+              style={{
+                left: insertRects[selectedInsertId].x + insertRects[selectedInsertId].w - 6,
+                top: insertRects[selectedInsertId].y + insertRects[selectedInsertId].h - 6,
+              }}
+              onPointerDown={(e) =>
+                beginInsertResize(e, selectedInsertId, doc.inserts.find((i) => i.id === selectedInsertId)?.sizePct ?? 0.26)
+              }
+              onPointerMove={onInsertResizePointerMove}
+              onPointerUp={onInsertResizePointerUp}
+              title="Drag to resize"
+            />
+          </>
+        )}
 
         {!previewMode && selectedRect && selectedFrameId && (
           <div className="frame-toolbar" style={{ left: selectedRect.x + selectedRect.w - 4, top: selectedRect.y + 4 }}>
