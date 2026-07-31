@@ -1,7 +1,6 @@
-// TS mirror of backend/app/render_engine.py's layout/crop/seam math.
-// Keep this in lockstep with that file -- same function shapes, same
-// constants -- so the live canvas preview never diverges from the Pillow
-// export.
+// Layout/crop/seam math, shared by both the live preview (CanvasEditor.tsx)
+// and the full-resolution export (canvasExport.ts) -- one implementation,
+// so the two can't visually diverge from each other.
 
 import { MAX_ZOOM, type CollageDoc, type FocalPoint, type FrameNode, type Node } from './collageTypes'
 

@@ -7,37 +7,27 @@ three scopes (external frame, grid between frames, per-insert).
 
 ## Architecture
 
-- **Frontend**: part of this site's own React app (`src/collage-studio/`),
-  routed at `/collage-studio` in `src/components/Main.jsx` (bypasses the
-  site's `Header`/`Footer` for a full-viewport editor). Builds and deploys
-  with the rest of the site — no separate frontend build step.
-- **Backend**: `collage-studio-backend/` (FastAPI + Pillow), sibling to
-  `api/` (not inside it, so Vercel's Python auto-detection never picks it
-  up — it must never be deployed). Runs **locally only**, bound to
-  `127.0.0.1:8756`. It is **stateless and disk-free**: it does one job,
-  rendering the final high-quality export, and holds nothing between
-  requests.
-- **No local filesystem access at all.** There is no folder browser and no
-  server-side storage. Every image enters the app via drag-drop or a file
-  picker (from Explorer/Finder, or the Gallery/Photos picker on
-  mobile/Android browsers) and lives only in browser memory for the
-  session.
-- **Why a local, cross-origin backend still works without a tunnel:** the
-  frontend is static content served from Vercel, but it runs in *your*
-  browser on *your* machine. Its JS calls `http://127.0.0.1:8756` directly,
-  cross-origin — browsers treat `127.0.0.1` as a secure context, so an
-  `https://` page fetching `http://127.0.0.1:...` is allowed. This only
-  works for whoever has the backend running locally; anyone else hitting
-  `/collage-studio` gets a page that can't reach an API and does nothing
-  useful. That's the deliberate access-control model — no login gate, the
-  URL is just unlisted.
-- **CORS** (`collage-studio-backend/app/main.py`) allow-lists the production
-  domain (`https://www.dlikane.com`, `https://dlikane.com`), this project's
-  Vercel preview URLs (`https://my-photo-site-git-*-dlikanes-projects.vercel.app`),
-  and any `localhost`/`127.0.0.1` port (Vite auto-increments its port when
-  5173+ are taken). **Never widen this to `allow_origins=["*"]`** — even
-  though the backend is stateless, wildcard CORS would let any site the
-  user's browser visits make requests to it.
+- **Frontend only — no backend at all.** `src/collage-studio/` is part of
+  this site's own React app, routed at `/collage-studio` in
+  `src/components/Main.jsx` (bypasses the site's `Header`/`Footer` for a
+  full-viewport editor). Builds and deploys with the rest of the site.
+- **No local filesystem access, no network calls, nothing server-side.**
+  There is no folder browser and no server-side storage. Every image enters
+  the app via drag-drop or a file picker (from Explorer/Finder, or the
+  Gallery/Photos picker on mobile/Android browsers) and lives only in
+  browser memory + IndexedDB, on that device. The final rendered JPEG
+  ("Render") is produced entirely client-side too, via `<canvas>` — see
+  "Export / Open / Render" below.
+- **This used to need a backend for Render, twice.** First a local-only
+  Python/FastAPI + Pillow process (`127.0.0.1:8756` — worked on desktop,
+  never from a phone, since `127.0.0.1` on a phone means the phone itself).
+  Then briefly a Vercel function backed by Blob storage (to work around
+  Vercel's 4.5MB request/response body limit for multi-photo collages).
+  Both were replaced with the current client-side `<canvas>` export so
+  Render has zero network dependency and works identically on any device.
+  If canvas output quality/reliability ever isn't good enough, either prior
+  approach is recoverable from git history — this was a deliberate,
+  reversible simplification, not a dead end.
 
 ## Image handling: local-only, persisted per device
 
@@ -49,8 +39,9 @@ three scopes (external frame, grid between frames, per-insert).
   `localStorage` — `localStorage` is capped around 5-10MB and can't hold
   binary Blobs; IndexedDB stores File/Blob objects natively and gets a much
   larger quota. This is **device-local only** — nothing syncs between
-  devices, and nothing ever leaves the browser (no backend involved in any
-  of this). The gallery and whatever collages/tabs were open both survive a
+  devices, and nothing ever leaves the browser at all (there's no backend
+  in this subsystem, period). The gallery and whatever collages/tabs were
+  open both survive a
   full browser restart; a "Clear gallery" button in `LibraryPanel.tsx`
   removes only images **not referenced by any currently-open collage**
   (computed via `collectImageKeys` across `useCollageStore().allDocs`, all
@@ -116,15 +107,17 @@ save-to-a-project concept.)
   with its original images (typically the same folder) loads both the
   layout and its images in one action. Any referenced `imageKey` still not
   in the pool afterward is reported as missing in the status line.
-- **Render**: the only operation that talks to the backend.
+- **Render**: fully client-side, no network call at all.
   `Toolbar.handleRender` collects every `imageKey` the doc references,
-  refuses to proceed if any are missing from the pool, then POSTs a
-  multipart request — `doc` (JSON) plus the actual file bytes for each
-  `imageKey` — to `POST /api/export` (the backend route name wasn't renamed,
-  just the button). The backend (`render_engine.py`, unchanged compositing
-  logic, just re-keyed) renders the final JPEG in memory and streams it
-  back; the frontend triggers a download. Nothing is written to disk on
-  either side.
+  refuses to proceed if any are missing from the pool, then calls
+  `model/canvasExport.ts`'s `renderCollageToBlob(doc, imageUrls)` — draws
+  the doc onto an off-screen `<canvas>` sized at its actual
+  `doc.canvas.width/height` (not the viewport-fit scale the live preview
+  uses), reusing the exact same layout/crop math (`geometry.ts`) and
+  drawing helpers (`canvasRender.ts`) as `CanvasEditor.tsx`, then
+  `canvas.toBlob('image/jpeg', quality)`. The frontend triggers a download
+  of the result. Nothing is written to disk, and nothing ever leaves the
+  browser.
 
 ## In-app dialogs, not native ones
 
@@ -138,9 +131,8 @@ confirm/prompt needs in this app — never reach for the native ones here.
 ## Data model
 
 One `CollageDoc` per collage. Canonical definition:
-`collage-studio-backend/app/models.py` (Pydantic), mirrored by hand in
-`src/collage-studio/model/collageTypes.ts` — keep both in sync, there's no
-codegen step.
+`src/collage-studio/model/collageTypes.ts` — the only copy now that
+rendering is fully client-side, no separate backend schema to keep in sync.
 
 ```
 CollageDoc
@@ -178,36 +170,25 @@ Insert
 
 Note: an insert's `imageKey` defaults to the adjacent frame's image when created via the seam `+` button, but from then on it's independent -- reassigning the frame's image (or flipping it) does not affect the insert, and vice versa. Reassign an insert's image the same way as a frame: click or drag a library thumbnail onto it while it's selected.
 
-- **Render split: client-side canvas preview, Pillow for final export.** The
-  cover-crop / split-rect / seam-adjacency math is implemented **twice** and
-  must be kept in lockstep:
-  - `collage-studio-backend/app/render_engine.py` (source of truth, used
-    for the `/api/export` render)
-  - `src/collage-studio/model/geometry.ts` (mirror, used for the live
-    canvas preview)
-  If you change one, change the other. Same function shapes/constants on
-  purpose (e.g. `MAX_ZOOM = 1/0.3` in both places).
+- **One render path, not two.** `geometry.ts`'s cover-crop / split-rect /
+  seam-adjacency math and `canvasRender.ts`'s drawing helpers are shared by
+  *both* the live preview (`CanvasEditor.tsx`, viewport-fit scale) and the
+  final export (`canvasExport.ts`, full `doc.canvas.width/height` scale) --
+  there's no separate backend implementation to keep in lockstep with
+  anymore, so preview and export can't visually diverge from each other.
 
 ## File layout
 
 ```
 my-photo-site/
-  collage-studio-backend/
-    app/
-      main.py            # FastAPI app + CORS + router wiring
-      models.py            # Pydantic models -- source of truth for the data model
-      render_engine.py      # layout/crop/insert math + render_collage(); ImageStore reads in-memory bytes, not disk
-      routers/
-        export.py             # POST /api/export -- stateless multipart render endpoint
-    requirements.txt
   src/collage-studio/
     model/
-      collageTypes.ts    # TS mirror of models.py + createBlankCollageDoc()
-      geometry.ts          # TS mirror of render_engine.py's layout/crop math
+      collageTypes.ts    # canonical CollageDoc shape + createBlankCollageDoc()
+      geometry.ts          # layout/crop/seam math, shared by preview and export
+      canvasExport.ts        # full-resolution client-side render -> Blob (canvas.toBlob)
       treeOps.ts            # split/remove/resize/setFrameImage tree operations
-      canvasRender.ts        # canvas drawing helpers (cover-crop, feathered insert, borders)
+      canvasRender.ts        # canvas drawing helpers (cover-crop, feathered insert, borders) -- shared by preview and export
       imageCache.ts           # module-level HTMLImageElement cache, loads from pool object URLs
-    api/client.ts        # health check + exportCollage() (multipart upload, returns a Blob)
     state/
       collageStore.tsx     # multi-doc tab store: per-tab doc/dirty/undo-redo, active tab; hydrates from + persists to idb.ts
       imagePoolStore.tsx     # content-hash-keyed image pool; hydrates from + persists to idb.ts
@@ -222,28 +203,26 @@ my-photo-site/
     CollageStudioApp.tsx    # root component: ImagePoolProvider > CollageStoreProvider > DialogProvider
     collage-studio.css      # scoped under .collage-studio-page so it can't leak into the site's Tailwind styles
   src/components/Main.jsx    # route wiring: /collage-studio bypasses Header/Footer
-  Makefile                    # collage-install / collage-start / collage-stop targets (backend only)
 ```
 
 ## Running locally
 
-```
-make collage-install   # one-time: creates collage-studio-backend/.venv, installs requirements.txt
-make collage-start     # starts uvicorn on 127.0.0.1:8756 in the background
-make collage-stop      # stops it
-```
-
-Then `pnpm dev` as usual and visit `http://localhost:5173/collage-studio`
-(whatever port Vite actually picks).
+Just `pnpm dev` like the rest of the site and visit
+`http://localhost:5173/collage-studio` (whatever port Vite actually picks)
+-- no separate process, no backend to start. Nothing in this subsystem
+needs anything beyond the frontend dev server.
 
 ## Known gaps
 
 - Canvas aspect-ratio presets are limited to 1:1 and 4:5 (`InspectorPanel.tsx`'s
   `ASPECT_PRESETS`); trivial to add more.
 - No cap on how many collages can be open as tabs at once.
-- `VITE_COLLAGE_API_BASE` env var exists for overriding the backend URL
-  (e.g. a non-default port) but isn't set anywhere yet — defaults to
-  `http://127.0.0.1:8756`.
+- Client-side `canvas` export quality/reliability across browsers hasn't
+  been extensively verified (resampling quality, and very large canvas
+  dimensions may hit per-browser canvas pixel/memory limits, especially on
+  mobile) -- this is exactly the thing to watch for; if it's not good
+  enough, a backend render is recoverable from git history (this file's own
+  history documents both prior approaches).
 - Mobile: Library/Inspector slide-in drawers and double-tap-to-assign are
   implemented and CSS/type-checked, but not verified on a real touch device.
   A long-press-on-canvas menu (as an alternative to the fixed top toolbar)

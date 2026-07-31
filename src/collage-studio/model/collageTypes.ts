@@ -1,4 +1,5 @@
-// Mirrors backend/app/models.py -- keep field names/shapes in sync.
+// Canonical CollageDoc shape -- the only copy now that rendering
+// (model/canvasExport.ts) is fully client-side, no backend schema to mirror.
 
 export interface FocalPoint {
   x: number
@@ -109,8 +110,8 @@ export interface CollageDoc {
 
 // Effectively "unlimited" for editing purposes while still keeping the crop
 // window from collapsing to a near-zero-pixel box (which would misbehave in
-// both the canvas preview and the Pillow render). Mirrored in
-// collage-studio-backend/app/models.py + render_engine.py -- keep in sync.
+// both the live preview and the full-res canvas export -- both share this
+// same constant, there's no separate backend copy to keep in sync with).
 export const MAX_ZOOM = 1 / 0.02
 
 export const DEFAULT_INSERT_SHADOW: InsertShadow = {
@@ -151,7 +152,7 @@ export function makeFrame(image: ImageRef | null = null): FrameNode {
   return { type: 'frame', id: newId(), image }
 }
 
-/** Mirrors the Pydantic default_factory values in backend/app/models.py's CollageDoc. */
+/** Default values for a brand-new CollageDoc. */
 export function createBlankCollageDoc(name = 'Untitled collage'): CollageDoc {
   const now = Date.now()
   return {
