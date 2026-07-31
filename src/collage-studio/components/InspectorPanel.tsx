@@ -8,19 +8,6 @@ const ASPECT_PRESETS: { label: string; ratio: number }[] = [
   { label: '4:5', ratio: 5 / 4 },
 ]
 
-// Insert.aspectRatio is width/height (unlike ASPECT_PRESETS above, which is
-// height/width for the canvas's own width->height derivation) -- so these
-// labels read directly as the ratio value, no inversion needed.
-const INSERT_ASPECT_PRESETS: { label: string; ratio: number }[] = [
-  { label: '1:1', ratio: 1 },
-  { label: '4:5', ratio: 4 / 5 },
-  { label: '5:4', ratio: 5 / 4 },
-  { label: '2:3', ratio: 2 / 3 },
-  { label: '3:2', ratio: 3 / 2 },
-  { label: '9:16', ratio: 9 / 16 },
-  { label: '16:9', ratio: 16 / 9 },
-]
-
 function NumberField({
   label,
   value,
@@ -297,21 +284,9 @@ export function InspectorPanel() {
               here -- they follow the doc-level defaults (see the "Inserts
               (default border/shadow)" sections above). */}
           <p className="hint">
-            Drag the insert to pan its image, scroll to zoom, or use the move/resize handles. Double-click to reset
-            zoom/pan.
+            Drag the insert to pan its image, scroll to zoom, or use the move/resize handles (bottom-right also
+            changes aspect ratio freely). Double-click to reset zoom/pan.
           </p>
-          <div className="field-row">
-            <span className="hint">Aspect:</span>
-            {INSERT_ASPECT_PRESETS.map((preset) => (
-              <button
-                key={preset.label}
-                className={Math.abs(selectedInsert.aspectRatio - preset.ratio) < 0.001 ? 'active' : undefined}
-                onClick={() => updateInsert(selectedInsert.id, { aspectRatio: preset.ratio })}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
           <NumberField
             label="Aspect ratio (width : height)"
             min={0.2}
