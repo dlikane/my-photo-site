@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { collectImageKeys } from '../model/geometry'
 import { setFrameImage } from '../model/treeOps'
 import { useCollageStore } from '../state/collageStore'
@@ -7,6 +7,11 @@ import { useImagePool } from '../state/imagePoolStore'
 
 type SortKey = 'name' | 'date'
 type SortDir = 'asc' | 'desc'
+
+const THUMB_MIN_PX = 104
+const THUMB_GAP_PX = 10
+const MIN_COLUMNS = 1
+const MAX_COLUMNS = 10
 
 export function LibraryPanel() {
   const { doc, editDoc, selectedFrameId, selectedInsertId, allDocs } = useCollageStore()
@@ -17,6 +22,29 @@ export function LibraryPanel() {
   // Date/desc (newest first) matches the pool's own default ordering.
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  // Thumbnail grid density -- null means "auto" (the CSS auto-fill default,
+  // ~104px minimum). Scrolling over the grid switches to an explicit
+  // columns-per-row count, stepping from whatever's currently on screen.
+  const [columns, setColumns] = useState<number | null>(null)
+  const thumbsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = thumbsRef.current
+    if (!el) return
+    // Native (non-passive) listener -- React's onWheel can't reliably
+    // preventDefault() to stop the page/panel from also scrolling.
+    const handler = (e: WheelEvent) => {
+      e.preventDefault()
+      const step = e.deltaY > 0 ? 1 : -1
+      setColumns((c) => {
+        const current = c ?? Math.max(MIN_COLUMNS, Math.round(el.clientWidth / (THUMB_MIN_PX + THUMB_GAP_PX)))
+        return Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, current + step))
+      })
+    }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  }, [])
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -129,7 +157,12 @@ export function LibraryPanel() {
         </div>
       )}
 
-      <div className="library-thumbs">
+      <div
+        className="library-thumbs"
+        ref={thumbsRef}
+        title="Scroll here to resize thumbnails"
+        style={columns ? { gridTemplateColumns: `repeat(${columns}, 1fr)` } : undefined}
+      >
         {sortedImages.map((img) => (
           <div
             key={img.key}
