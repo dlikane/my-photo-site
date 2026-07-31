@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { createBlankCollageDoc, type CollageDoc } from '../model/collageTypes'
-import { collectFrames } from '../model/geometry'
+import { collectImageKeys } from '../model/geometry'
+import { LAYOUT_TEMPLATES } from '../model/templates'
 import { useCollageStore } from '../state/collageStore'
 import { useDialog } from '../state/dialogStore'
 import { useImagePool } from '../state/imagePoolStore'
@@ -9,8 +10,28 @@ import { useImagePool } from '../state/imagePoolStore'
 interface ToolbarProps {
   previewMode: boolean
   onTogglePreview: () => void
+  mobileLibraryOpen: boolean
   onToggleLibrary: () => void
+  mobileInspectorOpen: boolean
   onToggleInspector: () => void
+}
+
+function LibraryPanelIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <rect x="1.5" y="2.5" width="5" height="11" rx="1.5" fill="currentColor" opacity="0.55" />
+    </svg>
+  )
+}
+
+function InspectorPanelIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <rect x="9.5" y="2.5" width="5" height="11" rx="1.5" fill="currentColor" opacity="0.55" />
+    </svg>
+  )
 }
 
 function sanitizeFilename(name: string): string {
@@ -34,28 +55,32 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-function collectImageKeys(doc: CollageDoc): string[] {
-  const frames = collectFrames(doc.tree)
-  const keys = new Set<string>()
-  for (const frame of Object.values(frames)) {
-    if (frame.image) keys.add(frame.image.imageKey)
-  }
-  // Inserts have their own, independent image assignment (see collageTypes.ts) --
-  // not necessarily used by any frame, so must be collected separately.
-  for (const insert of doc.inserts) {
-    if (insert.imageKey) keys.add(insert.imageKey)
-  }
-  return Array.from(keys)
-}
-
-export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggleInspector }: ToolbarProps) {
-  const { doc, dirty, tabs, activeId, newDoc, openDoc, closeDoc, setActive, renameDoc, undo, redo, canUndo, canRedo, markSaved } = useCollageStore()
+export function Toolbar({
+  previewMode,
+  onTogglePreview,
+  mobileLibraryOpen,
+  onToggleLibrary,
+  mobileInspectorOpen,
+  onToggleInspector,
+}: ToolbarProps) {
+  const { doc, tabs, activeId, newDoc, openDoc, closeDoc, setActive, renameDoc, undo, redo, canUndo, canRedo, markSaved } = useCollageStore()
   const dialog = useDialog()
   const pool = useImagePool()
   const [status, setStatus] = useState<string | null>(null)
   const openInputRef = useRef<HTMLInputElement>(null)
   const [renamingTabId, setRenamingTabId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [newMenuOpen, setNewMenuOpen] = useState(false)
+  const newMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!newMenuOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) setNewMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [newMenuOpen])
 
   const startRename = (tabId: string, currentName: string) => {
     setRenamingTabId(tabId)
@@ -77,6 +102,13 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
 
   const handleNew = () => {
     newDoc(createBlankCollageDoc())
+    setNewMenuOpen(false)
+  }
+
+  const handleNewFromTemplate = (build: () => CollageDoc['tree']) => {
+    const blank = createBlankCollageDoc()
+    newDoc({ ...blank, tree: build() })
+    setNewMenuOpen(false)
   }
 
   const handleOpenClick = () => openInputRef.current?.click()
@@ -155,10 +187,28 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
   return (
     <div className="toolbar-wrap">
       <div className="toolbar">
-        <button className="mobile-panel-toggle" onClick={onToggleLibrary} title="Show image library">
-          ☰ Library
-        </button>
-        <button onClick={handleNew}>New</button>
+        <div className="new-menu-wrap" ref={newMenuRef}>
+          <button className="new-menu-main" onClick={handleNew}>
+            New
+          </button>
+          <button className="new-menu-caret" onClick={() => setNewMenuOpen((o) => !o)} title="Choose a starting layout">
+            ▾
+          </button>
+          {newMenuOpen && (
+            <div className="new-menu-dropdown">
+              <button onClick={handleNew}>
+                <span className="layout-icon" />
+                Blank
+              </button>
+              {LAYOUT_TEMPLATES.map((t) => (
+                <button key={t.key} onClick={() => handleNewFromTemplate(t.build)}>
+                  <span className={`layout-icon layout-icon-${t.key}`} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button onClick={handleOpenClick} title="Select the .collage.json and its images together to load both at once">
           Open…
         </button>
@@ -174,7 +224,7 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
           }}
         />
         <button disabled={!doc} onClick={handleExportLayout}>
-          Export{dirty ? ' *' : ''}
+          Export
         </button>
         <span className="toolbar-sep" />
         <button disabled={!canUndo} onClick={undo}>
@@ -190,18 +240,24 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
         <button className={previewMode ? 'active' : undefined} onClick={onTogglePreview}>
           {previewMode ? 'Exit Preview' : 'Preview'}
         </button>
-        <button className="mobile-panel-toggle" onClick={onToggleInspector} title="Show adjustments panel">
-          Inspector ☰
-        </button>
         {status && <span className="toolbar-status">{status}</span>}
       </div>
 
       {tabs.length > 0 && (
         <div className="tabs-bar">
+          <button
+            className={`mobile-panel-icon-toggle${mobileLibraryOpen ? ' active' : ''}`}
+            onClick={onToggleLibrary}
+            title="Toggle Library"
+          >
+            <LibraryPanelIcon />
+          </button>
+          <div className="tabs-bar-tabs">
           {tabs.map((tab) => (
             <div key={tab.id} className={`tab${tab.id === activeId ? ' active' : ''}`} onClick={() => setActive(tab.id)}>
               {renamingTabId === tab.id ? (
                 <input
+                  type="text"
                   className="tab-rename-input"
                   value={renameValue}
                   autoFocus
@@ -238,6 +294,14 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
               </button>
             </div>
           ))}
+          </div>
+          <button
+            className={`mobile-panel-icon-toggle${mobileInspectorOpen ? ' active' : ''}`}
+            onClick={onToggleInspector}
+            title="Toggle Inspector"
+          >
+            <InspectorPanelIcon />
+          </button>
         </div>
       )}
     </div>

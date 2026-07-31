@@ -11,7 +11,7 @@ from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-MAX_ZOOM = 1 / 0.3  # crop window never shrinks below ~30% of the base cover-crop box
+MAX_ZOOM = 1 / 0.02  # crop window never shrinks below ~2% of the base cover-crop box -- see render_engine.py
 
 
 def _id() -> str:
@@ -65,13 +65,16 @@ class BorderConfig(BaseModel):
 
 
 class InsertBorder(BaseModel):
-    enabled: bool = False
+    # Doc-level defaults are always enabled -- no on/off toggle in the
+    # frontend for those; width 0 is how you'd effectively turn one off.
+    # Per-insert overrides do still expose their own enabled toggle.
+    enabled: bool = True
     width: int = 6
     color: str = "#ffffff"
 
 
 class InsertShadow(BaseModel):
-    enabled: bool = False
+    enabled: bool = True
     offsetPx: float = 8
     # Direction in degrees: 0 = right, 90 = down, 180 = left, 270 = up.
     angleDeg: float = 135
@@ -120,5 +123,6 @@ class CollageDoc(BaseModel):
     border: BorderConfig = Field(default_factory=BorderConfig)
     jpegQuality: int = 92
     insertBorderDefault: InsertBorder = Field(default_factory=InsertBorder)
+    insertShadowDefault: InsertShadow = Field(default_factory=InsertShadow)
     tree: Node = Field(default_factory=FrameNode)
     inserts: list[Insert] = Field(default_factory=list)

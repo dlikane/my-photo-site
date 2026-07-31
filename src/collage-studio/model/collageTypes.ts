@@ -102,11 +102,16 @@ export interface CollageDoc {
   border: BorderConfig
   jpegQuality: number
   insertBorderDefault: InsertBorder
+  insertShadowDefault: InsertShadow
   tree: Node
   inserts: Insert[]
 }
 
-export const MAX_ZOOM = 1 / 0.3
+// Effectively "unlimited" for editing purposes while still keeping the crop
+// window from collapsing to a near-zero-pixel box (which would misbehave in
+// both the canvas preview and the Pillow render). Mirrored in
+// collage-studio-backend/app/models.py + render_engine.py -- keep in sync.
+export const MAX_ZOOM = 1 / 0.02
 
 export const DEFAULT_INSERT_SHADOW: InsertShadow = {
   enabled: true,
@@ -115,6 +120,25 @@ export const DEFAULT_INSERT_SHADOW: InsertShadow = {
   blurPx: 12,
   opacity: 0.5,
   color: '#000000',
+}
+
+export const DEFAULT_INSERT_BORDER: InsertBorder = {
+  enabled: true,
+  width: 6,
+  color: '#ffffff',
+}
+
+/** Backfills fields added after this doc might have been created/persisted
+ * (IndexedDB-hydrated docs, or an older exported .collage.json) so the rest
+ * of the app can assume every CollageDoc is complete. Without this, a doc
+ * missing e.g. insertShadowDefault crashes on the first `.enabled` read --
+ * and with no error boundary, that's a blank white screen, not a nice error. */
+export function normalizeDoc(doc: CollageDoc): CollageDoc {
+  return {
+    ...doc,
+    insertBorderDefault: doc.insertBorderDefault ?? { ...DEFAULT_INSERT_BORDER },
+    insertShadowDefault: doc.insertShadowDefault ?? { ...DEFAULT_INSERT_SHADOW },
+  }
 }
 
 let idCounter = 0
@@ -141,7 +165,10 @@ export function createBlankCollageDoc(name = 'Untitled collage'): CollageDoc {
       grid: { width: 8, color: '#000000' },
     },
     jpegQuality: 92,
-    insertBorderDefault: { enabled: false, width: 6, color: '#ffffff' },
+    // Insert defaults are always "enabled" -- no on/off toggle in the UI for
+    // these, width/opacity of 0 is how you'd effectively turn one off.
+    insertBorderDefault: { enabled: true, width: 6, color: '#ffffff' },
+    insertShadowDefault: { ...DEFAULT_INSERT_SHADOW },
     tree: makeFrame(),
     inserts: [],
   }

@@ -31,6 +31,10 @@ export interface StoredImage {
   key: string
   name: string
   blob: Blob
+  // IndexedDB's getAll() returns records ordered by the primary key (the
+  // content hash, i.e. effectively random) -- this is what lets the gallery
+  // sort by when each image was actually added instead.
+  addedAt: number
 }
 
 export async function loadAllImages(): Promise<StoredImage[]> {
@@ -58,16 +62,6 @@ export async function deleteImage(key: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IMAGES_STORE, 'readwrite')
     tx.objectStore(IMAGES_STORE).delete(key)
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
-  })
-}
-
-export async function clearImages(): Promise<void> {
-  const db = await openDb()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IMAGES_STORE, 'readwrite')
-    tx.objectStore(IMAGES_STORE).clear()
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
   })

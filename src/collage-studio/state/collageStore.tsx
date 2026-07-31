@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
-import type { CollageDoc } from '../model/collageTypes'
+import { normalizeDoc, type CollageDoc } from '../model/collageTypes'
 import { loadSession, saveSession } from './idb'
 
 const HISTORY_LIMIT = 50
@@ -48,13 +48,17 @@ function reducer(state: State, action: Action): State {
         order: [...state.order, action.doc.id],
         activeId: action.doc.id,
       }
-    case 'OPEN_DOC':
+    case 'OPEN_DOC': {
       // Freshly loaded from a file on disk -- matches what's on disk, so it's clean.
+      // normalizeDoc backfills any fields added after this file might have been
+      // exported (e.g. an older .collage.json missing insertShadowDefault).
+      const doc = normalizeDoc(action.doc)
       return {
-        entries: { ...state.entries, [action.doc.id]: newEntry(action.doc, false) },
-        order: [...state.order, action.doc.id],
-        activeId: action.doc.id,
+        entries: { ...state.entries, [doc.id]: newEntry(doc, false) },
+        order: [...state.order, doc.id],
+        activeId: doc.id,
       }
+    }
     case 'CLOSE_DOC': {
       if (!state.entries[action.id]) return state
       const { [action.id]: _removed, ...entries } = state.entries
@@ -173,6 +177,9 @@ interface StoreApi {
   closeDoc: (id: string) => void
   setActive: (id: string) => void
   renameDoc: (id: string, name: string) => void
+  /** Every open collage's doc, across all tabs (not just the active one) --
+   * e.g. for "which images does any open collage still reference." */
+  allDocs: CollageDoc[]
 }
 
 const CollageStoreContext = createContext<StoreApi | null>(null)
@@ -191,7 +198,7 @@ export function CollageStoreProvider({ children }: { children: ReactNode }) {
         const entries: Record<string, DocEntry> = {}
         for (const id of session.order) {
           const stored = session.docs[id]
-          if (stored) entries[id] = newEntry(stored.doc as CollageDoc, stored.dirty)
+          if (stored) entries[id] = newEntry(normalizeDoc(stored.doc as CollageDoc), stored.dirty)
         }
         dispatch({ type: 'HYDRATE', order: session.order, activeId: session.activeId, entries })
       })
@@ -257,6 +264,8 @@ export function CollageStoreProvider({ children }: { children: ReactNode }) {
     [state.order, state.entries],
   )
 
+  const allDocs = useMemo<CollageDoc[]>(() => state.order.map((id) => state.entries[id].doc), [state.order, state.entries])
+
   const value = useMemo<StoreApi>(
     () => ({
       doc: activeEntry?.doc ?? null,
@@ -278,8 +287,9 @@ export function CollageStoreProvider({ children }: { children: ReactNode }) {
       closeDoc,
       setActive,
       renameDoc,
+      allDocs,
     }),
-    [activeEntry, editDoc, undo, redo, selectFrame, selectInsert, markSaved, tabs, state.activeId, newDoc, openDoc, closeDoc, setActive, renameDoc],
+    [activeEntry, editDoc, undo, redo, selectFrame, selectInsert, markSaved, tabs, state.activeId, newDoc, openDoc, closeDoc, setActive, renameDoc, allDocs],
   )
 
   return <CollageStoreContext.Provider value={value}>{children}</CollageStoreContext.Provider>

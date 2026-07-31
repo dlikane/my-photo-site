@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 from .models import CollageDoc, FrameNode, Insert, SplitNode
 
-MAX_ZOOM = 1 / 0.3  # crop window never shrinks below ~30% of the base cover-crop box
+MAX_ZOOM = 1 / 0.02  # crop window never shrinks below ~2% of the base cover-crop box (kept high/effectively "unlimited" for editing; mirrored in frontend model/collageTypes.ts)
 
 
 # --------------------------------------------------------------------------- image loading
@@ -48,8 +48,9 @@ class ImageStore:
 def compute_crop_box(src_w, src_h, target_w, target_h, focal_xy=(0.5, 0.5), zoom=1.0):
     """Cover-crop box in source pixel coords. zoom==1.0 is a plain focal-centred
     cover crop (only crops what's needed to match the target aspect ratio).
-    zoom>1 crops in further, clamped so the box never shrinks below ~30% of the
-    base box (i.e. up to ~3.33x tighter crop)."""
+    zoom>1 crops in further, clamped so the box never shrinks below ~2% of the
+    base box (i.e. up to ~50x tighter crop -- effectively unlimited for
+    editing purposes, just not literally infinite)."""
     fx, fy = focal_xy
     target_ratio = target_w / target_h
     src_ratio = src_w / src_h
@@ -171,6 +172,10 @@ def _insert_border_spec(insert: Insert, default_border):
     return insert.border if insert.border is not None else default_border
 
 
+def _insert_shadow_spec(insert: Insert, default_shadow):
+    return insert.shadow if insert.shadow is not None else default_shadow
+
+
 def make_insert_shadow(size, corner_radius_frac, color, opacity, blur_px):
     """A blurred, colored silhouette of the insert's rounded shape, padded so
     the blur has room to spread outward without being clipped. Returned as
@@ -217,8 +222,8 @@ def paste_insert(canvas, doc: CollageDoc, insert: Insert, frame_rects, images, s
     px = int(cx - inset_size / 2)
     py = int(cy - inset_size / 2)
 
-    if insert.shadow is not None and insert.shadow.enabled:
-        shadow = insert.shadow
+    shadow = _insert_shadow_spec(insert, doc.insertShadowDefault)
+    if shadow and shadow.enabled:
         angle_rad = math.radians(shadow.angleDeg)
         offset = shadow.offsetPx * scale
         dx = math.cos(angle_rad) * offset
