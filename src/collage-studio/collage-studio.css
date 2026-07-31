@@ -563,7 +563,9 @@
 }
 .collage-studio-page .field-row {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .collage-studio-page .field.checkbox {
   flex-direction: row;

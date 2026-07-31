@@ -81,6 +81,10 @@ export interface Insert {
   seam: SeamRef | null
   position: PositionPct | null
   sizePct: number
+  // width / height. 1 = square (the only shape this used to support).
+  // sizePct still controls overall scale; this only controls the shape --
+  // see the aspect-preserving w/h split in CanvasEditor.tsx's insertRects.
+  aspectRatio: number
   focal: FocalPoint
   zoom: number
   featherPx: number
@@ -139,6 +143,7 @@ export function normalizeDoc(doc: CollageDoc): CollageDoc {
     ...doc,
     insertBorderDefault: doc.insertBorderDefault ?? { ...DEFAULT_INSERT_BORDER },
     insertShadowDefault: doc.insertShadowDefault ?? { ...DEFAULT_INSERT_SHADOW },
+    inserts: doc.inserts.map((i) => ({ ...i, aspectRatio: i.aspectRatio ?? 1 })),
   }
 }
 

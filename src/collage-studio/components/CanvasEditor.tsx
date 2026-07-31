@@ -108,7 +108,14 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     const out: Record<string, Rect> = {}
     for (const insert of doc.inserts) {
       const sizePct = liveInsertSize && liveInsertSize.insertId === insert.id ? liveInsertSize.sizePct : insert.sizePct
-      const size = sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
+      const base = sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
+      // aspectRatio is width/height -- split the resize handle's overall
+      // "size" scale between width and height via sqrt so the two stay
+      // inverse of each other (area roughly constant as aspect changes) and
+      // aspectRatio 1 reduces to exactly the old square behavior (w = h = base).
+      const aspect = Math.max(0.05, Math.min(20, insert.aspectRatio))
+      const w = base * Math.sqrt(aspect)
+      const h = base / Math.sqrt(aspect)
       let cx: number
       let cy: number
       // Seam-anchored by default (created via the seam "+"), but the move
@@ -128,7 +135,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       } else {
         continue
       }
-      out[insert.id] = { x: cx - size / 2, y: cy - size / 2, w: size, h: size }
+      out[insert.id] = { x: cx - w / 2, y: cy - h / 2, w, h }
     }
     return out
   }, [doc, layout, liveInsertPos, liveInsertSize])
@@ -645,6 +652,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
                 seam: null,
                 position: { cxPct: 0.5, cyPct: 0.5 },
                 sizePct: 0.26,
+                aspectRatio: 1,
                 focal: { x: 0.5, y: 0.5 },
                 zoom: 1.6,
                 featherPx: 18,
