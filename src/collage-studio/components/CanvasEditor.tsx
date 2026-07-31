@@ -606,6 +606,13 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
               ⇄
             </button>
             <button
+              title="Clear image from this frame"
+              disabled={!selectedFrame?.image}
+              onClick={() => editDoc((d) => ({ ...d, tree: updateFrame(d.tree, selectedFrameId, (f) => ({ ...f, image: null })) }))}
+            >
+              ⌫
+            </button>
+            <button
               title="Remove this frame"
               disabled={frameCount <= 1}
               onClick={() => {
