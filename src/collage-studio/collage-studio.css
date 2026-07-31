@@ -186,11 +186,32 @@
 /* ---- tabs ---- */
 .collage-studio-page .tabs-bar {
   display: flex;
-  gap: 2px;
-  padding: 0 8px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
   background: #1c1c1f;
   border-bottom: 1px solid #333;
+}
+.collage-studio-page .tabs-bar-tabs {
+  display: flex;
+  gap: 2px;
   overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+}
+.collage-studio-page .mobile-panel-icon-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  flex-shrink: 0;
+  color: #aaa;
+}
+.collage-studio-page .mobile-panel-icon-toggle.active {
+  color: #3b82f6;
+  border-color: #3b82f6;
 }
 .collage-studio-page .tab {
   display: flex;
@@ -556,16 +577,13 @@
 }
 
 /* ---- mobile: library/inspector become slide-in drawers instead of fixed columns ---- */
-.collage-studio-page .mobile-panel-toggle {
-  display: none;
-}
 .collage-studio-page .library-panel-wrap,
 .collage-studio-page .inspector-panel-wrap {
   display: contents;
 }
 
 @media (max-width: 860px) {
-  .collage-studio-page .mobile-panel-toggle {
+  .collage-studio-page .mobile-panel-icon-toggle {
     display: inline-flex;
   }
   .collage-studio-page .resize-handle {
