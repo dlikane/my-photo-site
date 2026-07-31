@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api } from '../api/client'
+import { renderCollageToBlob } from '../model/canvasExport'
 import { createBlankCollageDoc, type CollageDoc } from '../model/collageTypes'
 import { collectImageKeys } from '../model/geometry'
 import { LAYOUT_TEMPLATES } from '../model/templates'
@@ -164,7 +164,8 @@ export function Toolbar({
     setStatus('Exported')
   }
 
-  // "Render" = the backend Pillow render to a final JPEG (was "Export").
+  // "Render" = full-resolution export to a final JPEG (was "Export"). Runs
+  // entirely client-side via canvas (model/canvasExport.ts) -- no backend.
   const handleRender = async () => {
     if (!doc) return
     const imageKeys = collectImageKeys(doc)
@@ -175,8 +176,8 @@ export function Toolbar({
     }
     setStatus('Rendering…')
     try {
-      const imageFiles = new Map(imageKeys.map((key) => [key, pool.get(key)!.file]))
-      const blob = await api.exportCollage(doc, imageFiles)
+      const imageUrls = new Map(imageKeys.map((key) => [key, pool.get(key)!.objectUrl]))
+      const blob = await renderCollageToBlob(doc, imageUrls)
       downloadBlob(blob, `${sanitizeFilename(doc.name)}.jpg`)
       setStatus('Rendered')
     } catch (e) {
