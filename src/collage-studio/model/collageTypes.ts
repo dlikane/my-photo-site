@@ -107,7 +107,11 @@ export interface CollageDoc {
   inserts: Insert[]
 }
 
-export const MAX_ZOOM = 1 / 0.3
+// Effectively "unlimited" for editing purposes while still keeping the crop
+// window from collapsing to a near-zero-pixel box (which would misbehave in
+// both the canvas preview and the Pillow render). Mirrored in
+// collage-studio-backend/app/models.py + render_engine.py -- keep in sync.
+export const MAX_ZOOM = 1 / 0.02
 
 export const DEFAULT_INSERT_SHADOW: InsertShadow = {
   enabled: true,

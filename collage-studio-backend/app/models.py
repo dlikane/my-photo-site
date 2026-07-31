@@ -11,7 +11,7 @@ from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
-MAX_ZOOM = 1 / 0.3  # crop window never shrinks below ~30% of the base cover-crop box
+MAX_ZOOM = 1 / 0.02  # crop window never shrinks below ~2% of the base cover-crop box -- see render_engine.py
 
 
 def _id() -> str:

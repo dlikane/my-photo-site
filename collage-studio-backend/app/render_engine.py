@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 from .models import CollageDoc, FrameNode, Insert, SplitNode
 
-MAX_ZOOM = 1 / 0.3  # crop window never shrinks below ~30% of the base cover-crop box
+MAX_ZOOM = 1 / 0.02  # crop window never shrinks below ~2% of the base cover-crop box (kept high/effectively "unlimited" for editing; mirrored in frontend model/collageTypes.ts)
 
 
 # --------------------------------------------------------------------------- image loading
@@ -48,8 +48,9 @@ class ImageStore:
 def compute_crop_box(src_w, src_h, target_w, target_h, focal_xy=(0.5, 0.5), zoom=1.0):
     """Cover-crop box in source pixel coords. zoom==1.0 is a plain focal-centred
     cover crop (only crops what's needed to match the target aspect ratio).
-    zoom>1 crops in further, clamped so the box never shrinks below ~30% of the
-    base box (i.e. up to ~3.33x tighter crop)."""
+    zoom>1 crops in further, clamped so the box never shrinks below ~2% of the
+    base box (i.e. up to ~50x tighter crop -- effectively unlimited for
+    editing purposes, just not literally infinite)."""
     fx, fy = focal_xy
     target_ratio = target_w / target_h
     src_ratio = src_w / src_h

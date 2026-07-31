@@ -301,8 +301,12 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       const frame = layout.frames[frameId]
       if (!frame?.image) return
       e.preventDefault()
-      const delta = e.deltaY > 0 ? -0.1 : 0.1
-      const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom + delta))
+      // Multiplicative (not additive) step -- with MAX_ZOOM this high, a fixed
+      // +/-0.1 per tick would take hundreds of scroll ticks to reach the top
+      // of the range. A proportional step stays fine-grained near 1x and
+      // still reaches high zoom quickly.
+      const factor = e.deltaY > 0 ? 1 / 1.1 : 1.1
+      const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom * factor))
       editDoc((d) => ({ ...d, tree: updateFrame(d.tree, frameId, (f) => ({ ...f, image: f.image ? { ...f.image, zoom: nextZoom } : f.image })) }))
     }
     canvas.addEventListener('wheel', handler, { passive: false })
