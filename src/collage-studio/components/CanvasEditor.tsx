@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FocalPoint, ImageRef, Insert } from '../model/collageTypes'
 import { newId } from '../model/collageTypes'
-import {
-  collectDividers,
-  collectFrames,
-  computeCropBox,
-  findAdjacentSeams,
-  rectsAdjacentSeam,
-  resolveRects,
-  type Rect,
-} from '../model/geometry'
+import { collectDividers, collectFrames, computeCropBox, rectsAdjacentSeam, resolveRects, type Rect } from '../model/geometry'
 import { drawCoverCropImage, drawFeatheredImage, drawInsertShadow, strokeRoundedRect } from '../model/canvasRender'
 import { ensureImageLoaded, getCachedImage } from '../model/imageCache'
 import { useCollageStore } from '../state/collageStore'
@@ -108,8 +100,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     const frameRects = resolveRects(tree, interior, gutter)
     const frames = collectFrames(tree)
     const dividers = collectDividers(tree, interior, gutter)
-    const seams = findAdjacentSeams(frameRects, gutter)
-    return { scale, canvasCssW, canvasCssH, extW, gutter, interior, frameRects, frames, dividers, seams }
+    return { scale, canvasCssW, canvasCssH, extW, gutter, interior, frameRects, frames, dividers }
   }, [doc, containerSize, liveRatio])
 
   const insertRects = useMemo(() => {
@@ -607,7 +598,19 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const frameCount = Object.keys(layout.frameRects).length
 
   return (
-    <div className="canvas-editor" ref={wrapperRef}>
+    <div
+      className="canvas-editor"
+      ref={wrapperRef}
+      onClick={(e) => {
+        // Only when the click lands on this wrapper itself -- the padding
+        // area around the stage -- not any descendant (stage/canvas clicks
+        // are handled by onCanvasPointerDown, which already selects/
+        // deselects based on what's under the pointer).
+        if (e.target !== e.currentTarget) return
+        selectFrame(null)
+        selectInsert(null)
+      }}
+    >
       <div className="canvas-editor-stage" style={{ width: layout.canvasCssW, height: layout.canvasCssH }}>
         <canvas
           ref={canvasRef}
@@ -631,75 +634,34 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
             />
           ))}
 
-        {!previewMode &&
-          layout.seams.map((seam) => {
-            // A seam only offers "+" while nothing is anchored to it. Once an
-            // insert is created there it can be freely moved away (via its
-            // move handle below), which detaches it from the seam and frees
-            // the "+" up again -- see onInsertMovePointerUp.
-            const occupied = doc.inserts.some(
-              (i) =>
-                i.seam &&
-                ((i.seam.frameIdA === seam.frameIdA && i.seam.frameIdB === seam.frameIdB) ||
-                  (i.seam.frameIdA === seam.frameIdB && i.seam.frameIdB === seam.frameIdA)),
-            )
-            if (occupied) return null
-            return (
-              <button
-                key={`${seam.frameIdA}-${seam.frameIdB}`}
-                className="seam-marker"
-                title="Add insert on this seam"
-                style={{ left: seam.cx - 13, top: seam.cy - 13 }}
-                onClick={() => {
-                  const frameA = layout.frames[seam.frameIdA]
-                  const frameB = layout.frames[seam.frameIdB]
-                  const imageKey = frameA?.image?.imageKey ?? frameB?.image?.imageKey ?? null
-                  const insert: Insert = {
-                    id: newId(),
-                    imageKey,
-                    seam: { frameIdA: seam.frameIdA, frameIdB: seam.frameIdB },
-                    position: null,
-                    sizePct: 0.26,
-                    focal: { x: 0.5, y: 0.5 },
-                    zoom: 1.6,
-                    featherPx: 18,
-                    cornerRadiusPct: 0.08,
-                    border: null,
-                    shadow: null,
-                  }
-                  editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
-                  selectInsert(insert.id)
-                }}
-              >
-                +
-              </button>
-            )
-          })}
+        {!previewMode && (
+          <button
+            className="insert-add-btn"
+            title="Add an insert (drag it into place afterwards)"
+            onClick={() => {
+              const insert: Insert = {
+                id: newId(),
+                imageKey: null,
+                seam: null,
+                position: { cxPct: 0.5, cyPct: 0.5 },
+                sizePct: 0.26,
+                focal: { x: 0.5, y: 0.5 },
+                zoom: 1.6,
+                featherPx: 18,
+                cornerRadiusPct: 0.08,
+                border: null,
+                shadow: null,
+              }
+              editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
+              selectInsert(insert.id)
+            }}
+          >
+            +
+          </button>
+        )}
 
-        {/* Every existing insert gets its own remove-X at its current
-            rendered position, whether it's still seam-anchored or has been
-            freely moved -- unlike the seam "+", this doesn't depend on
-            selection state. */}
-        {!previewMode &&
-          doc.inserts.map((insert) => {
-            const rect = insertRects[insert.id]
-            if (!rect) return null
-            return (
-              <button
-                key={insert.id}
-                className="seam-remove"
-                title="Remove insert"
-                style={{ left: rect.x + rect.w - 11, top: rect.y - 11 }}
-                onClick={() => {
-                  editDoc((d) => ({ ...d, inserts: d.inserts.filter((i) => i.id !== insert.id) }))
-                  if (selectedInsertId === insert.id) selectInsert(null)
-                }}
-              >
-                ✕
-              </button>
-            )
-          })}
-
+        {/* Move/resize/remove controls only for the *selected* insert --
+            wherever it currently is (seam-anchored or freely moved). */}
         {!previewMode && selectedInsertId && insertRects[selectedInsertId] && (
           <>
             <div
@@ -723,6 +685,20 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
               onPointerUp={onInsertResizePointerUp}
               title="Drag to resize"
             />
+            <button
+              className="seam-remove"
+              title="Remove insert"
+              style={{
+                left: insertRects[selectedInsertId].x + insertRects[selectedInsertId].w - 11,
+                top: insertRects[selectedInsertId].y - 11,
+              }}
+              onClick={() => {
+                editDoc((d) => ({ ...d, inserts: d.inserts.filter((i) => i.id !== selectedInsertId) }))
+                selectInsert(null)
+              }}
+            >
+              ✕
+            </button>
           </>
         )}
 

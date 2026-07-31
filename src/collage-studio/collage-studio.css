@@ -445,8 +445,10 @@
 .collage-studio-page .divider-vertical {
   cursor: row-resize;
 }
-.collage-studio-page .seam-marker {
+.collage-studio-page .insert-add-btn {
   position: absolute;
+  left: 10px;
+  top: 10px;
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -462,7 +464,7 @@
   padding: 0;
   transition: transform 0.1s ease;
 }
-.collage-studio-page .seam-marker:hover {
+.collage-studio-page .insert-add-btn:hover {
   background: #2563eb;
   transform: scale(1.15);
 }
