@@ -229,6 +229,10 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   // ---- pointer interaction on the canvas itself (select / pan / move insert) ----
   const onCanvasPointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      // A second (or third...) touch starting a pinch shouldn't hijack the
+      // single-pointer pan/move drag the first touch may have already
+      // started -- isPrimary is only true for the first active touch point.
+      if (!e.isPrimary) return
       if (!doc || !layout) return
       const box = e.currentTarget.getBoundingClientRect()
       const point = { x: e.clientX - box.left, y: e.clientY - box.top }
@@ -412,6 +416,71 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     }
     canvas.addEventListener('wheel', handler, { passive: false })
     return () => canvas.removeEventListener('wheel', handler)
+  }, [doc, layout, insertRects, editDoc])
+
+  // Two-finger pinch zooms whichever frame/insert is under the pinch's
+  // midpoint -- the touch equivalent of the wheel handler above. Kept in a
+  // ref (not a plain closure variable) so the active gesture survives this
+  // effect re-running mid-pinch, which it does on every editDoc call since
+  // `doc` is a dependency (same as the wheel handler already relies on).
+  const pinchRef = useRef<{ kind: 'insert' | 'frame'; id: string; lastDist: number } | null>(null)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !doc || !layout) return
+    const touchDist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return
+      const box = canvas.getBoundingClientRect()
+      const point = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - box.left,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - box.top,
+      }
+      const insertId = hitTest(point, insertRects)
+      if (insertId && doc.inserts.find((i) => i.id === insertId)?.imageKey) {
+        pinchRef.current = { kind: 'insert', id: insertId, lastDist: touchDist(e.touches) }
+        return
+      }
+      const frameId = hitTest(point, layout.frameRects)
+      if (frameId && layout.frames[frameId]?.image) {
+        pinchRef.current = { kind: 'frame', id: frameId, lastDist: touchDist(e.touches) }
+      }
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+      const pinch = pinchRef.current
+      if (e.touches.length !== 2 || !pinch) return
+      e.preventDefault()
+      const newDist = touchDist(e.touches)
+      const ratio = newDist / pinch.lastDist
+      pinch.lastDist = newDist
+      if (pinch.kind === 'insert') {
+        const insert = doc.inserts.find((i) => i.id === pinch.id)
+        if (!insert) return
+        const nextZoom = Math.max(1, Math.min(MAX_ZOOM, insert.zoom * ratio))
+        editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === pinch.id ? { ...i, zoom: nextZoom } : i)) }))
+      } else {
+        const frame = layout.frames[pinch.id]
+        if (!frame?.image) return
+        const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom * ratio))
+        editDoc((d) => ({ ...d, tree: updateFrame(d.tree, pinch.id, (f) => (f.image ? { ...f, image: { ...f.image, zoom: nextZoom } } : f)) }))
+      }
+    }
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchRef.current = null
+    }
+
+    canvas.addEventListener('touchstart', onTouchStart, { passive: true })
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false })
+    canvas.addEventListener('touchend', onTouchEnd)
+    canvas.addEventListener('touchcancel', onTouchEnd)
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart)
+      canvas.removeEventListener('touchmove', onTouchMove)
+      canvas.removeEventListener('touchend', onTouchEnd)
+      canvas.removeEventListener('touchcancel', onTouchEnd)
+    }
   }, [doc, layout, insertRects, editDoc])
 
   const assignImageToDropTarget = useCallback(
@@ -601,7 +670,10 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       setLiveInsertSize((live) => {
         if (live) {
           const minDim = Math.min(layout.canvasCssW, layout.canvasCssH)
-          const sizePct = Math.max(0.05, Math.min(0.6, Math.sqrt(live.w * live.h) / minDim))
+          // No practical upper limit on insert size (it can be bigger than
+          // the canvas itself) -- only a small floor to avoid a degenerate
+          // near-zero box.
+          const sizePct = Math.max(0.02, Math.sqrt(live.w * live.h) / minDim)
           const aspectRatio = Math.max(0.05, Math.min(20, live.w / live.h))
           editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, sizePct, aspectRatio } : i)) }))
         }
