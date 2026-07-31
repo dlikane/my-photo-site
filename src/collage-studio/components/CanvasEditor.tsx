@@ -344,6 +344,33 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     [editDoc],
   )
 
+  // Double-click an image (frame or insert) to reset it back to a plain
+  // fit -- zoom 1, centered focal -- undoing any amount of zoom/pan in one step.
+  const onCanvasDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!layout) return
+      const box = e.currentTarget.getBoundingClientRect()
+      const point = { x: e.clientX - box.left, y: e.clientY - box.top }
+
+      const insertId = hitTest(point, insertRects)
+      if (insertId) {
+        editDoc((d) => ({
+          ...d,
+          inserts: d.inserts.map((i) => (i.id === insertId ? { ...i, zoom: 1, focal: { x: 0.5, y: 0.5 } } : i)),
+        }))
+        return
+      }
+
+      const frameId = hitTest(point, layout.frameRects)
+      if (!frameId) return
+      editDoc((d) => ({
+        ...d,
+        tree: updateFrame(d.tree, frameId, (f) => (f.image ? { ...f, image: { ...f.image, zoom: 1, focal: { x: 0.5, y: 0.5 } } } : f)),
+      }))
+    },
+    [layout, insertRects, editDoc],
+  )
+
   // Native (non-React) listener: React's onWheel is registered passive on the
   // root container, so e.preventDefault() there can't stop page scroll.
   useEffect(() => {
@@ -587,6 +614,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           onPointerDown={onCanvasPointerDown}
           onPointerMove={onCanvasPointerMove}
           onPointerUp={onCanvasPointerUp}
+          onDoubleClick={onCanvasDoubleClick}
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
         />

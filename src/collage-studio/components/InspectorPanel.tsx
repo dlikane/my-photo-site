@@ -220,6 +220,7 @@ export function InspectorPanel() {
             <p className="hint">Drag an image from the library onto this frame, or click a thumbnail.</p>
           ) : (
             <>
+              <p className="hint">Drag the image to pan, scroll to zoom, or double-click to reset zoom/pan.</p>
               <NumberField
                 label="Zoom"
                 min={1}
@@ -282,7 +283,10 @@ export function InspectorPanel() {
               shadow override are still in the data model but not exposed
               here -- they follow the doc-level defaults (see the "Inserts
               (default border/shadow)" sections above). */}
-          <p className="hint">Drag the insert to pan its image, scroll to zoom, or use the move/resize handles.</p>
+          <p className="hint">
+            Drag the insert to pan its image, scroll to zoom, or use the move/resize handles. Double-click to reset
+            zoom/pan.
+          </p>
           <label className="field">
             <span>Corner radius (0 = square, 50 = circle)</span>
             <input
