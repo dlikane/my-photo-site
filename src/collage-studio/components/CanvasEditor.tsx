@@ -31,7 +31,7 @@ function hitTest(point: { x: number; y: number }, rects: Record<string, Rect>): 
   return null
 }
 
-function drawPlaceholder(ctx: CanvasRenderingContext2D, rect: Rect, label: string) {
+function drawPlaceholder(ctx: CanvasRenderingContext2D, rect: Rect, label?: string) {
   if (rect.w <= 4 || rect.h <= 4) return
   ctx.save()
   ctx.fillStyle = '#2a2a2e'
@@ -41,13 +41,20 @@ function drawPlaceholder(ctx: CanvasRenderingContext2D, rect: Rect, label: strin
   ctx.lineWidth = 1.5
   ctx.strokeRect(rect.x + 4, rect.y + 4, rect.w - 8, rect.h - 8)
   ctx.setLineDash([])
-  ctx.fillStyle = '#888'
-  ctx.font = '13px system-ui, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  if (rect.w > 60 && rect.h > 20) ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2)
+  if (label) {
+    ctx.fillStyle = '#888'
+    ctx.font = '13px system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    if (rect.w > 60 && rect.h > 20) ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2)
+  }
   ctx.restore()
 }
+
+// Matches the CSS mobile breakpoint (collage-studio.css) -- below it, "Drop
+// image here" isn't useful copy (drag-and-drop isn't the primary mobile
+// interaction) and just wastes space on an already-small frame.
+const MOBILE_BREAKPOINT = 860
 
 interface CanvasEditorProps {
   previewMode: boolean
@@ -161,7 +168,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
             drawPlaceholder(ctx, rect, 'Missing image — drop it in the library')
           }
         } else {
-          drawPlaceholder(ctx, rect, 'Drop image here')
+          drawPlaceholder(ctx, rect, containerSize.w < MOBILE_BREAKPOINT ? undefined : 'Drop image here')
         }
         if (!previewMode && frameId === selectedFrameId) {
           ctx.save()
