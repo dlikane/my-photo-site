@@ -123,7 +123,7 @@ export function LibraryPanel() {
 
       {pool.images.length > 0 && (
         <div className="library-gallery-header">
-          <span className="hint">{pool.images.length} image(s)</span>
+          <span className="hint">{pool.images.length}</span>
           <div className="library-header-actions">
             <button className="library-add-btn" onClick={() => fileInputRef.current?.click()} title="Add photos">
               +
@@ -151,7 +151,7 @@ export function LibraryPanel() {
                   : `Removes ${unusedImages.length} image(s) not used by any open collage; images still in use are kept`
               }
             >
-              Clear gallery{unusedImages.length > 0 ? ` (${unusedImages.length})` : ''}
+              Clear{unusedImages.length > 0 ? ` (${unusedImages.length})` : ''}
             </button>
           </div>
         </div>
