@@ -33,12 +33,20 @@ export function LibraryPanel() {
     const el = thumbsRef.current
     if (!el) return
     // Native (non-passive) listener -- React's onWheel can't reliably
-    // preventDefault() to stop the page/panel from also scrolling.
+    // preventDefault(). Gated on Ctrl/Cmd so plain scrolling still scrolls
+    // the list -- an earlier version resized on *every* wheel tick, which
+    // meant there was no way left to scroll a long gallery with the wheel.
     const handler = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
       e.preventDefault()
       const step = e.deltaY > 0 ? 1 : -1
       setColumns((c) => {
-        const current = c ?? Math.max(MIN_COLUMNS, Math.round(el.clientWidth / (THUMB_MIN_PX + THUMB_GAP_PX)))
+        // clientWidth is the content box (padding already excluded, and
+        // scrollbar-gutter keeps the scrollbar out of it too) -- subtract
+        // one gap-width's worth of slack per column so the seeded guess
+        // undershoots slightly rather than overshoots into invisible/
+        // under-scrollbar territory.
+        const current = c ?? Math.max(MIN_COLUMNS, Math.floor(el.clientWidth / (THUMB_MIN_PX + THUMB_GAP_PX)))
         return Math.max(MIN_COLUMNS, Math.min(MAX_COLUMNS, current + step))
       })
     }
@@ -96,71 +104,67 @@ export function LibraryPanel() {
   }
 
   return (
-    <div className="library-panel">
-      <div
-        className={`library-dropzone${isDragOver ? ' drag-over' : ''}`}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setIsDragOver(true)
+    <div
+      className={`library-panel${isDragOver ? ' drag-over' : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setIsDragOver(true)
+      }}
+      onDragLeave={() => setIsDragOver(false)}
+      onDrop={onDrop}
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          if (e.target.files) void pool.add(e.target.files)
+          e.target.value = ''
         }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={onDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={(e) => {
-            if (e.target.files) void pool.add(e.target.files)
-            e.target.value = ''
-          }}
-        />
-        <span>Drop images here, or click to choose (from Explorer/Finder, or Gallery on mobile)</span>
+      />
+
+      <div className="library-gallery-header">
+        <span className="hint">{pool.images.length}</span>
+        <div className="library-header-actions">
+          <button className="library-add-btn" onClick={() => fileInputRef.current?.click()} title="Add photos">
+            +
+          </button>
+          <button
+            className={sortKey === 'name' ? 'active' : undefined}
+            onClick={() => toggleSort('name')}
+            title="Sort by name"
+          >
+            Name{sortKey === 'name' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+          </button>
+          <button
+            className={sortKey === 'date' ? 'active' : undefined}
+            onClick={() => toggleSort('date')}
+            title="Sort by date added"
+          >
+            Date{sortKey === 'date' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+          </button>
+          <button
+            onClick={handleClearGallery}
+            disabled={unusedImages.length === 0}
+            title={
+              unusedImages.length === 0
+                ? 'Every image here is used by an open collage -- nothing to remove'
+                : `Removes ${unusedImages.length} image(s) not used by any open collage; images still in use are kept`
+            }
+          >
+            Clear{unusedImages.length > 0 ? ` (${unusedImages.length})` : ''}
+          </button>
+        </div>
       </div>
 
-      {pool.images.length > 0 && (
-        <div className="library-gallery-header">
-          <span className="hint">{pool.images.length}</span>
-          <div className="library-header-actions">
-            <button className="library-add-btn" onClick={() => fileInputRef.current?.click()} title="Add photos">
-              +
-            </button>
-            <button
-              className={sortKey === 'name' ? 'active' : undefined}
-              onClick={() => toggleSort('name')}
-              title="Sort by name"
-            >
-              Name{sortKey === 'name' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
-            </button>
-            <button
-              className={sortKey === 'date' ? 'active' : undefined}
-              onClick={() => toggleSort('date')}
-              title="Sort by date added"
-            >
-              Date{sortKey === 'date' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
-            </button>
-            <button
-              onClick={handleClearGallery}
-              disabled={unusedImages.length === 0}
-              title={
-                unusedImages.length === 0
-                  ? 'Every image here is used by an open collage -- nothing to remove'
-                  : `Removes ${unusedImages.length} image(s) not used by any open collage; images still in use are kept`
-              }
-            >
-              Clear{unusedImages.length > 0 ? ` (${unusedImages.length})` : ''}
-            </button>
-          </div>
-        </div>
-      )}
+      {pool.images.length === 0 && <p className="library-thumbs-hint">Drop images anywhere here, or tap + to add.</p>}
 
       <div
         className="library-thumbs"
         ref={thumbsRef}
-        title="Scroll here to resize thumbnails"
+        title="Ctrl+Scroll (Cmd+Scroll on Mac) to resize thumbnails"
         style={columns ? { gridTemplateColumns: `repeat(${columns}, 1fr)` } : undefined}
       >
         {sortedImages.map((img) => (
