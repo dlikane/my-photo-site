@@ -157,7 +157,7 @@ Insert
     # support); sizePct still controls overall scale, split between width/
     # height via sqrt(aspectRatio) so area stays roughly constant as the
     # shape changes -- see CanvasEditor.tsx's insertRects and
-    # render_engine.py's paste_insert (kept in sync)
+    # canvasExport.ts's renderCollageToBlob (kept in sync, same formula)
   border: {enabled, width, color} | null                                      # null = inherit insertBorderDefault
   shadow: {enabled, offsetPx, angleDeg, blurPx, opacity, color} | null        # null = inherit insertShadowDefault
 ```

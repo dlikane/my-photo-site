@@ -76,7 +76,15 @@ export async function renderCollageToBlob(doc: CollageDoc, imageUrls: Map<string
       const img = images.get(insert.imageKey)
       if (!img) continue
 
-      const size = insert.sizePct * Math.min(canvasW, canvasH)
+      const base = insert.sizePct * Math.min(canvasW, canvasH)
+      // aspectRatio is width/height -- split the overall "size" scale
+      // between width and height via sqrt so the two stay inverse of each
+      // other (area roughly constant as aspect changes) and aspectRatio 1
+      // reduces to exactly the old square behavior (w = h = base). Mirrors
+      // CanvasEditor.tsx's insertRects computation.
+      const aspect = Math.max(0.05, Math.min(20, insert.aspectRatio))
+      const w = base * Math.sqrt(aspect)
+      const h = base / Math.sqrt(aspect)
       let cx: number
       let cy: number
       if (insert.position) {
@@ -90,7 +98,7 @@ export async function renderCollageToBlob(doc: CollageDoc, imageUrls: Map<string
       } else {
         continue
       }
-      const rect: Rect = { x: cx - size / 2, y: cy - size / 2, w: size, h: size }
+      const rect: Rect = { x: cx - w / 2, y: cy - h / 2, w, h }
 
       const shadow = insert.shadow ?? doc.insertShadowDefault
       if (shadow.enabled) drawInsertShadow(ctx, rect, insert.cornerRadiusPct, shadow, 1)
