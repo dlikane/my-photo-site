@@ -23,8 +23,6 @@ const LIBRARY_DRAG_MIME = 'application/x-collage-image'
 type DragState =
   | { type: 'pan'; frameId: string; pointerId: number; startX: number; startY: number; startFocal: FocalPoint; rect: Rect; img: HTMLImageElement; cropW: number; cropH: number }
   | { type: 'divider'; pointerId: number; splitId: string; orientation: 'horizontal' | 'vertical'; parentRect: Rect }
-  | { type: 'insert-move'; insertId: string; pointerId: number; startX: number; startY: number; startCxPct: number; startCyPct: number; moved: boolean }
-  | { type: 'insert-resize'; insertId: string; pointerId: number; startX: number; startY: number; startSizePct: number }
 
 function hitTest(point: { x: number; y: number }, rects: Record<string, Rect>): string | null {
   for (const [id, r] of Object.entries(rects)) {
@@ -65,8 +63,6 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const [tick, setTick] = useState(0)
   const [liveFocal, setLiveFocal] = useState<{ frameId: string; focal: FocalPoint } | null>(null)
   const [liveRatio, setLiveRatio] = useState<{ splitId: string; ratio: number } | null>(null)
-  const [liveInsertPos, setLiveInsertPos] = useState<{ insertId: string; cxPct: number; cyPct: number } | null>(null)
-  const [liveInsertSize, setLiveInsertSize] = useState<{ insertId: string; sizePct: number } | null>(null)
   const forceRedraw = useCallback(() => setTick((t) => t + 1), [])
 
   useEffect(() => {
@@ -107,14 +103,13 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     if (!doc || !layout) return {}
     const out: Record<string, Rect> = {}
     for (const insert of doc.inserts) {
-      const sizePct = liveInsertSize && liveInsertSize.insertId === insert.id ? liveInsertSize.sizePct : insert.sizePct
-      const size = sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
+      const size = insert.sizePct * Math.min(layout.canvasCssW, layout.canvasCssH)
       let cx: number
       let cy: number
-      if (liveInsertPos && liveInsertPos.insertId === insert.id) {
-        cx = liveInsertPos.cxPct * layout.canvasCssW
-        cy = liveInsertPos.cyPct * layout.canvasCssH
-      } else if (insert.position) {
+      // `position` (free placement) is no longer settable from the UI --
+      // inserts are seam-anchored only -- but still honored here so any
+      // older doc that has one keeps rendering where it was left.
+      if (insert.position) {
         cx = insert.position.cxPct * layout.canvasCssW
         cy = insert.position.cyPct * layout.canvasCssH
       } else if (insert.seam) {
@@ -128,7 +123,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       out[insert.id] = { x: cx - size / 2, y: cy - size / 2, w: size, h: size }
     }
     return out
-  }, [doc, layout, liveInsertPos, liveInsertSize])
+  }, [doc, layout])
 
   // ---- draw ----
   useEffect(() => {
@@ -216,20 +211,6 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       const insertId = hitTest(point, insertRects)
       if (insertId) {
         selectInsert(insertId)
-        if (!previewMode) {
-          const rect = insertRects[insertId]
-          dragRef.current = {
-            type: 'insert-move',
-            insertId,
-            pointerId: e.pointerId,
-            startX: point.x,
-            startY: point.y,
-            startCxPct: (rect.x + rect.w / 2) / layout.canvasCssW,
-            startCyPct: (rect.y + rect.h / 2) / layout.canvasCssH,
-            moved: false,
-          }
-          e.currentTarget.setPointerCapture(e.pointerId)
-        }
         return
       }
 
@@ -276,19 +257,6 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         const newX = Math.max(0, Math.min(1, drag.startFocal.x - (dxCss * scaleX) / drag.img.naturalWidth))
         const newY = Math.max(0, Math.min(1, drag.startFocal.y - (dyCss * scaleY) / drag.img.naturalHeight))
         setLiveFocal({ frameId: drag.frameId, focal: { x: newX, y: newY } })
-        return
-      }
-
-      if (drag.type === 'insert-move') {
-        const box = e.currentTarget.getBoundingClientRect()
-        const x = e.clientX - box.left
-        const y = e.clientY - box.top
-        const dxCss = x - drag.startX
-        const dyCss = y - drag.startY
-        if (Math.abs(dxCss) > 2 || Math.abs(dyCss) > 2) drag.moved = true
-        const newCxPct = Math.max(0, Math.min(1, drag.startCxPct + dxCss / layout.canvasCssW))
-        const newCyPct = Math.max(0, Math.min(1, drag.startCyPct + dyCss / layout.canvasCssH))
-        setLiveInsertPos({ insertId: drag.insertId, cxPct: newCxPct, cyPct: newCyPct })
       }
     },
     [layout],
@@ -305,21 +273,6 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         setLiveFocal((live) => {
           if (live && live.frameId === drag.frameId) {
             editDoc((d) => ({ ...d, tree: updateFrame(d.tree, drag.frameId, (f) => ({ ...f, image: f.image ? { ...f.image, focal: live.focal } : f.image })) }))
-          }
-          return null
-        })
-        return
-      }
-
-      if (drag.type === 'insert-move') {
-        dragRef.current = null
-        e.currentTarget.releasePointerCapture(e.pointerId)
-        setLiveInsertPos((live) => {
-          if (live && drag.moved) {
-            editDoc((d) => ({
-              ...d,
-              inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, position: { cxPct: live.cxPct, cyPct: live.cyPct } } : i)),
-            }))
           }
           return null
         })
@@ -439,50 +392,6 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     [editDoc],
   )
 
-  // ---- insert resize handle (DOM overlay) ----
-  const beginInsertResize = useCallback((e: React.PointerEvent<HTMLDivElement>, insertId: string, startSizePct: number) => {
-    e.stopPropagation()
-    const canvasBox = canvasRef.current?.getBoundingClientRect()
-    if (!canvasBox) return
-    dragRef.current = {
-      type: 'insert-resize',
-      insertId,
-      pointerId: e.pointerId,
-      startX: e.clientX - canvasBox.left,
-      startY: e.clientY - canvasBox.top,
-      startSizePct,
-    }
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }, [])
-
-  const onInsertResizePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const drag = dragRef.current
-      if (!drag || drag.type !== 'insert-resize' || !layout || !canvasRef.current) return
-      const canvasBox = canvasRef.current.getBoundingClientRect()
-      const x = e.clientX - canvasBox.left
-      const y = e.clientY - canvasBox.top
-      const delta = ((x - drag.startX) + (y - drag.startY)) / 2
-      const newSizePct = Math.max(0.05, Math.min(0.6, drag.startSizePct + delta / Math.min(layout.canvasCssW, layout.canvasCssH)))
-      setLiveInsertSize({ insertId: drag.insertId, sizePct: newSizePct })
-    },
-    [layout],
-  )
-
-  const onInsertResizePointerUp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const drag = dragRef.current
-      if (!drag || drag.type !== 'insert-resize') return
-      dragRef.current = null
-      e.currentTarget.releasePointerCapture(e.pointerId)
-      setLiveInsertSize((live) => {
-        if (live) editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, sizePct: live.sizePct } : i)) }))
-        return null
-      })
-    },
-    [editDoc],
-  )
-
   if (!doc || !layout) {
     return (
       <div className="canvas-editor-empty" ref={wrapperRef}>
@@ -493,7 +402,6 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
 
   const selectedRect = selectedFrameId ? layout.frameRects[selectedFrameId] : null
   const selectedFrame = selectedFrameId ? layout.frames[selectedFrameId] : null
-  const selectedInsertRect = selectedInsertId ? insertRects[selectedInsertId] : null
   const frameCount = Object.keys(layout.frameRects).length
 
   return (
@@ -521,47 +429,66 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           ))}
 
         {!previewMode &&
-          layout.seams.map((seam) => (
-            <button
-              key={`${seam.frameIdA}-${seam.frameIdB}`}
-              className="seam-marker"
-              title="Add insert on this seam (drag it anywhere afterward)"
-              style={{ left: seam.cx - 13, top: seam.cy - 13 }}
-              onClick={() => {
-                const frameA = layout.frames[seam.frameIdA]
-                const frameB = layout.frames[seam.frameIdB]
-                const imageKey = frameA?.image?.imageKey ?? frameB?.image?.imageKey ?? null
-                const insert: Insert = {
-                  id: newId(),
-                  imageKey,
-                  seam: { frameIdA: seam.frameIdA, frameIdB: seam.frameIdB },
-                  position: null,
-                  sizePct: 0.26,
-                  focal: { x: 0.5, y: 0.5 },
-                  zoom: 1.6,
-                  featherPx: 18,
-                  cornerRadiusPct: 0.08,
-                  border: null,
-                  shadow: null,
-                }
-                editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
-                selectInsert(insert.id)
-              }}
-            >
-              +
-            </button>
-          ))}
-
-        {!previewMode && selectedInsertRect && selectedInsertId && (
-          <div
-            className="insert-resize-handle"
-            style={{ left: selectedInsertRect.x + selectedInsertRect.w - 6, top: selectedInsertRect.y + selectedInsertRect.h - 6 }}
-            onPointerDown={(e) => beginInsertResize(e, selectedInsertId, doc.inserts.find((i) => i.id === selectedInsertId)?.sizePct ?? 0.26)}
-            onPointerMove={onInsertResizePointerMove}
-            onPointerUp={onInsertResizePointerUp}
-            title="Drag to resize"
-          />
-        )}
+          layout.seams.map((seam) => {
+            // At most one insert per seam -- clicking "+" creates it, and its
+            // own small remove button (rendered at the seam position once
+            // it exists) takes the "+" marker's place until it's removed.
+            const existing = doc.inserts.find(
+              (i) =>
+                i.seam &&
+                ((i.seam.frameIdA === seam.frameIdA && i.seam.frameIdB === seam.frameIdB) ||
+                  (i.seam.frameIdA === seam.frameIdB && i.seam.frameIdB === seam.frameIdA)),
+            )
+            const key = `${seam.frameIdA}-${seam.frameIdB}`
+            if (existing) {
+              const rect = insertRects[existing.id]
+              if (!rect) return null
+              return (
+                <button
+                  key={key}
+                  className="seam-remove"
+                  title="Remove insert"
+                  style={{ left: rect.x + rect.w - 11, top: rect.y - 11 }}
+                  onClick={() => {
+                    editDoc((d) => ({ ...d, inserts: d.inserts.filter((i) => i.id !== existing.id) }))
+                    if (selectedInsertId === existing.id) selectInsert(null)
+                  }}
+                >
+                  ✕
+                </button>
+              )
+            }
+            return (
+              <button
+                key={key}
+                className="seam-marker"
+                title="Add insert on this seam"
+                style={{ left: seam.cx - 13, top: seam.cy - 13 }}
+                onClick={() => {
+                  const frameA = layout.frames[seam.frameIdA]
+                  const frameB = layout.frames[seam.frameIdB]
+                  const imageKey = frameA?.image?.imageKey ?? frameB?.image?.imageKey ?? null
+                  const insert: Insert = {
+                    id: newId(),
+                    imageKey,
+                    seam: { frameIdA: seam.frameIdA, frameIdB: seam.frameIdB },
+                    position: null,
+                    sizePct: 0.26,
+                    focal: { x: 0.5, y: 0.5 },
+                    zoom: 1.6,
+                    featherPx: 18,
+                    cornerRadiusPct: 0.08,
+                    border: null,
+                    shadow: null,
+                  }
+                  editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
+                  selectInsert(insert.id)
+                }}
+              >
+                +
+              </button>
+            )
+          })}
 
         {!previewMode && selectedRect && selectedFrameId && (
           <div className="frame-toolbar" style={{ left: selectedRect.x + selectedRect.w - 4, top: selectedRect.y + 4 }}>
