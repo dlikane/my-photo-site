@@ -63,9 +63,15 @@ function CollageStudioApp() {
               previewMode={previewMode}
               onTogglePreview={() => setPreviewMode((p) => !p)}
               mobileLibraryOpen={mobileLibraryOpen}
-              onToggleLibrary={() => setMobileLibraryOpen((o) => !o)}
+              onToggleLibrary={() => {
+                setMobileLibraryOpen((o) => !o)
+                setMobileInspectorOpen(false)
+              }}
               mobileInspectorOpen={mobileInspectorOpen}
-              onToggleInspector={() => setMobileInspectorOpen((o) => !o)}
+              onToggleInspector={() => {
+                setMobileInspectorOpen((o) => !o)
+                setMobileLibraryOpen(false)
+              }}
             />
             <div
               className="app-body"

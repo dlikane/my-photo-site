@@ -384,9 +384,12 @@
   grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 10px;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   flex: 1;
   min-height: 60px;
   padding-top: 6px;
+  padding-right: 4px;
   align-content: start;
 }
 .collage-studio-page .library-thumb {
@@ -417,6 +420,7 @@
 .collage-studio-page .canvas-editor {
   flex: 1;
   overflow: auto;
+  scrollbar-gutter: stable;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,7 +517,9 @@
   width: var(--inspector-width, 300px);
   border-left: 1px solid #333;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 10px;
+  padding-right: 6px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -598,7 +604,10 @@
   gap: 8px;
 }
 
-/* ---- mobile: library/inspector become slide-in drawers instead of fixed columns ---- */
+/* ---- mobile: library/inspector share space with the canvas instead of
+   overlaying it -- at most one of the two is ever open at once (enforced
+   in CollageStudioApp.tsx), so the only states are "library + canvas",
+   "canvas" alone, or "canvas + inspector", never an overlap. ---- */
 .collage-studio-page .library-panel-wrap,
 .collage-studio-page .inspector-panel-wrap {
   display: contents;
@@ -613,32 +622,18 @@
   }
   .collage-studio-page .library-panel-wrap,
   .collage-studio-page .inspector-panel-wrap {
-    display: block;
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    width: min(82vw, 320px);
-    z-index: 50;
-    transition: transform 0.2s ease;
+    display: none;
   }
-  .collage-studio-page .library-panel-wrap {
-    left: 0;
-    transform: translateX(-100%);
-  }
-  .collage-studio-page .library-panel-wrap.open {
-    transform: translateX(0);
-  }
-  .collage-studio-page .inspector-panel-wrap {
-    right: 0;
-    transform: translateX(100%);
-  }
+  .collage-studio-page .library-panel-wrap.open,
   .collage-studio-page .inspector-panel-wrap.open {
-    transform: translateX(0);
+    display: block;
+    width: min(70vw, 300px);
+    flex-shrink: 0;
+    height: 100%;
   }
-  .collage-studio-page .library-panel-wrap .library-panel,
-  .collage-studio-page .inspector-panel-wrap .inspector-panel {
+  .collage-studio-page .library-panel-wrap.open .library-panel,
+  .collage-studio-page .inspector-panel-wrap.open .inspector-panel {
     width: 100%;
     height: 100%;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
   }
 }
