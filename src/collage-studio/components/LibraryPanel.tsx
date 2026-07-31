@@ -5,12 +5,32 @@ import { useCollageStore } from '../state/collageStore'
 import { useDialog } from '../state/dialogStore'
 import { useImagePool } from '../state/imagePoolStore'
 
+type SortKey = 'name' | 'date'
+type SortDir = 'asc' | 'desc'
+
 export function LibraryPanel() {
   const { doc, editDoc, selectedFrameId, selectedInsertId, allDocs } = useCollageStore()
   const pool = useImagePool()
   const dialog = useDialog()
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Date/desc (newest first) matches the pool's own default ordering.
+  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'name' ? 'asc' : 'desc')
+    }
+  }
+
+  const sortedImages = [...pool.images].sort((a, b) => {
+    const cmp = sortKey === 'name' ? a.name.localeCompare(b.name) : a.addedAt - b.addedAt
+    return sortDir === 'asc' ? cmp : -cmp
+  })
 
   // Only removes images no *open* collage references -- anything still in
   // use (even in a background tab) is kept, so this can't silently break a
@@ -76,45 +96,72 @@ export function LibraryPanel() {
       {pool.images.length > 0 && (
         <div className="library-gallery-header">
           <span className="hint">{pool.images.length} image(s)</span>
-          <button
-            onClick={handleClearGallery}
-            disabled={unusedImages.length === 0}
-            title={
-              unusedImages.length === 0
-                ? 'Every image here is used by an open collage -- nothing to remove'
-                : `Removes ${unusedImages.length} image(s) not used by any open collage; images still in use are kept`
-            }
-          >
-            Clear gallery{unusedImages.length > 0 ? ` (${unusedImages.length})` : ''}
-          </button>
+          <div className="library-header-actions">
+            <button className="library-add-btn" onClick={() => fileInputRef.current?.click()} title="Add photos">
+              +
+            </button>
+            <button
+              className={sortKey === 'name' ? 'active' : undefined}
+              onClick={() => toggleSort('name')}
+              title="Sort by name"
+            >
+              Name{sortKey === 'name' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+            </button>
+            <button
+              className={sortKey === 'date' ? 'active' : undefined}
+              onClick={() => toggleSort('date')}
+              title="Sort by date added"
+            >
+              Date{sortKey === 'date' ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+            </button>
+            <button
+              onClick={handleClearGallery}
+              disabled={unusedImages.length === 0}
+              title={
+                unusedImages.length === 0
+                  ? 'Every image here is used by an open collage -- nothing to remove'
+                  : `Removes ${unusedImages.length} image(s) not used by any open collage; images still in use are kept`
+              }
+            >
+              Clear gallery{unusedImages.length > 0 ? ` (${unusedImages.length})` : ''}
+            </button>
+          </div>
         </div>
       )}
 
       <div className="library-thumbs">
-        {pool.images.map((img) => (
-          <div key={img.key} className="library-thumb-wrap">
-            <img
-              src={img.objectUrl}
-              alt={img.name}
-              title={
-                selectedInsertId
-                  ? `${img.name} (click to assign to selected insert)`
-                  : selectedFrameId
-                    ? `${img.name} (click to assign to selected frame)`
-                    : img.name
-              }
-              draggable
-              className="library-thumb"
-              onDragStart={(e) => e.dataTransfer.setData('application/x-collage-image', img.key)}
-              onClick={() => assignToSelected(img.key)}
-              onDoubleClick={() => assignToSelected(img.key)}
-            />
-            <button className="library-thumb-remove" title="Remove from gallery" onClick={() => pool.remove(img.key)}>
+        {sortedImages.map((img) => (
+          <div
+            key={img.key}
+            className="library-thumb-wrap"
+            draggable
+            title={
+              selectedInsertId
+                ? `${img.name} (click to assign to selected insert)`
+                : selectedFrameId
+                  ? `${img.name} (click to assign to selected frame)`
+                  : img.name
+            }
+            onDragStart={(e) => e.dataTransfer.setData('application/x-collage-image', img.key)}
+            onClick={() => assignToSelected(img.key)}
+            onDoubleClick={() => assignToSelected(img.key)}
+          >
+            <img src={img.objectUrl} alt={img.name} className="library-thumb" />
+            <span className="library-thumb-name">{img.name}</span>
+            <button
+              className="library-thumb-remove"
+              title="Remove from gallery"
+              onClick={(e) => {
+                e.stopPropagation()
+                pool.remove(img.key)
+              }}
+            >
               ✕
             </button>
           </div>
         ))}
       </div>
+      <p className="library-thumbs-hint">Drag an image directly onto a frame in the canvas to place it there.</p>
     </div>
   )
 }

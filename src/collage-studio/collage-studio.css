@@ -280,10 +280,34 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-bottom: 6px;
+}
+.collage-studio-page .library-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.collage-studio-page .library-header-actions button {
+  padding: 3px 6px;
+  font-size: 11px;
+}
+.collage-studio-page .library-add-btn {
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  padding: 0 !important;
+  font-size: 14px;
+  line-height: 1;
 }
 .collage-studio-page .library-thumb-wrap {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: grab;
 }
 .collage-studio-page .library-thumb-remove {
   position: absolute;
@@ -303,8 +327,8 @@
 }
 .collage-studio-page .library-thumbs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
   overflow-y: auto;
   flex: 1;
   min-height: 60px;
@@ -315,12 +339,24 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  cursor: grab;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid #333;
 }
-.collage-studio-page .library-thumb:hover {
+.collage-studio-page .library-thumb-wrap:hover .library-thumb {
   outline: 2px solid #3b82f6;
+}
+.collage-studio-page .library-thumb-name {
+  font-size: 10px;
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collage-studio-page .library-thumbs-hint {
+  font-size: 11px;
+  color: #777;
+  margin: 8px 0 0;
+  line-height: 1.5;
 }
 
 /* ---- canvas editor ---- */
