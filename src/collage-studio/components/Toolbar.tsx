@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { createBlankCollageDoc, type CollageDoc } from '../model/collageTypes'
 import { collectImageKeys } from '../model/geometry'
+import { LAYOUT_TEMPLATES } from '../model/templates'
 import { useCollageStore } from '../state/collageStore'
 import { useDialog } from '../state/dialogStore'
 import { useImagePool } from '../state/imagePoolStore'
@@ -42,6 +43,17 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
   const openInputRef = useRef<HTMLInputElement>(null)
   const [renamingTabId, setRenamingTabId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [newMenuOpen, setNewMenuOpen] = useState(false)
+  const newMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!newMenuOpen) return
+    const onPointerDown = (e: PointerEvent) => {
+      if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) setNewMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [newMenuOpen])
 
   const startRename = (tabId: string, currentName: string) => {
     setRenamingTabId(tabId)
@@ -63,6 +75,13 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
 
   const handleNew = () => {
     newDoc(createBlankCollageDoc())
+    setNewMenuOpen(false)
+  }
+
+  const handleNewFromTemplate = (build: () => CollageDoc['tree']) => {
+    const blank = createBlankCollageDoc()
+    newDoc({ ...blank, tree: build() })
+    setNewMenuOpen(false)
   }
 
   const handleOpenClick = () => openInputRef.current?.click()
@@ -144,7 +163,28 @@ export function Toolbar({ previewMode, onTogglePreview, onToggleLibrary, onToggl
         <button className="mobile-panel-toggle" onClick={onToggleLibrary} title="Show image library">
           ☰ Library
         </button>
-        <button onClick={handleNew}>New</button>
+        <div className="new-menu-wrap" ref={newMenuRef}>
+          <button className="new-menu-main" onClick={handleNew}>
+            New
+          </button>
+          <button className="new-menu-caret" onClick={() => setNewMenuOpen((o) => !o)} title="Choose a starting layout">
+            ▾
+          </button>
+          {newMenuOpen && (
+            <div className="new-menu-dropdown">
+              <button onClick={handleNew}>
+                <span className="layout-icon" />
+                Blank
+              </button>
+              {LAYOUT_TEMPLATES.map((t) => (
+                <button key={t.key} onClick={() => handleNewFromTemplate(t.build)}>
+                  <span className={`layout-icon layout-icon-${t.key}`} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button onClick={handleOpenClick} title="Select the .collage.json and its images together to load both at once">
           Open…
         </button>

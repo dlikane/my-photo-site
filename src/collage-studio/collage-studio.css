@@ -82,6 +82,107 @@
   flex-direction: column;
 }
 
+/* ---- New ▾ split button ---- */
+.collage-studio-page .new-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.collage-studio-page .new-menu-main {
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+}
+.collage-studio-page .new-menu-caret {
+  border-radius: 0 4px 4px 0;
+  padding: 4px 6px;
+  font-size: 10px;
+}
+.collage-studio-page .new-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #242428;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 50;
+  min-width: 150px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+.collage-studio-page .new-menu-dropdown button {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.collage-studio-page .new-menu-dropdown button:hover {
+  background: #333338;
+}
+.collage-studio-page .layout-icon {
+  width: 18px;
+  height: 14px;
+  border: 1px solid #999;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: grid;
+  gap: 1px;
+}
+.collage-studio-page .layout-icon-twoCol {
+  grid-template-columns: 1fr 1fr;
+}
+.collage-studio-page .layout-icon-twoCol::before {
+  content: '';
+  border-right: 1px solid #999;
+}
+.collage-studio-page .layout-icon-twoRow {
+  grid-template-rows: 1fr 1fr;
+}
+.collage-studio-page .layout-icon-twoRow::before {
+  content: '';
+  border-bottom: 1px solid #999;
+}
+.collage-studio-page .layout-icon-threeCol {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.collage-studio-page .layout-icon-threeCol::before,
+.collage-studio-page .layout-icon-threeCol::after {
+  content: '';
+  border-right: 1px solid #999;
+}
+.collage-studio-page .layout-icon-twoXTwo {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.collage-studio-page .layout-icon-twoXTwo::before {
+  content: '';
+  grid-column: span 2;
+  border-bottom: 1px solid #999;
+}
+.collage-studio-page .layout-icon-twoXTwo::after {
+  content: '';
+  grid-column: span 2;
+  border-left: 1px solid #999;
+  margin-left: 50%;
+}
+.collage-studio-page .layout-icon-threeXThree,
+.collage-studio-page .layout-icon-fourXFour {
+  background-image:
+    linear-gradient(#999 1px, transparent 1px),
+    linear-gradient(90deg, #999 1px, transparent 1px);
+}
+.collage-studio-page .layout-icon-threeXThree {
+  background-size: 33.33% 33.33%;
+}
+.collage-studio-page .layout-icon-fourXFour {
+  background-size: 25% 25%;
+}
+
 /* ---- tabs ---- */
 .collage-studio-page .tabs-bar {
   display: flex;
@@ -223,15 +324,6 @@
 }
 
 /* ---- canvas editor ---- */
-.collage-studio-page .quick-start {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  padding: 6px 12px;
-  font-size: 12px;
-  color: #aaa;
-  border-bottom: 1px solid #2e2e33;
-}
 .collage-studio-page .canvas-editor {
   flex: 1;
   overflow: auto;

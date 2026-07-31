@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { CanvasEditor } from './components/CanvasEditor'
 import { InspectorPanel } from './components/InspectorPanel'
 import { LibraryPanel } from './components/LibraryPanel'
-import { QuickStartTemplates } from './components/QuickStartTemplates'
 import { Toolbar } from './components/Toolbar'
 import { CollageStoreProvider } from './state/collageStore'
 import { DialogProvider } from './state/dialogStore'
@@ -40,7 +39,6 @@ function CollageStudioApp() {
                 <LibraryPanel />
               </div>
               <div className="app-center">
-                <QuickStartTemplates />
                 <CanvasEditor previewMode={previewMode} />
               </div>
               <div className={`inspector-panel-wrap${mobileInspectorOpen ? ' open' : ''}`}>
