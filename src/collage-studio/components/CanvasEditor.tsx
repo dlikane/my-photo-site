@@ -19,7 +19,7 @@ type DragState =
   | { type: 'insert-move'; insertId: string; pointerId: number; startX: number; startY: number; startCxPct: number; startCyPct: number }
   | { type: 'insert-resize'; insertId: string; pointerId: number; startX: number; startY: number; startW: number; startH: number }
   | { type: 'new-insert-drag'; pointerId: number; startX: number; startY: number; insertId: string | null }
-  | { type: 'view-pan'; pointerId: number; startX: number; startY: number; startScrollLeft: number; startScrollTop: number }
+  | { type: 'view-pan'; pointerId: number; startX: number; startY: number; startOffsetX: number; startOffsetY: number }
 
 // Long-press on an insert (instead of using its dedicated move handle)
 // switches from panning its image to moving the insert itself -- cancelled
@@ -31,6 +31,10 @@ const LONG_PRESS_CANCEL_PX = 8
 // drag-to-place gesture rather than a plain tap (which still creates the
 // insert centered, as before).
 const NEW_INSERT_DRAG_THRESHOLD_PX = 6
+// Extra vertical room subtracted from the "fit" scale so the floating zoom
+// bar (bottom-center, ~40px tall plus margin) has space below the collage
+// instead of overlapping its bottom edge at the default/base size.
+const ZOOM_BAR_RESERVED_PX = 56
 
 function makeNewInsert(cxPct: number, cyPct: number): Insert {
   return {
@@ -123,6 +127,22 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   // this). Independent of any per-frame/insert image zoom -- this scales
   // the *display*, same as resizing the window would, not the doc itself.
   const [viewZoom, setViewZoom] = useState(1)
+  // Pan offset applied as a transform on the stage, not native scrolling --
+  // scrollLeft/scrollTop turned out jittery and wouldn't reliably stay
+  // where released (browser scroll-anchoring/momentum fighting with
+  // per-pointermove writes). A plain {x,y} we fully own is deterministic:
+  // wherever the drag math puts it is exactly where it stays.
+  const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 })
+  // Mirrors viewOffset synchronously (unlike the state, which only updates on
+  // the next render) -- read by gesture-start code (mousedown, touchstart,
+  // the pending->pan transition) so a fast sequence of events during a pan
+  // always sees the true latest offset, never a stale one from a pending
+  // render. Same rationale as spaceHeldRef above.
+  const viewOffsetRef = useRef({ x: 0, y: 0 })
+  const updateViewOffset = useCallback((next: { x: number; y: number }) => {
+    viewOffsetRef.current = next
+    setViewOffset(next)
+  }, [])
   // Which frame/insert to draw the transient "full image" outline for --
   // set while actively panning/zooming that image, cleared shortly after.
   const [activeZoomTarget, setActiveZoomTarget] = useState<{ kind: 'frame' | 'insert'; id: string } | null>(null)
@@ -191,22 +211,22 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     }
   }, [])
 
-  // Re-centers the scroll position whenever the view zoom changes -- simple
-  // "zoom around the middle" rather than trying to preserve exactly what was
-  // under the cursor/fingers, which fits the "just fit or zoom in" slider
-  // this drives (not a full pan-to-point zoom tool).
+  // Re-centers (resets the pan offset) whenever the view zoom changes --
+  // simple "zoom around the middle" rather than trying to preserve exactly
+  // what was under the cursor/fingers, which fits the "just fit or zoom in"
+  // slider this drives (not a full pan-to-point zoom tool).
   useEffect(() => {
-    const el = wrapperRef.current
-    if (!el) return
-    el.scrollLeft = Math.max(0, (el.scrollWidth - el.clientWidth) / 2)
-    el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2)
-  }, [viewZoom])
+    updateViewOffset({ x: 0, y: 0 })
+  }, [viewZoom, updateViewOffset])
 
   const layout = useMemo(() => {
     if (!doc) return null
     const tree = liveRatio ? resizeSplit(doc.tree, liveRatio.splitId, liveRatio.ratio) : doc.tree
     const maxW = Math.max(50, containerSize.w - 40)
-    const maxH = Math.max(50, containerSize.h - 40)
+    // A bit shorter than the panel's full height at fit, so the floating
+    // zoom bar at the bottom has room to sit below the collage instead of
+    // overlapping it.
+    const maxH = Math.max(50, containerSize.h - 40 - ZOOM_BAR_RESERVED_PX)
     const fitScale = Math.max(0.01, Math.min(maxW / doc.canvas.width, maxH / doc.canvas.height))
     // viewZoom only ever zooms *in* from fit (see the zoom bar) -- fit
     // itself is already "as much as the panel can show", so there's no
@@ -386,15 +406,13 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       // select/pan-image behavior entirely while held, same as
       // Photoshop/Figma's spacebar pan.
       if (spaceHeldRef.current) {
-        const container = wrapperRef.current
-        if (!container) return
         dragRef.current = {
           type: 'view-pan',
           pointerId: e.pointerId,
           startX: e.clientX,
           startY: e.clientY,
-          startScrollLeft: container.scrollLeft,
-          startScrollTop: container.scrollTop,
+          startOffsetX: viewOffsetRef.current.x,
+          startOffsetY: viewOffsetRef.current.y,
         }
         e.currentTarget.setPointerCapture(e.pointerId)
         setIsPanningView(true)
@@ -487,36 +505,39 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       // instead, using the current scroll position as the new baseline so
       // there's no jump.
       if (spaceHeldRef.current && (drag.type === 'pan' || drag.type === 'insert-pan')) {
-        const container = wrapperRef.current
-        if (container) {
-          if (longPressRef.current) {
-            clearTimeout(longPressRef.current.timer)
-            longPressRef.current = null
-          }
-          // Abandon whatever partial focal drag was in progress -- without
-          // this, the live (uncommitted) override would keep rendering
-          // indefinitely, since view-pan's own cleanup never touches it.
-          if (drag.type === 'pan') setLiveFocal(null)
-          else setLiveInsertFocal(null)
-          drag = {
-            type: 'view-pan',
-            pointerId: drag.pointerId,
-            startX: e.clientX,
-            startY: e.clientY,
-            startScrollLeft: container.scrollLeft,
-            startScrollTop: container.scrollTop,
-          }
-          dragRef.current = drag
-          setIsPanningView(true)
-          setActiveZoomTarget(null)
+        if (longPressRef.current) {
+          clearTimeout(longPressRef.current.timer)
+          longPressRef.current = null
         }
+        // Abandon whatever partial focal drag was in progress -- without
+        // this, the live (uncommitted) override would keep rendering
+        // indefinitely, since view-pan's own cleanup never touches it.
+        if (drag.type === 'pan') setLiveFocal(null)
+        else setLiveInsertFocal(null)
+        drag = {
+          type: 'view-pan',
+          pointerId: drag.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          startOffsetX: viewOffsetRef.current.x,
+          startOffsetY: viewOffsetRef.current.y,
+        }
+        dragRef.current = drag
+        setIsPanningView(true)
+        setActiveZoomTarget(null)
       }
 
       if (drag.type === 'view-pan') {
-        const container = wrapperRef.current
-        if (!container) return
-        container.scrollLeft = drag.startScrollLeft - (e.clientX - drag.startX)
-        container.scrollTop = drag.startScrollTop - (e.clientY - drag.startY)
+        // Keep at least a small sliver of the collage always reachable/
+        // visible rather than letting it be dragged arbitrarily far off
+        // panel -- half the overhang beyond the container, plus a little
+        // slack, on each axis.
+        const maxX = Math.max(0, (layout.canvasCssW - containerSize.w) / 2) + 150
+        const maxY = Math.max(0, (layout.canvasCssH - containerSize.h) / 2) + 150
+        updateViewOffset({
+          x: Math.max(-maxX, Math.min(maxX, drag.startOffsetX + (e.clientX - drag.startX))),
+          y: Math.max(-maxY, Math.min(maxY, drag.startOffsetY + (e.clientY - drag.startY))),
+        })
         return
       }
 
@@ -567,7 +588,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         setLiveInsertPos({ insertId: drag.insertId, cxPct: newCxPct, cyPct: newCyPct })
       }
     },
-    [layout],
+    [layout, containerSize, updateViewOffset],
   )
 
   const onCanvasPointerUp = useCallback(
@@ -726,9 +747,9 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   // effect re-running mid-gesture, which it does on every editDoc call
   // since `doc` is a dependency (same as the wheel handler already relies on).
   type TouchGesture =
-    | { mode: 'pending'; startDist: number; startMidX: number; startMidY: number; target: { kind: 'insert' | 'frame'; id: string } | null; startScrollLeft: number; startScrollTop: number }
+    | { mode: 'pending'; startDist: number; startMidX: number; startMidY: number; target: { kind: 'insert' | 'frame'; id: string } | null; startOffsetX: number; startOffsetY: number }
     | { mode: 'zoom'; kind: 'insert' | 'frame'; id: string; lastDist: number }
-    | { mode: 'pan'; startMidX: number; startMidY: number; startScrollLeft: number; startScrollTop: number }
+    | { mode: 'pan'; startMidX: number; startMidY: number; startOffsetX: number; startOffsetY: number }
   const touchGestureRef = useRef<TouchGesture | null>(null)
   useEffect(() => {
     const canvas = canvasRef.current
@@ -757,8 +778,8 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         startMidX: mid.x,
         startMidY: mid.y,
         target,
-        startScrollLeft: container.scrollLeft,
-        startScrollTop: container.scrollTop,
+        startOffsetX: viewOffsetRef.current.x,
+        startOffsetY: viewOffsetRef.current.y,
       }
     }
 
@@ -781,8 +802,8 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
             mode: 'pan',
             startMidX: gesture.startMidX,
             startMidY: gesture.startMidY,
-            startScrollLeft: gesture.startScrollLeft,
-            startScrollTop: gesture.startScrollTop,
+            startOffsetX: gesture.startOffsetX,
+            startOffsetY: gesture.startOffsetY,
           }
         }
         return
@@ -805,9 +826,13 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         return
       }
 
-      // pan -- drag fingers right, the view scrolls to reveal what was to the left.
-      container.scrollLeft = gesture.startScrollLeft - (mid.x - gesture.startMidX)
-      container.scrollTop = gesture.startScrollTop - (mid.y - gesture.startMidY)
+      // pan -- drag fingers right, the view shifts right to reveal what was to the left.
+      const maxX = Math.max(0, (layout.canvasCssW - containerSize.w) / 2) + 150
+      const maxY = Math.max(0, (layout.canvasCssH - containerSize.h) / 2) + 150
+      updateViewOffset({
+        x: Math.max(-maxX, Math.min(maxX, gesture.startOffsetX + (mid.x - gesture.startMidX))),
+        y: Math.max(-maxY, Math.min(maxY, gesture.startOffsetY + (mid.y - gesture.startMidY))),
+      })
     }
 
     const onTouchEnd = (e: TouchEvent) => {
@@ -827,7 +852,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       canvas.removeEventListener('touchend', onTouchEnd)
       canvas.removeEventListener('touchcancel', onTouchEnd)
     }
-  }, [doc, layout, insertRects, editDoc])
+  }, [doc, layout, insertRects, editDoc, containerSize, updateViewOffset])
 
   const assignImageToDropTarget = useCallback(
     (imageKey: string, insertId: string | null, frameId: string | null) => {
@@ -1139,7 +1164,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   return (
     <div className="canvas-editor-wrap" ref={editorWrapRef}>
     <div
-      className={`canvas-editor${viewZoom > 1 ? ' zoomed' : ''}${spaceHeld ? ' space-pan' : ''}${isPanningView ? ' panning' : ''}`}
+      className={`canvas-editor${spaceHeld ? ' space-pan' : ''}${isPanningView ? ' panning' : ''}`}
       ref={wrapperRef}
       onClick={(e) => {
         // Only when the click lands on this wrapper itself -- the padding
@@ -1151,7 +1176,14 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         selectInsert(null)
       }}
     >
-      <div className="canvas-editor-stage" style={{ width: layout.canvasCssW, height: layout.canvasCssH }}>
+      <div
+        className="canvas-editor-stage"
+        style={{
+          width: layout.canvasCssW,
+          height: layout.canvasCssH,
+          transform: `translate(${viewOffset.x}px, ${viewOffset.y}px)`,
+        }}
+      >
         <canvas
           ref={canvasRef}
           onPointerDown={onCanvasPointerDown}

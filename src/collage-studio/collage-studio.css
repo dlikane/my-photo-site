@@ -418,20 +418,15 @@
 }
 .collage-studio-page .canvas-editor {
   flex: 1;
-  overflow: auto;
-  scrollbar-gutter: stable;
+  /* Panning is a CSS transform on .canvas-editor-stage (viewOffset in
+     CanvasEditor.tsx), not native scrolling -- scrollLeft/scrollTop proved
+     jittery and wouldn't reliably stay put on release. No native scroll
+     means nothing here needs to overflow. */
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-}
-/* Centered flex content that overflows can clip its own start edge out of
-   scroll reach (a well-known flexbox+overflow quirk) -- switched to
-   flex-start once actually zoomed in past fit, so every edge stays
-   reachable by scrolling/panning. */
-.collage-studio-page .canvas-editor.zoomed {
-  align-items: flex-start;
-  justify-content: flex-start;
 }
 .collage-studio-page .canvas-zoom-bar {
   position: absolute;
