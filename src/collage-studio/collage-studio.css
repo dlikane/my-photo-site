@@ -455,6 +455,19 @@
   min-width: 3.5em;
   text-align: right;
 }
+.collage-studio-page .canvas-zoom-bar-handle {
+  cursor: grab;
+  color: #888;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 2px;
+  margin: -4px 0 -4px -6px;
+  touch-action: none;
+  user-select: none;
+}
+.collage-studio-page .canvas-zoom-bar-handle:hover {
+  color: #ccc;
+}
 .collage-studio-page .canvas-editor-empty {
   flex: 1;
   display: flex;
@@ -471,6 +484,14 @@
   display: block;
   cursor: grab;
   touch-action: none;
+}
+/* Space held (desktop pan, mirrors the two-finger touch pan): grab while
+   held, grabbing once actually dragging -- Photoshop/Figma convention. */
+.collage-studio-page .canvas-editor.space-pan .canvas-editor-stage canvas {
+  cursor: grab;
+}
+.collage-studio-page .canvas-editor.panning .canvas-editor-stage canvas {
+  cursor: grabbing;
 }
 .collage-studio-page .divider {
   position: absolute;

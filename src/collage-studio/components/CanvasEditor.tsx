@@ -19,6 +19,7 @@ type DragState =
   | { type: 'insert-move'; insertId: string; pointerId: number; startX: number; startY: number; startCxPct: number; startCyPct: number }
   | { type: 'insert-resize'; insertId: string; pointerId: number; startX: number; startY: number; startW: number; startH: number }
   | { type: 'new-insert-drag'; pointerId: number; startX: number; startY: number; insertId: string | null }
+  | { type: 'view-pan'; pointerId: number; startX: number; startY: number; startScrollLeft: number; startScrollTop: number }
 
 // Long-press on an insert (instead of using its dedicated move handle)
 // switches from panning its image to moving the insert itself -- cancelled
@@ -127,6 +128,17 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const [activeZoomTarget, setActiveZoomTarget] = useState<{ kind: 'frame' | 'insert'; id: string } | null>(null)
   const longPressRef = useRef<{ timer: ReturnType<typeof setTimeout>; insertId: string; pointerId: number } | null>(null)
   const wheelZoomClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Desktop equivalent of the two-finger touch pan above -- hold Space and
+  // drag with the mouse to pan the collage view, same as Photoshop/Figma.
+  const [spaceHeld, setSpaceHeld] = useState(false)
+  const [isPanningView, setIsPanningView] = useState(false)
+  // Zoom bar position -- null means "default" (bottom-center, via CSS);
+  // dragging its handle switches to an explicit left/top within
+  // canvas-editor-wrap instead. Not persisted -- a display preference for
+  // this session, not part of the doc.
+  const editorWrapRef = useRef<HTMLDivElement>(null)
+  const [zoomBarPos, setZoomBarPos] = useState<{ left: number; top: number } | null>(null)
+  const zoomBarDragRef = useRef<{ pointerId: number; startClientX: number; startClientY: number; startLeft: number; startTop: number } | null>(null)
   const forceRedraw = useCallback(() => setTick((t) => t + 1), [])
 
   useEffect(() => {
@@ -138,6 +150,28 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     })
     ro.observe(el)
     return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false
+      return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target)) return
+      e.preventDefault() // stop the page from scrolling on Space
+      setSpaceHeld(true)
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return
+      setSpaceHeld(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
   }, [])
 
   // Re-centers the scroll position whenever the view zoom changes -- simple
@@ -330,6 +364,26 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       // started -- isPrimary is only true for the first active touch point.
       if (!e.isPrimary) return
       if (!doc || !layout) return
+
+      // Space+drag pans the whole collage view -- overrides the normal
+      // select/pan-image behavior entirely while held, same as
+      // Photoshop/Figma's spacebar pan.
+      if (spaceHeld) {
+        const container = wrapperRef.current
+        if (!container) return
+        dragRef.current = {
+          type: 'view-pan',
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          startScrollLeft: container.scrollLeft,
+          startScrollTop: container.scrollTop,
+        }
+        e.currentTarget.setPointerCapture(e.pointerId)
+        setIsPanningView(true)
+        return
+      }
+
       const box = e.currentTarget.getBoundingClientRect()
       const point = { x: e.clientX - box.left, y: e.clientY - box.top }
 
@@ -403,13 +457,21 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       e.currentTarget.setPointerCapture(e.pointerId)
       setActiveZoomTarget({ kind: 'frame', id: frameId })
     },
-    [doc, layout, insertRects, selectFrame, selectInsert, previewMode],
+    [doc, layout, insertRects, selectFrame, selectInsert, previewMode, spaceHeld],
   )
 
   const onCanvasPointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       const drag = dragRef.current
       if (!drag || !layout) return
+
+      if (drag.type === 'view-pan') {
+        const container = wrapperRef.current
+        if (!container) return
+        container.scrollLeft = drag.startScrollLeft - (e.clientX - drag.startX)
+        container.scrollTop = drag.startScrollTop - (e.clientY - drag.startY)
+        return
+      }
 
       if (drag.type === 'pan') {
         const box = e.currentTarget.getBoundingClientRect()
@@ -465,6 +527,13 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       const drag = dragRef.current
       if (!drag) return
+
+      if (drag.type === 'view-pan') {
+        dragRef.current = null
+        e.currentTarget.releasePointerCapture(e.pointerId)
+        setIsPanningView(false)
+        return
+      }
 
       if (drag.type === 'pan') {
         dragRef.current = null
@@ -962,6 +1031,42 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     [editDoc, layout],
   )
 
+  // ---- zoom bar move handle (drag the whole floating bar around) ----
+  const beginZoomBarMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const wrapEl = editorWrapRef.current
+    const barEl = e.currentTarget.closest('.canvas-zoom-bar') as HTMLElement | null
+    if (!wrapEl || !barEl) return
+    const wrapBox = wrapEl.getBoundingClientRect()
+    const barBox = barEl.getBoundingClientRect()
+    zoomBarDragRef.current = {
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startLeft: barBox.left - wrapBox.left,
+      startTop: barBox.top - wrapBox.top,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [])
+
+  const onZoomBarMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = zoomBarDragRef.current
+    const wrapEl = editorWrapRef.current
+    if (!drag || !wrapEl) return
+    const wrapBox = wrapEl.getBoundingClientRect()
+    const barEl = e.currentTarget.closest('.canvas-zoom-bar') as HTMLElement | null
+    const barW = barEl?.offsetWidth ?? 0
+    const barH = barEl?.offsetHeight ?? 0
+    const left = Math.max(0, Math.min(wrapBox.width - barW, drag.startLeft + (e.clientX - drag.startClientX)))
+    const top = Math.max(0, Math.min(wrapBox.height - barH, drag.startTop + (e.clientY - drag.startClientY)))
+    setZoomBarPos({ left, top })
+  }, [])
+
+  const onZoomBarMoveUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!zoomBarDragRef.current) return
+    zoomBarDragRef.current = null
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }, [])
+
   if (!doc || !layout) {
     return (
       <div className="canvas-editor-empty" ref={wrapperRef}>
@@ -975,9 +1080,9 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const frameCount = Object.keys(layout.frameRects).length
 
   return (
-    <div className="canvas-editor-wrap">
+    <div className="canvas-editor-wrap" ref={editorWrapRef}>
     <div
-      className={`canvas-editor${viewZoom > 1 ? ' zoomed' : ''}`}
+      className={`canvas-editor${viewZoom > 1 ? ' zoomed' : ''}${spaceHeld ? ' space-pan' : ''}${isPanningView ? ' panning' : ''}`}
       ref={wrapperRef}
       onClick={(e) => {
         // Only when the click lands on this wrapper itself -- the padding
@@ -1151,7 +1256,19 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       </div>
     </div>
     {!previewMode && (
-      <div className="canvas-zoom-bar">
+      <div
+        className="canvas-zoom-bar"
+        style={zoomBarPos ? { left: zoomBarPos.left, top: zoomBarPos.top, bottom: 'auto', transform: 'none' } : undefined}
+      >
+        <div
+          className="canvas-zoom-bar-handle"
+          title="Drag to move"
+          onPointerDown={beginZoomBarMove}
+          onPointerMove={onZoomBarMove}
+          onPointerUp={onZoomBarMoveUp}
+        >
+          ⋮
+        </div>
         <button onClick={() => setViewZoom(1)} disabled={viewZoom === 1} title="Fit to panel">
           Fit
         </button>
