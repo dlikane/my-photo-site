@@ -18,12 +18,67 @@ type DragState =
   | { type: 'insert-pan'; insertId: string; pointerId: number; startX: number; startY: number; startFocal: FocalPoint; rect: Rect; img: HTMLImageElement; cropW: number; cropH: number }
   | { type: 'insert-move'; insertId: string; pointerId: number; startX: number; startY: number; startCxPct: number; startCyPct: number }
   | { type: 'insert-resize'; insertId: string; pointerId: number; startX: number; startY: number; startW: number; startH: number }
+  | { type: 'new-insert-drag'; pointerId: number; startX: number; startY: number; insertId: string | null }
+  | { type: 'view-pan'; pointerId: number; startX: number; startY: number; startOffsetX: number; startOffsetY: number }
+
+// Long-press on an insert (instead of using its dedicated move handle)
+// switches from panning its image to moving the insert itself -- cancelled
+// if the pointer moves more than this before the timer fires, since that's
+// a clear sign the intent was to pan, not to long-press-and-move.
+const LONG_PRESS_MS = 450
+const LONG_PRESS_CANCEL_PX = 8
+// How far the "New insert" button must be dragged before it's treated as a
+// drag-to-place gesture rather than a plain tap (which still creates the
+// insert centered, as before).
+const NEW_INSERT_DRAG_THRESHOLD_PX = 6
+// Extra vertical room subtracted from the "fit" scale so the floating zoom
+// bar (bottom-center, ~40px tall plus margin) has space below the collage
+// instead of overlapping its bottom edge at the default/base size.
+const ZOOM_BAR_RESERVED_PX = 56
+
+function makeNewInsert(cxPct: number, cyPct: number): Insert {
+  return {
+    id: newId(),
+    imageKey: null,
+    seam: null,
+    position: { cxPct, cyPct },
+    sizePct: 0.26,
+    aspectRatio: 1,
+    focal: { x: 0.5, y: 0.5 },
+    zoom: 1.6,
+    featherPx: 18,
+    cornerRadiusPct: 0.08,
+    border: null,
+    shadow: null,
+  }
+}
 
 function hitTest(point: { x: number; y: number }, rects: Record<string, Rect>): string | null {
   for (const [id, r] of Object.entries(rects)) {
     if (point.x >= r.x && point.x <= r.x + r.w && point.y >= r.y && point.y <= r.y + r.h) return id
   }
   return null
+}
+
+/** Thin outline showing where the edges of the *full* source image would
+ * fall, in display space -- while zoomed in, that's larger than (and
+ * extends beyond) destRect, since destRect only shows a cropped portion.
+ * Only drawn transiently, while actively panning/zooming (see
+ * activeZoomTarget) -- at zoom 1 this would just retrace destRect itself. */
+function drawFullImageOutline(ctx: CanvasRenderingContext2D, img: HTMLImageElement, destRect: Rect, focal: FocalPoint, zoom: number) {
+  if (zoom <= 1.01) return
+  const box = computeCropBox(img.naturalWidth, img.naturalHeight, destRect.w, destRect.h, focal, zoom)
+  const scaleX = destRect.w / box.w
+  const scaleY = destRect.h / box.h
+  const fullX = destRect.x - box.x * scaleX
+  const fullY = destRect.y - box.y * scaleY
+  const fullW = img.naturalWidth * scaleX
+  const fullH = img.naturalHeight * scaleY
+  ctx.save()
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)'
+  ctx.lineWidth = 1
+  ctx.strokeRect(Math.round(fullX) + 0.5, Math.round(fullY) + 0.5, Math.round(fullW) - 1, Math.round(fullH) - 1)
+  ctx.restore()
 }
 
 function drawPlaceholder(ctx: CanvasRenderingContext2D, rect: Rect, label?: string) {
@@ -68,6 +123,48 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const [liveInsertFocal, setLiveInsertFocal] = useState<{ insertId: string; focal: FocalPoint } | null>(null)
   const [liveInsertPos, setLiveInsertPos] = useState<{ insertId: string; cxPct: number; cyPct: number } | null>(null)
   const [liveInsertSize, setLiveInsertSize] = useState<{ insertId: string; w: number; h: number } | null>(null)
+  // Whole-collage view zoom (1 = fit-to-panel, the only zoom level before
+  // this). Independent of any per-frame/insert image zoom -- this scales
+  // the *display*, same as resizing the window would, not the doc itself.
+  const [viewZoom, setViewZoom] = useState(1)
+  // Pan offset applied as a transform on the stage, not native scrolling --
+  // scrollLeft/scrollTop turned out jittery and wouldn't reliably stay
+  // where released (browser scroll-anchoring/momentum fighting with
+  // per-pointermove writes). A plain {x,y} we fully own is deterministic:
+  // wherever the drag math puts it is exactly where it stays.
+  const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 })
+  // Mirrors viewOffset synchronously (unlike the state, which only updates on
+  // the next render) -- read by gesture-start code (mousedown, touchstart,
+  // the pending->pan transition) so a fast sequence of events during a pan
+  // always sees the true latest offset, never a stale one from a pending
+  // render. Same rationale as spaceHeldRef above.
+  const viewOffsetRef = useRef({ x: 0, y: 0 })
+  const updateViewOffset = useCallback((next: { x: number; y: number }) => {
+    viewOffsetRef.current = next
+    setViewOffset(next)
+  }, [])
+  // Which frame/insert to draw the transient "full image" outline for --
+  // set while actively panning/zooming that image, cleared shortly after.
+  const [activeZoomTarget, setActiveZoomTarget] = useState<{ kind: 'frame' | 'insert'; id: string } | null>(null)
+  const longPressRef = useRef<{ timer: ReturnType<typeof setTimeout>; insertId: string; pointerId: number } | null>(null)
+  const wheelZoomClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Desktop equivalent of the two-finger touch pan above -- hold Space and
+  // drag with the mouse to pan the collage view, same as Photoshop/Figma.
+  // Kept in a ref (read from all the pointer/wheel handlers) as well as
+  // state (drives the cursor's CSS class) -- the ref is what those handlers
+  // actually branch on, so there's no dependency on them re-closing over a
+  // fresh `spaceHeld` render value, which is otherwise a real source of
+  // stale-closure bugs for a fast keydown-then-mousedown sequence.
+  const spaceHeldRef = useRef(false)
+  const [spaceHeld, setSpaceHeld] = useState(false)
+  const [isPanningView, setIsPanningView] = useState(false)
+  // Zoom bar position -- null means "default" (bottom-center, via CSS);
+  // dragging its handle switches to an explicit left/top within
+  // canvas-editor-wrap instead. Not persisted -- a display preference for
+  // this session, not part of the doc.
+  const editorWrapRef = useRef<HTMLDivElement>(null)
+  const [zoomBarPos, setZoomBarPos] = useState<{ left: number; top: number } | null>(null)
+  const zoomBarDragRef = useRef<{ pointerId: number; startClientX: number; startClientY: number; startLeft: number; startTop: number } | null>(null)
   const forceRedraw = useCallback(() => setTick((t) => t + 1), [])
 
   useEffect(() => {
@@ -81,12 +178,60 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     return () => ro.disconnect()
   }, [])
 
+  useEffect(() => {
+    const isTypingTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false
+      return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target)) return
+      e.preventDefault() // stop the page from scrolling on Space
+      spaceHeldRef.current = true
+      setSpaceHeld(true)
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return
+      spaceHeldRef.current = false
+      setSpaceHeld(false)
+    }
+    // If focus/window changes while Space is physically still down, the
+    // keyup can be missed entirely -- release on blur too so it can't get
+    // stuck "on" and hijack every future drag.
+    const onBlur = () => {
+      spaceHeldRef.current = false
+      setSpaceHeld(false)
+    }
+    window.addEventListener('blur', onBlur)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
+    }
+  }, [])
+
+  // Re-centers (resets the pan offset) whenever the view zoom changes --
+  // simple "zoom around the middle" rather than trying to preserve exactly
+  // what was under the cursor/fingers, which fits the "just fit or zoom in"
+  // slider this drives (not a full pan-to-point zoom tool).
+  useEffect(() => {
+    updateViewOffset({ x: 0, y: 0 })
+  }, [viewZoom, updateViewOffset])
+
   const layout = useMemo(() => {
     if (!doc) return null
     const tree = liveRatio ? resizeSplit(doc.tree, liveRatio.splitId, liveRatio.ratio) : doc.tree
     const maxW = Math.max(50, containerSize.w - 40)
-    const maxH = Math.max(50, containerSize.h - 40)
-    const scale = Math.max(0.01, Math.min(maxW / doc.canvas.width, maxH / doc.canvas.height))
+    // A bit shorter than the panel's full height at fit, so the floating
+    // zoom bar at the bottom has room to sit below the collage instead of
+    // overlapping it.
+    const maxH = Math.max(50, containerSize.h - 40 - ZOOM_BAR_RESERVED_PX)
+    const fitScale = Math.max(0.01, Math.min(maxW / doc.canvas.width, maxH / doc.canvas.height))
+    // viewZoom only ever zooms *in* from fit (see the zoom bar) -- fit
+    // itself is already "as much as the panel can show", so there's no
+    // zoom-out below it.
+    const scale = fitScale * viewZoom
     const canvasCssW = doc.canvas.width * scale
     const canvasCssH = doc.canvas.height * scale
     const extW = doc.border.external.width * scale
@@ -101,7 +246,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     const frames = collectFrames(tree)
     const dividers = collectDividers(tree, interior, gutter)
     return { scale, canvasCssW, canvasCssH, extW, gutter, interior, frameRects, frames, dividers }
-  }, [doc, containerSize, liveRatio])
+  }, [doc, containerSize, liveRatio, viewZoom])
 
   const insertRects = useMemo(() => {
     if (!doc || !layout) return {}
@@ -177,8 +322,12 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           const pooled = pool.get(frame.image.imageKey)
           const img = pooled ? getCachedImage(frame.image.imageKey) : undefined
           const focal = liveFocal && liveFocal.frameId === frameId ? liveFocal.focal : frame.image.focal
-          if (img) drawCoverCropImage(ctx, img, rect, focal, frame.image.zoom, frame.image.flipH, frame.image.flipV)
-          else if (pooled) {
+          if (img) {
+            drawCoverCropImage(ctx, img, rect, focal, frame.image.zoom, frame.image.flipH, frame.image.flipV)
+            if (activeZoomTarget?.kind === 'frame' && activeZoomTarget.id === frameId) {
+              drawFullImageOutline(ctx, img, rect, focal, frame.image.zoom)
+            }
+          } else if (pooled) {
             ensureImageLoaded(frame.image.imageKey, pooled.objectUrl, forceRedraw)
             drawPlaceholder(ctx, rect, 'Loading…')
           } else {
@@ -198,7 +347,22 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
 
       for (const insert of doc.inserts) {
         const rect = insertRects[insert.id]
-        if (!rect || insert.imageKey === null) continue
+        if (!rect) continue
+        if (insert.imageKey === null) {
+          // Previously invisible until assigned an image -- no way to tell
+          // one exists at all unless it happened to be selected. Now shown
+          // for every imageless insert, selected or not.
+          drawPlaceholder(ctx, rect, containerSize.w < MOBILE_BREAKPOINT ? undefined : 'Drop image here')
+          if (!previewMode && insert.id === selectedInsertId) {
+            ctx.save()
+            ctx.strokeStyle = '#3b82f6'
+            ctx.setLineDash([5, 4])
+            ctx.lineWidth = 2
+            ctx.strokeRect(rect.x, rect.y, rect.w, rect.h)
+            ctx.restore()
+          }
+          continue
+        }
         const pooled = pool.get(insert.imageKey)
         if (!pooled) continue
         const img = getCachedImage(insert.imageKey)
@@ -212,6 +376,9 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           drawInsertShadow(ctx, rect, insert.cornerRadiusPct, shadow, layout.scale)
         }
         drawFeatheredImage(ctx, img, rect, insertFocal, insert.zoom, insert.cornerRadiusPct, insert.featherPx * layout.scale)
+        if (activeZoomTarget?.kind === 'insert' && activeZoomTarget.id === insert.id) {
+          drawFullImageOutline(ctx, img, rect, insertFocal, insert.zoom)
+        }
         const border = insert.border ?? doc.insertBorderDefault
         if (border?.enabled) strokeRoundedRect(ctx, rect, insert.cornerRadiusPct, border.color, border.width * layout.scale)
         if (!previewMode && insert.id === selectedInsertId) {
@@ -224,7 +391,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         }
       }
     }
-  }, [doc, layout, selectedFrameId, selectedInsertId, tick, liveFocal, liveInsertFocal, insertRects, forceRedraw, pool, previewMode])
+  }, [doc, layout, selectedFrameId, selectedInsertId, tick, liveFocal, liveInsertFocal, insertRects, forceRedraw, pool, previewMode, activeZoomTarget])
 
   // ---- pointer interaction on the canvas itself (select / pan / move insert) ----
   const onCanvasPointerDown = useCallback(
@@ -234,6 +401,24 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       // started -- isPrimary is only true for the first active touch point.
       if (!e.isPrimary) return
       if (!doc || !layout) return
+
+      // Space+drag pans the whole collage view -- overrides the normal
+      // select/pan-image behavior entirely while held, same as
+      // Photoshop/Figma's spacebar pan.
+      if (spaceHeldRef.current) {
+        dragRef.current = {
+          type: 'view-pan',
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          startOffsetX: viewOffsetRef.current.x,
+          startOffsetY: viewOffsetRef.current.y,
+        }
+        e.currentTarget.setPointerCapture(e.pointerId)
+        setIsPanningView(true)
+        return
+      }
+
       const box = e.currentTarget.getBoundingClientRect()
       const point = { x: e.clientX - box.left, y: e.clientY - box.top }
 
@@ -259,6 +444,27 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           cropH: cropBox.h,
         }
         e.currentTarget.setPointerCapture(e.pointerId)
+        setActiveZoomTarget({ kind: 'insert', id: insertId })
+        // Long-press (instead of using the dedicated move handle) switches
+        // this from panning the image to moving the insert itself --
+        // cancelled in onCanvasPointerMove if the pointer moves first.
+        if (longPressRef.current) clearTimeout(longPressRef.current.timer)
+        const timer = setTimeout(() => {
+          const drag = dragRef.current
+          if (!drag || drag.type !== 'insert-pan' || drag.insertId !== insertId || drag.pointerId !== e.pointerId) return
+          if (navigator.vibrate) navigator.vibrate(30)
+          dragRef.current = {
+            type: 'insert-move',
+            insertId,
+            pointerId: drag.pointerId,
+            startX: drag.startX,
+            startY: drag.startY,
+            startCxPct: (rect.x + rect.w / 2) / layout.canvasCssW,
+            startCyPct: (rect.y + rect.h / 2) / layout.canvasCssH,
+          }
+          longPressRef.current = null
+        }, LONG_PRESS_MS)
+        longPressRef.current = { timer, insertId, pointerId: e.pointerId }
         return
       }
 
@@ -284,14 +490,56 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         cropH: cropBox.h,
       }
       e.currentTarget.setPointerCapture(e.pointerId)
+      setActiveZoomTarget({ kind: 'frame', id: frameId })
     },
     [doc, layout, insertRects, selectFrame, selectInsert, previewMode],
   )
 
   const onCanvasPointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      const drag = dragRef.current
+      let drag = dragRef.current
       if (!drag || !layout) return
+
+      // Space pressed *during* an already-started image pan (pressed after
+      // mousedown, not before) -- switch to panning the collage view
+      // instead, using the current scroll position as the new baseline so
+      // there's no jump.
+      if (spaceHeldRef.current && (drag.type === 'pan' || drag.type === 'insert-pan')) {
+        if (longPressRef.current) {
+          clearTimeout(longPressRef.current.timer)
+          longPressRef.current = null
+        }
+        // Abandon whatever partial focal drag was in progress -- without
+        // this, the live (uncommitted) override would keep rendering
+        // indefinitely, since view-pan's own cleanup never touches it.
+        if (drag.type === 'pan') setLiveFocal(null)
+        else setLiveInsertFocal(null)
+        drag = {
+          type: 'view-pan',
+          pointerId: drag.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          startOffsetX: viewOffsetRef.current.x,
+          startOffsetY: viewOffsetRef.current.y,
+        }
+        dragRef.current = drag
+        setIsPanningView(true)
+        setActiveZoomTarget(null)
+      }
+
+      if (drag.type === 'view-pan') {
+        // Keep at least a small sliver of the collage always reachable/
+        // visible rather than letting it be dragged arbitrarily far off
+        // panel -- half the overhang beyond the container, plus a little
+        // slack, on each axis.
+        const maxX = Math.max(0, (layout.canvasCssW - containerSize.w) / 2) + 150
+        const maxY = Math.max(0, (layout.canvasCssH - containerSize.h) / 2) + 150
+        updateViewOffset({
+          x: Math.max(-maxX, Math.min(maxX, drag.startOffsetX + (e.clientX - drag.startX))),
+          y: Math.max(-maxY, Math.min(maxY, drag.startOffsetY + (e.clientY - drag.startY))),
+        })
+        return
+      }
 
       if (drag.type === 'pan') {
         const box = e.currentTarget.getBoundingClientRect()
@@ -314,14 +562,33 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         const y = e.clientY - box.top
         const dxCss = x - drag.startX
         const dyCss = y - drag.startY
+        // Real panning intent, confirmed by movement -- don't let the
+        // pending long-press timer convert this into a move partway through.
+        if (longPressRef.current && Math.hypot(dxCss, dyCss) > LONG_PRESS_CANCEL_PX) {
+          clearTimeout(longPressRef.current.timer)
+          longPressRef.current = null
+        }
         const scaleX = drag.cropW / drag.rect.w
         const scaleY = drag.cropH / drag.rect.h
         const newX = Math.max(0, Math.min(1, drag.startFocal.x - (dxCss * scaleX) / drag.img.naturalWidth))
         const newY = Math.max(0, Math.min(1, drag.startFocal.y - (dyCss * scaleY) / drag.img.naturalHeight))
         setLiveInsertFocal({ insertId: drag.insertId, focal: { x: newX, y: newY } })
+        return
+      }
+
+      // Long-press converted this into a move -- same math as the dedicated
+      // move handle's onInsertMovePointerMove, just driven by the canvas's
+      // own pointer events since that's where capture already is.
+      if (drag.type === 'insert-move') {
+        const box = e.currentTarget.getBoundingClientRect()
+        const x = e.clientX - box.left
+        const y = e.clientY - box.top
+        const newCxPct = Math.max(0, Math.min(1, drag.startCxPct + (x - drag.startX) / layout.canvasCssW))
+        const newCyPct = Math.max(0, Math.min(1, drag.startCyPct + (y - drag.startY) / layout.canvasCssH))
+        setLiveInsertPos({ insertId: drag.insertId, cxPct: newCxPct, cyPct: newCyPct })
       }
     },
-    [layout],
+    [layout, containerSize, updateViewOffset],
   )
 
   const onCanvasPointerUp = useCallback(
@@ -329,9 +596,17 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       const drag = dragRef.current
       if (!drag) return
 
+      if (drag.type === 'view-pan') {
+        dragRef.current = null
+        e.currentTarget.releasePointerCapture(e.pointerId)
+        setIsPanningView(false)
+        return
+      }
+
       if (drag.type === 'pan') {
         dragRef.current = null
         e.currentTarget.releasePointerCapture(e.pointerId)
+        setActiveZoomTarget(null)
         setLiveFocal((live) => {
           if (live && live.frameId === drag.frameId) {
             editDoc((d) => ({ ...d, tree: updateFrame(d.tree, drag.frameId, (f) => ({ ...f, image: f.image ? { ...f.image, focal: live.focal } : f.image })) }))
@@ -344,9 +619,31 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       if (drag.type === 'insert-pan') {
         dragRef.current = null
         e.currentTarget.releasePointerCapture(e.pointerId)
+        setActiveZoomTarget(null)
+        if (longPressRef.current) {
+          clearTimeout(longPressRef.current.timer)
+          longPressRef.current = null
+        }
         setLiveInsertFocal((live) => {
           if (live && live.insertId === drag.insertId) {
             editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, focal: live.focal } : i)) }))
+          }
+          return null
+        })
+        return
+      }
+
+      // Long-press-converted move -- same commit logic as the dedicated
+      // move handle's onInsertMovePointerUp.
+      if (drag.type === 'insert-move') {
+        dragRef.current = null
+        e.currentTarget.releasePointerCapture(e.pointerId)
+        setLiveInsertPos((live) => {
+          if (live) {
+            editDoc((d) => ({
+              ...d,
+              inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, seam: null, position: { cxPct: live.cxPct, cyPct: live.cyPct } } : i)),
+            }))
           }
           return null
         })
@@ -388,13 +685,32 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     const canvas = canvasRef.current
     if (!canvas || !doc || !layout) return
     const handler = (e: WheelEvent) => {
-      const box = canvas.getBoundingClientRect()
-      const point = { x: e.clientX - box.left, y: e.clientY - box.top }
       // Multiplicative (not additive) step -- with MAX_ZOOM this high, a fixed
       // +/-0.1 per tick would take hundreds of scroll ticks to reach the top
       // of the range. A proportional step stays fine-grained near 1x and
       // still reaches high zoom quickly.
       const factor = e.deltaY > 0 ? 1 / 1.1 : 1.1
+
+      // Space held -- scroll wheel zooms the whole collage view (same range
+      // as the zoom bar's slider) instead of whichever image is under the
+      // cursor, mirroring Space turning drag into panning the view too.
+      if (spaceHeldRef.current) {
+        e.preventDefault()
+        setViewZoom((z) => Math.max(1, Math.min(4, z * factor)))
+        return
+      }
+
+      const box = canvas.getBoundingClientRect()
+      const point = { x: e.clientX - box.left, y: e.clientY - box.top }
+
+      // Shown while the wheel is actively turning, cleared shortly after it
+      // stops -- wheel ticks don't have a clear gesture start/end the way a
+      // drag or pinch does, so this just debounces on inactivity instead.
+      const markActive = (kind: 'frame' | 'insert', id: string) => {
+        setActiveZoomTarget({ kind, id })
+        if (wheelZoomClearRef.current) clearTimeout(wheelZoomClearRef.current)
+        wheelZoomClearRef.current = setTimeout(() => setActiveZoomTarget(null), 600)
+      }
 
       const insertId = hitTest(point, insertRects)
       if (insertId) {
@@ -403,6 +719,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         e.preventDefault()
         const nextZoom = Math.max(1, Math.min(MAX_ZOOM, insert.zoom * factor))
         editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === insertId ? { ...i, zoom: nextZoom } : i)) }))
+        markActive('insert', insertId)
         return
       }
 
@@ -413,62 +730,116 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       e.preventDefault()
       const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom * factor))
       editDoc((d) => ({ ...d, tree: updateFrame(d.tree, frameId, (f) => ({ ...f, image: f.image ? { ...f.image, zoom: nextZoom } : f.image })) }))
+      markActive('frame', frameId)
     }
     canvas.addEventListener('wheel', handler, { passive: false })
     return () => canvas.removeEventListener('wheel', handler)
   }, [doc, layout, insertRects, editDoc])
 
-  // Two-finger pinch zooms whichever frame/insert is under the pinch's
-  // midpoint -- the touch equivalent of the wheel handler above. Kept in a
-  // ref (not a plain closure variable) so the active gesture survives this
-  // effect re-running mid-pinch, which it does on every editDoc call since
-  // `doc` is a dependency (same as the wheel handler already relies on).
-  const pinchRef = useRef<{ kind: 'insert' | 'frame'; id: string; lastDist: number } | null>(null)
+  // Two-finger touch is either a pinch (zoom whichever frame/insert is under
+  // the midpoint, touch equivalent of the wheel handler above) or a drag
+  // (pan the whole collage view -- see the zoom bar below). Both start the
+  // same way, so the first ~10px of movement decides which one it is by
+  // comparing how much the distance between the two touches changed
+  // (pinch signal) against how much their midpoint moved (pan signal),
+  // then commits to that mode for the rest of the gesture. Kept in a ref
+  // (not a plain closure variable) so the active gesture survives this
+  // effect re-running mid-gesture, which it does on every editDoc call
+  // since `doc` is a dependency (same as the wheel handler already relies on).
+  type TouchGesture =
+    | { mode: 'pending'; startDist: number; startMidX: number; startMidY: number; target: { kind: 'insert' | 'frame'; id: string } | null; startOffsetX: number; startOffsetY: number }
+    | { mode: 'zoom'; kind: 'insert' | 'frame'; id: string; lastDist: number }
+    | { mode: 'pan'; startMidX: number; startMidY: number; startOffsetX: number; startOffsetY: number }
+  const touchGestureRef = useRef<TouchGesture | null>(null)
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !doc || !layout) return
+    const container = wrapperRef.current
+    if (!canvas || !container || !doc || !layout) return
     const touchDist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const touchMid = (t: TouchList) => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 })
+    const GESTURE_DECIDE_PX = 10
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 2) return
       const box = canvas.getBoundingClientRect()
-      const point = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - box.left,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - box.top,
-      }
+      const mid = touchMid(e.touches)
+      const point = { x: mid.x - box.left, y: mid.y - box.top }
       const insertId = hitTest(point, insertRects)
+      let target: { kind: 'insert' | 'frame'; id: string } | null = null
       if (insertId && doc.inserts.find((i) => i.id === insertId)?.imageKey) {
-        pinchRef.current = { kind: 'insert', id: insertId, lastDist: touchDist(e.touches) }
-        return
+        target = { kind: 'insert', id: insertId }
+      } else {
+        const frameId = hitTest(point, layout.frameRects)
+        if (frameId && layout.frames[frameId]?.image) target = { kind: 'frame', id: frameId }
       }
-      const frameId = hitTest(point, layout.frameRects)
-      if (frameId && layout.frames[frameId]?.image) {
-        pinchRef.current = { kind: 'frame', id: frameId, lastDist: touchDist(e.touches) }
+      touchGestureRef.current = {
+        mode: 'pending',
+        startDist: touchDist(e.touches),
+        startMidX: mid.x,
+        startMidY: mid.y,
+        target,
+        startOffsetX: viewOffsetRef.current.x,
+        startOffsetY: viewOffsetRef.current.y,
       }
     }
 
     const onTouchMove = (e: TouchEvent) => {
-      const pinch = pinchRef.current
-      if (e.touches.length !== 2 || !pinch) return
+      const gesture = touchGestureRef.current
+      if (e.touches.length !== 2 || !gesture) return
       e.preventDefault()
-      const newDist = touchDist(e.touches)
-      const ratio = newDist / pinch.lastDist
-      pinch.lastDist = newDist
-      if (pinch.kind === 'insert') {
-        const insert = doc.inserts.find((i) => i.id === pinch.id)
-        if (!insert) return
-        const nextZoom = Math.max(1, Math.min(MAX_ZOOM, insert.zoom * ratio))
-        editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === pinch.id ? { ...i, zoom: nextZoom } : i)) }))
-      } else {
-        const frame = layout.frames[pinch.id]
-        if (!frame?.image) return
-        const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom * ratio))
-        editDoc((d) => ({ ...d, tree: updateFrame(d.tree, pinch.id, (f) => (f.image ? { ...f, image: { ...f.image, zoom: nextZoom } } : f)) }))
+      const mid = touchMid(e.touches)
+      const dist = touchDist(e.touches)
+
+      if (gesture.mode === 'pending') {
+        const distChange = Math.abs(dist - gesture.startDist)
+        const midMove = Math.hypot(mid.x - gesture.startMidX, mid.y - gesture.startMidY)
+        if (Math.max(distChange, midMove) < GESTURE_DECIDE_PX) return
+        if (gesture.target && distChange > midMove) {
+          touchGestureRef.current = { mode: 'zoom', kind: gesture.target.kind, id: gesture.target.id, lastDist: dist }
+          setActiveZoomTarget(gesture.target)
+        } else {
+          touchGestureRef.current = {
+            mode: 'pan',
+            startMidX: gesture.startMidX,
+            startMidY: gesture.startMidY,
+            startOffsetX: gesture.startOffsetX,
+            startOffsetY: gesture.startOffsetY,
+          }
+        }
+        return
       }
+
+      if (gesture.mode === 'zoom') {
+        const ratio = dist / gesture.lastDist
+        gesture.lastDist = dist
+        if (gesture.kind === 'insert') {
+          const insert = doc.inserts.find((i) => i.id === gesture.id)
+          if (!insert) return
+          const nextZoom = Math.max(1, Math.min(MAX_ZOOM, insert.zoom * ratio))
+          editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === gesture.id ? { ...i, zoom: nextZoom } : i)) }))
+        } else {
+          const frame = layout.frames[gesture.id]
+          if (!frame?.image) return
+          const nextZoom = Math.max(1, Math.min(MAX_ZOOM, frame.image.zoom * ratio))
+          editDoc((d) => ({ ...d, tree: updateFrame(d.tree, gesture.id, (f) => (f.image ? { ...f, image: { ...f.image, zoom: nextZoom } } : f)) }))
+        }
+        return
+      }
+
+      // pan -- drag fingers right, the view shifts right to reveal what was to the left.
+      const maxX = Math.max(0, (layout.canvasCssW - containerSize.w) / 2) + 150
+      const maxY = Math.max(0, (layout.canvasCssH - containerSize.h) / 2) + 150
+      updateViewOffset({
+        x: Math.max(-maxX, Math.min(maxX, gesture.startOffsetX + (mid.x - gesture.startMidX))),
+        y: Math.max(-maxY, Math.min(maxY, gesture.startOffsetY + (mid.y - gesture.startMidY))),
+      })
     }
 
     const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) pinchRef.current = null
+      if (e.touches.length < 2) {
+        touchGestureRef.current = null
+        setActiveZoomTarget(null)
+      }
     }
 
     canvas.addEventListener('touchstart', onTouchStart, { passive: true })
@@ -481,7 +852,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       canvas.removeEventListener('touchend', onTouchEnd)
       canvas.removeEventListener('touchcancel', onTouchEnd)
     }
-  }, [doc, layout, insertRects, editDoc])
+  }, [doc, layout, insertRects, editDoc, containerSize, updateViewOffset])
 
   const assignImageToDropTarget = useCallback(
     (imageKey: string, insertId: string | null, frameId: string | null) => {
@@ -571,6 +942,65 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       })
     },
     [editDoc],
+  )
+
+  // ---- "New insert" button: tap creates one centered, drag places it directly ----
+  const beginNewInsertDrag = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    const canvasBox = canvasRef.current?.getBoundingClientRect()
+    if (!canvasBox) return
+    dragRef.current = { type: 'new-insert-drag', pointerId: e.pointerId, startX: e.clientX - canvasBox.left, startY: e.clientY - canvasBox.top, insertId: null }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [])
+
+  const onNewInsertDragMove = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const drag = dragRef.current
+      if (!drag || drag.type !== 'new-insert-drag' || !layout) return
+      const canvasBox = canvasRef.current?.getBoundingClientRect()
+      if (!canvasBox) return
+      const x = e.clientX - canvasBox.left
+      const y = e.clientY - canvasBox.top
+      const cxPct = Math.max(0, Math.min(1, x / layout.canvasCssW))
+      const cyPct = Math.max(0, Math.min(1, y / layout.canvasCssH))
+
+      if (!drag.insertId) {
+        // Only actually create the insert once the drag clears a small
+        // threshold -- a plain tap (released before this) instead falls
+        // through to onNewInsertDragUp's centered-creation fallback.
+        if (Math.hypot(x - drag.startX, y - drag.startY) < NEW_INSERT_DRAG_THRESHOLD_PX) return
+        const insert = makeNewInsert(cxPct, cyPct)
+        editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
+        selectInsert(insert.id)
+        dragRef.current = { ...drag, insertId: insert.id }
+        setLiveInsertPos({ insertId: insert.id, cxPct, cyPct })
+        return
+      }
+      setLiveInsertPos({ insertId: drag.insertId, cxPct, cyPct })
+    },
+    [layout, editDoc, selectInsert],
+  )
+
+  const onNewInsertDragUp = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const drag = dragRef.current
+      if (!drag || drag.type !== 'new-insert-drag') return
+      dragRef.current = null
+      e.currentTarget.releasePointerCapture(e.pointerId)
+      if (!drag.insertId) {
+        // Never crossed the drag threshold -- treat as a plain tap.
+        const insert = makeNewInsert(0.5, 0.5)
+        editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
+        selectInsert(insert.id)
+        return
+      }
+      setLiveInsertPos((live) => {
+        if (live && live.insertId === drag.insertId) {
+          editDoc((d) => ({ ...d, inserts: d.inserts.map((i) => (i.id === live.insertId ? { ...i, position: { cxPct: live.cxPct, cyPct: live.cyPct } } : i)) }))
+        }
+        return null
+      })
+    },
+    [editDoc, selectInsert],
   )
 
   // ---- insert move handle (DOM overlay, top-left anchor) ----
@@ -683,6 +1113,42 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     [editDoc, layout],
   )
 
+  // ---- zoom bar move handle (drag the whole floating bar around) ----
+  const beginZoomBarMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const wrapEl = editorWrapRef.current
+    const barEl = e.currentTarget.closest('.canvas-zoom-bar') as HTMLElement | null
+    if (!wrapEl || !barEl) return
+    const wrapBox = wrapEl.getBoundingClientRect()
+    const barBox = barEl.getBoundingClientRect()
+    zoomBarDragRef.current = {
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startLeft: barBox.left - wrapBox.left,
+      startTop: barBox.top - wrapBox.top,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }, [])
+
+  const onZoomBarMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = zoomBarDragRef.current
+    const wrapEl = editorWrapRef.current
+    if (!drag || !wrapEl) return
+    const wrapBox = wrapEl.getBoundingClientRect()
+    const barEl = e.currentTarget.closest('.canvas-zoom-bar') as HTMLElement | null
+    const barW = barEl?.offsetWidth ?? 0
+    const barH = barEl?.offsetHeight ?? 0
+    const left = Math.max(0, Math.min(wrapBox.width - barW, drag.startLeft + (e.clientX - drag.startClientX)))
+    const top = Math.max(0, Math.min(wrapBox.height - barH, drag.startTop + (e.clientY - drag.startClientY)))
+    setZoomBarPos({ left, top })
+  }, [])
+
+  const onZoomBarMoveUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!zoomBarDragRef.current) return
+    zoomBarDragRef.current = null
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }, [])
+
   if (!doc || !layout) {
     return (
       <div className="canvas-editor-empty" ref={wrapperRef}>
@@ -696,8 +1162,9 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const frameCount = Object.keys(layout.frameRects).length
 
   return (
+    <div className="canvas-editor-wrap" ref={editorWrapRef}>
     <div
-      className="canvas-editor"
+      className={`canvas-editor${spaceHeld ? ' space-pan' : ''}${isPanningView ? ' panning' : ''}`}
       ref={wrapperRef}
       onClick={(e) => {
         // Only when the click lands on this wrapper itself -- the padding
@@ -709,7 +1176,14 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         selectInsert(null)
       }}
     >
-      <div className="canvas-editor-stage" style={{ width: layout.canvasCssW, height: layout.canvasCssH }}>
+      <div
+        className="canvas-editor-stage"
+        style={{
+          width: layout.canvasCssW,
+          height: layout.canvasCssH,
+          transform: `translate(${viewOffset.x}px, ${viewOffset.y}px)`,
+        }}
+      >
         <canvas
           ref={canvasRef}
           onPointerDown={onCanvasPointerDown}
@@ -735,25 +1209,10 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
         {!previewMode && (
           <button
             className="insert-add-btn"
-            title="Add an insert (drag it into place afterwards)"
-            onClick={() => {
-              const insert: Insert = {
-                id: newId(),
-                imageKey: null,
-                seam: null,
-                position: { cxPct: 0.5, cyPct: 0.5 },
-                sizePct: 0.26,
-                aspectRatio: 1,
-                focal: { x: 0.5, y: 0.5 },
-                zoom: 1.6,
-                featherPx: 18,
-                cornerRadiusPct: 0.08,
-                border: null,
-                shadow: null,
-              }
-              editDoc((d) => ({ ...d, inserts: [...d.inserts, insert] }))
-              selectInsert(insert.id)
-            }}
+            title="Add an insert -- tap to place it centered, or press and drag to place it directly"
+            onPointerDown={beginNewInsertDrag}
+            onPointerMove={onNewInsertDragMove}
+            onPointerUp={onNewInsertDragUp}
           >
             +
           </button>
@@ -798,6 +1257,29 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
             </button>
           </>
         )}
+
+        {/* Imageless inserts are otherwise easy to lose track of (nothing
+            to click to select them except their own placeholder) -- give
+            every one a remove-X regardless of selection, not just the
+            selected one (which already gets the fuller control set above). */}
+        {!previewMode &&
+          doc.inserts
+            .filter((insert) => insert.imageKey === null && insert.id !== selectedInsertId)
+            .map((insert) => {
+              const rect = insertRects[insert.id]
+              if (!rect) return null
+              return (
+                <button
+                  key={insert.id}
+                  className="seam-remove"
+                  title="Remove insert"
+                  style={{ left: rect.x + rect.w - 11, top: rect.y - 11 }}
+                  onClick={() => editDoc((d) => ({ ...d, inserts: d.inserts.filter((i) => i.id !== insert.id) }))}
+                >
+                  ✕
+                </button>
+              )
+            })}
 
         {!previewMode && selectedRect && selectedFrameId && (
           <div className="frame-toolbar" style={{ left: selectedRect.x + selectedRect.w - 4, top: selectedRect.y + 4 }}>
@@ -861,6 +1343,36 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
           </div>
         )}
       </div>
+    </div>
+    {!previewMode && (
+      <div
+        className="canvas-zoom-bar"
+        style={zoomBarPos ? { left: zoomBarPos.left, top: zoomBarPos.top, bottom: 'auto', transform: 'none' } : undefined}
+      >
+        <div
+          className="canvas-zoom-bar-handle"
+          title="Drag to move"
+          onPointerDown={beginZoomBarMove}
+          onPointerMove={onZoomBarMove}
+          onPointerUp={onZoomBarMoveUp}
+        >
+          ⋮
+        </div>
+        <button onClick={() => setViewZoom(1)} disabled={viewZoom === 1} title="Fit to panel">
+          Fit
+        </button>
+        <input
+          type="range"
+          min={1}
+          max={4}
+          step={0.1}
+          value={viewZoom}
+          onChange={(e) => setViewZoom(Number(e.target.value))}
+          title="Zoom the whole collage view (not any individual photo)"
+        />
+        <span className="hint">{Math.round(viewZoom * 100)}%</span>
+      </div>
+    )}
     </div>
   )
 }
