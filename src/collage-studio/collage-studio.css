@@ -410,6 +410,12 @@
 }
 
 /* ---- canvas editor ---- */
+.collage-studio-page .canvas-editor-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
 .collage-studio-page .canvas-editor {
   flex: 1;
   overflow: auto;
@@ -418,6 +424,36 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+}
+/* Centered flex content that overflows can clip its own start edge out of
+   scroll reach (a well-known flexbox+overflow quirk) -- switched to
+   flex-start once actually zoomed in past fit, so every edge stays
+   reachable by scrolling/panning. */
+.collage-studio-page .canvas-editor.zoomed {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.collage-studio-page .canvas-zoom-bar {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(36, 36, 40, 0.92);
+  border: 1px solid #444;
+  border-radius: 20px;
+  padding: 6px 14px;
+  z-index: 20;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.collage-studio-page .canvas-zoom-bar input[type='range'] {
+  width: 120px;
+}
+.collage-studio-page .canvas-zoom-bar .hint {
+  min-width: 3.5em;
+  text-align: right;
 }
 .collage-studio-page .canvas-editor-empty {
   flex: 1;
@@ -466,6 +502,9 @@
   line-height: 1;
   padding: 0;
   transition: transform 0.1s ease;
+  /* Now drag-to-place, not just tap -- without this, a touch-drag here
+     gets claimed by the browser as a scroll instead of reaching us. */
+  touch-action: none;
 }
 .collage-studio-page .insert-add-btn:hover {
   background: #2563eb;
