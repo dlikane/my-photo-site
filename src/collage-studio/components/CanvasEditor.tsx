@@ -130,6 +130,12 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
   const wheelZoomClearRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Desktop equivalent of the two-finger touch pan above -- hold Space and
   // drag with the mouse to pan the collage view, same as Photoshop/Figma.
+  // Kept in a ref (read from all the pointer/wheel handlers) as well as
+  // state (drives the cursor's CSS class) -- the ref is what those handlers
+  // actually branch on, so there's no dependency on them re-closing over a
+  // fresh `spaceHeld` render value, which is otherwise a real source of
+  // stale-closure bugs for a fast keydown-then-mousedown sequence.
+  const spaceHeldRef = useRef(false)
   const [spaceHeld, setSpaceHeld] = useState(false)
   const [isPanningView, setIsPanningView] = useState(false)
   // Zoom bar position -- null means "default" (bottom-center, via CSS);
@@ -160,17 +166,28 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target)) return
       e.preventDefault() // stop the page from scrolling on Space
+      spaceHeldRef.current = true
       setSpaceHeld(true)
     }
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code !== 'Space') return
+      spaceHeldRef.current = false
       setSpaceHeld(false)
     }
+    // If focus/window changes while Space is physically still down, the
+    // keyup can be missed entirely -- release on blur too so it can't get
+    // stuck "on" and hijack every future drag.
+    const onBlur = () => {
+      spaceHeldRef.current = false
+      setSpaceHeld(false)
+    }
+    window.addEventListener('blur', onBlur)
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
     }
   }, [])
 
@@ -368,7 +385,7 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       // Space+drag pans the whole collage view -- overrides the normal
       // select/pan-image behavior entirely while held, same as
       // Photoshop/Figma's spacebar pan.
-      if (spaceHeld) {
+      if (spaceHeldRef.current) {
         const container = wrapperRef.current
         if (!container) return
         dragRef.current = {
@@ -457,13 +474,43 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
       e.currentTarget.setPointerCapture(e.pointerId)
       setActiveZoomTarget({ kind: 'frame', id: frameId })
     },
-    [doc, layout, insertRects, selectFrame, selectInsert, previewMode, spaceHeld],
+    [doc, layout, insertRects, selectFrame, selectInsert, previewMode],
   )
 
   const onCanvasPointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      const drag = dragRef.current
+      let drag = dragRef.current
       if (!drag || !layout) return
+
+      // Space pressed *during* an already-started image pan (pressed after
+      // mousedown, not before) -- switch to panning the collage view
+      // instead, using the current scroll position as the new baseline so
+      // there's no jump.
+      if (spaceHeldRef.current && (drag.type === 'pan' || drag.type === 'insert-pan')) {
+        const container = wrapperRef.current
+        if (container) {
+          if (longPressRef.current) {
+            clearTimeout(longPressRef.current.timer)
+            longPressRef.current = null
+          }
+          // Abandon whatever partial focal drag was in progress -- without
+          // this, the live (uncommitted) override would keep rendering
+          // indefinitely, since view-pan's own cleanup never touches it.
+          if (drag.type === 'pan') setLiveFocal(null)
+          else setLiveInsertFocal(null)
+          drag = {
+            type: 'view-pan',
+            pointerId: drag.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            startScrollLeft: container.scrollLeft,
+            startScrollTop: container.scrollTop,
+          }
+          dragRef.current = drag
+          setIsPanningView(true)
+          setActiveZoomTarget(null)
+        }
+      }
 
       if (drag.type === 'view-pan') {
         const container = wrapperRef.current
@@ -617,13 +664,23 @@ export function CanvasEditor({ previewMode }: CanvasEditorProps) {
     const canvas = canvasRef.current
     if (!canvas || !doc || !layout) return
     const handler = (e: WheelEvent) => {
-      const box = canvas.getBoundingClientRect()
-      const point = { x: e.clientX - box.left, y: e.clientY - box.top }
       // Multiplicative (not additive) step -- with MAX_ZOOM this high, a fixed
       // +/-0.1 per tick would take hundreds of scroll ticks to reach the top
       // of the range. A proportional step stays fine-grained near 1x and
       // still reaches high zoom quickly.
       const factor = e.deltaY > 0 ? 1 / 1.1 : 1.1
+
+      // Space held -- scroll wheel zooms the whole collage view (same range
+      // as the zoom bar's slider) instead of whichever image is under the
+      // cursor, mirroring Space turning drag into panning the view too.
+      if (spaceHeldRef.current) {
+        e.preventDefault()
+        setViewZoom((z) => Math.max(1, Math.min(4, z * factor)))
+        return
+      }
+
+      const box = canvas.getBoundingClientRect()
+      const point = { x: e.clientX - box.left, y: e.clientY - box.top }
 
       // Shown while the wheel is actively turning, cleared shortly after it
       // stops -- wheel ticks don't have a clear gesture start/end the way a

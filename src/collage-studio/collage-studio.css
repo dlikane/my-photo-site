@@ -485,13 +485,16 @@
   cursor: grab;
   touch-action: none;
 }
-/* Space held (desktop pan, mirrors the two-finger touch pan): grab while
-   held, grabbing once actually dragging -- Photoshop/Figma convention. */
+/* Space held (desktop pan, mirrors the two-finger touch pan). Deliberately
+   NOT grab/grabbing -- the canvas already uses grab by default for
+   dragging an image's focal point within a frame, and reusing the same
+   icon here reads as "still panning the image", not "now panning the
+   whole view". `move` is unambiguous and distinct from that. */
 .collage-studio-page .canvas-editor.space-pan .canvas-editor-stage canvas {
-  cursor: grab;
+  cursor: move;
 }
 .collage-studio-page .canvas-editor.panning .canvas-editor-stage canvas {
-  cursor: grabbing;
+  cursor: move;
 }
 .collage-studio-page .divider {
   position: absolute;
